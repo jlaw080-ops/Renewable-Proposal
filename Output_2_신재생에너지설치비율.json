@@ -1,0 +1,108 @@
+{
+  "scenarios": [
+    {
+      "id": "ALT-1",
+      "label": "ALT-1",
+      "systems": [
+        {
+          "id": "system_1",
+          "에너지원": {
+            "value": null,
+            "type": "select",
+            "source": "신재생에너지계수라이브러리.json",
+            "sourceKey": "에너지원",
+            "label": "에너지원"
+          },
+          "형식": {
+            "value": null,
+            "type": "select",
+            "source": "신재생에너지계수라이브러리.json",
+            "sourceKey": "형식",
+            "dependsOn": "에너지원",
+            "label": "형식"
+          },
+          "단위에너지생산량": {
+            "value": null,
+            "type": "number",
+            "unit": "kWh/kW·yr",
+            "readonly": true,
+            "source": "신재생에너지계수라이브러리.json",
+            "sourceKey": "단위에너지생산량",
+            "dependsOn": ["에너지원", "형식"],
+            "label": "단위 에너지생산량"
+          },
+          "원별보정계수": {
+            "value": null,
+            "type": "number",
+            "readonly": true,
+            "source": "신재생에너지계수라이브러리.json",
+            "sourceKey": "원별보정계수",
+            "dependsOn": ["에너지원", "형식"],
+            "label": "원별 보정계수"
+          },
+          "적용용량": {
+            "value": null,
+            "type": "number",
+            "unit": "kW",
+            "required": true,
+            "label": "적용용량"
+          },
+          "신재생에너지생산량": {
+            "value": null,
+            "type": "number",
+            "unit": "kWh/yr",
+            "readonly": true,
+            "formula": "적용용량 * 단위에너지생산량 * 원별보정계수",
+            "label": "신재생에너지생산량"
+          }
+        }
+      ],
+      "summary": {
+        "신재생에너지생산량합계": {
+          "value": null,
+          "unit": "kWh/yr",
+          "readonly": true,
+          "formula": "sum(systems[*].신재생에너지생산량)",
+          "label": "신재생에너지 생산량 적용 합계"
+        },
+        "총에너지사용량": {
+          "value": null,
+          "unit": "kWh/yr",
+          "readonly": true,
+          "source": "Output_1_예상에너지사용량.json",
+          "sourceKey": "에너지사용량산정.합계.총예상에너지사용량.value",
+          "label": "총에너지사용량"
+        },
+        "신재생에너지생산량비율": {
+          "value": null,
+          "unit": "%",
+          "readonly": true,
+          "formula": "(신재생에너지생산량합계 / 총에너지사용량) * 100",
+          "dependencies": {
+            "신재생에너지생산량합계": {
+              "dependsOn": "scenarios[현재ALT].summary.신재생에너지생산량합계"
+            },
+            "총에너지사용량": {
+              "source": "Output_1_예상에너지사용량.json",
+              "sourceKey": "에너지사용량산정.합계.총예상에너지사용량.value"
+            }
+          },
+          "label": "신재생에너지 생산량 적용 비율"
+        },
+        "의무비율만족여부": {
+          "value": null,
+          "readonly": true,
+          "source": "의무비율라이브러리.json",
+          "formula": "신재생에너지생산량비율 >= 의무비율라이브러리[용도].의무비율",
+          "label": "의무 비율 만족 여부"
+        },
+        "시스템구성": {
+          "value": null,
+          "readonly": true,
+          "formula": "systems[*].에너지원 + ' - ' + systems[*].형식 + ' : ' + systems[*].적용용량 + 'kW'",
+          "label": "시스템 구성"
+        }
+      }
+    }
+  ]
+}

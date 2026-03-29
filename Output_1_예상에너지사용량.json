@@ -1,0 +1,90 @@
+{
+  "에너지사용량산정": {
+    "대지위치": {
+      "label": "대지위치",
+      "source": "Input-사업정보.json",
+      "sourceKey": "프로젝트정보.대지위치.value"
+    },
+    "용도별에너지목록": {
+      "type": "array",
+      "label": "용도별 에너지 사용량",
+      "items": {
+        "구분": {
+          "type": "number",
+          "label": "구분",
+          "readonly": true,
+          "formula": "auto_increment"
+        },
+        "용도": {
+          "type": "reference",
+          "label": "용도",
+          "source": "Input-사업정보.json",
+          "sourceKey": "프로젝트정보.용도별연면적목록.items[n].용도.value"
+        },
+        "용도별연면적": {
+          "type": "reference",
+          "label": "용도별 연면적",
+          "unit": "㎡",
+          "source": "Input-사업정보.json",
+          "sourceKey": "프로젝트정보.용도별연면적목록.items[n].연면적.value"
+        },
+        "지역계수": {
+          "type": "lookup",
+          "label": "지역계수",
+          "source": "지역계수라이브러리.json",
+          "lookupKey": "대지위치",
+          "lookupValue": "Input-사업정보.json > 프로젝트정보.대지위치.value"
+        },
+        "단위에너지사용량": {
+          "type": "lookup",
+          "label": "단위에너지사용량",
+          "unit": "kWh/㎡·yr",
+          "source": "건축물종류별단위에너지사용량라이브러리.json",
+          "lookupKey": "용도",
+          "lookupValue": "용도별에너지목록.items[n].용도"
+        },
+        "예상에너지사용량": {
+          "type": "number",
+          "label": "예상에너지사용량",
+          "unit": "kWh/yr",
+          "readonly": true,
+          "formula": "용도별연면적 * 지역계수 * 단위에너지사용량"
+        }
+      }
+    },
+    "합계": {
+      "총연면적": {
+        "type": "number",
+        "label": "총연면적",
+        "unit": "㎡",
+        "readonly": true,
+        "formula": "sum(용도별에너지목록.items[*].용도별연면적)"
+      },
+      "총예상에너지사용량": {
+        "type": "number",
+        "label": "총 예상에너지사용량",
+        "unit": "kWh/yr",
+        "readonly": true,
+        "formula": "sum(용도별에너지목록.items[*].예상에너지사용량)"
+      }
+    },
+    "신재생에너지": {
+      "적용비율": {
+        "type": "lookup",
+        "label": "신재생에너지 적용 비율",
+        "unit": "%",
+        "source": "의무비율라이브러리.json",
+        "lookupKey": "TBD",
+        "lookupValue": "TBD",
+        "note": "선택 기준 추가 예정"
+      },
+      "필요신재생에너지사용량": {
+        "type": "number",
+        "label": "필요신재생에너지사용량",
+        "unit": "kWh/yr",
+        "readonly": true,
+        "formula": "합계.총예상에너지사용량 * (신재생에너지.적용비율 / 100)"
+      }
+    }
+  }
+}

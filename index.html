@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>신재생에너지 의무설치비율 검토 도구</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- 라이브러리 데이터 (window 전역변수 방식 — file:// CORS 우회) -->
+  <script src="data/신재생에너지계수라이브러리.js"></script>
+  <script src="data/지역계수라이브러리.js"></script>
+  <script src="data/건축물종류별단위에너지사용량라이브러리.js"></script>
+  <script src="data/의무비율라이브러리.js"></script>
+</head>
+<body>
+
+<!-- 로딩 오버레이 -->
+<div id="loading-overlay" class="loading-overlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text">라이브러리 로딩 중...</div>
+</div>
+
+<!-- 작성 지침 관리 모달 -->
+<div id="modal-overlay" class="modal-overlay hidden">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title">검토결과 작성 지침 관리</span>
+      <button class="modal-close" id="btn-modal-close">×</button>
+    </div>
+    <div class="modal-prompt-row">
+      <select id="prompt-select"></select>
+      <button class="btn-secondary" id="btn-new-prompt">+ 새로만들기</button>
+    </div>
+    <textarea class="modal-textarea" id="prompt-textarea" rows="10"></textarea>
+    <div class="modal-footer">
+      <button class="btn-secondary" id="btn-delete-prompt">삭제</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-secondary" id="btn-cancel-modal">취소</button>
+        <button class="btn-primary" id="btn-save-prompt">저장 및 적용</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 앱 셸 -->
+<div class="app-shell">
+
+  <!-- 헤더 -->
+  <header>
+    <span class="header-title">신재생에너지 의무설치비율 검토 도구</span>
+    <div class="header-user">
+      <button class="btn-sm-outline" id="btn-load-state" title="저장된 입력값 불러오기">불러오기</button>
+      <button class="btn-sm-outline" id="btn-save-state" title="현재 입력값 저장">저장</button>
+      <span id="header-status">라이브러리 로딩 중...</span>
+    </div>
+  </header>
+
+  <!-- 좌측 패널 -->
+  <div class="left-panel">
+    <div class="load-error-banner" id="load-error-banner"></div>
+
+    <!-- Section 1: 사업정보 -->
+    <div class="section-card input-section">
+      <div class="section-title">사업정보 입력</div>
+
+      <div class="field-row-2col">
+        <div class="field-group">
+          <label class="field-label" for="sel-사업형태">사업형태</label>
+          <select id="sel-사업형태">
+            <option value="">선택</option>
+            <option value="공공">공공</option>
+            <option value="민간">민간</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="sel-사업연도">사업연도</label>
+          <select id="sel-사업연도">
+            <option value="">선택</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label" for="sel-대지위치">대지위치</label>
+        <select id="sel-대지위치">
+          <option value="">선택</option>
+          <option value="강원 영동">강원 영동</option>
+          <option value="강원 영서">강원 영서</option>
+          <option value="경기도">경기도</option>
+          <option value="경상남도">경상남도</option>
+          <option value="경상북도">경상북도</option>
+          <option value="광주광역시">광주광역시</option>
+          <option value="대구광역시">대구광역시</option>
+          <option value="대전광역시">대전광역시</option>
+          <option value="부산광역시">부산광역시</option>
+          <option value="서울특별시">서울특별시</option>
+          <option value="울산광역시">울산광역시</option>
+          <option value="인천광역시">인천광역시</option>
+          <option value="전라남도">전라남도</option>
+          <option value="전라북도">전라북도</option>
+          <option value="제주특별자치도">제주특별자치도</option>
+          <option value="충청남도·세종특별자치시">충청남도·세종특별자치시</option>
+          <option value="충청북도">충청북도</option>
+        </select>
+      </div>
+
+      <div class="field-row-2col">
+        <div class="field-group">
+          <label class="field-label" for="inp-대지면적">대지면적 <span class="input-suffix">㎡</span></label>
+          <input type="number" id="inp-대지면적" placeholder="0" min="0" step="0.01" />
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="inp-건축면적">건축면적 <span class="input-suffix">㎡</span></label>
+          <input type="number" id="inp-건축면적" placeholder="0" min="0" step="0.01" />
+        </div>
+      </div>
+
+      <div class="field-row-2col">
+        <div class="field-group">
+          <label class="field-label" for="inp-연면적">연면적 <span class="input-suffix">㎡</span></label>
+          <input type="number" id="inp-연면적" placeholder="0" min="0" step="0.01" />
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="inp-건폐율">건폐율 <span class="input-suffix">%</span></label>
+          <input type="number" id="inp-건폐율" placeholder="0" min="0" max="100" step="0.01" />
+        </div>
+      </div>
+
+      <div class="field-row-2col">
+        <div class="field-group">
+          <label class="field-label" for="inp-용적률">용적률 <span class="input-suffix">%</span></label>
+          <input type="number" id="inp-용적률" placeholder="0" min="0" step="0.01" />
+        </div>
+        <div class="field-group">
+          <label class="field-label">
+            규모등급
+            <span class="tooltip-wrap" style="display:inline-flex;align-items:center;gap:4px;">
+              <span class="tooltip-icon">?</span>
+              <span class="tooltip-text">주거: 세대수 기준 / 비주거: 용도별 연면적 합계 기준으로 자동 결정됩니다</span>
+            </span>
+          </label>
+          <input type="text" id="inp-규모등급" readonly placeholder="자동 결정" />
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">용도별 연면적</label>
+        <div id="usage-list"></div>
+        <button class="btn-add" id="btn-add-usage">+ 용도 추가</button>
+        <div class="total-area-row">
+          <span class="total-area-label">적용연면적 합계</span>
+          <span class="total-area-value" id="total-area-display">0 <span>㎡</span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 2: 시나리오 -->
+    <div class="section-card scenario-section">
+      <div class="section-title">시나리오 입력 (신재생에너지)</div>
+      <div class="alt-tabs" id="alt-tabs-input"></div>
+      <div id="alt-panes-input"></div>
+    </div>
+  </div>
+
+  <!-- 중앙 패널 -->
+  <div class="center-panel">
+    <div class="section-card result-section">
+      <div class="section-title">계산 결과</div>
+
+      <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;font-weight:600;">
+        예상에너지사용량 (Output_1)
+      </div>
+      <table class="result-table">
+        <thead>
+          <tr>
+            <th>#</th><th>용도</th>
+            <th class="num">연면적<br>(㎡)</th>
+            <th class="num">지역계수</th>
+            <th class="num">단위에너지<br>(kWh/㎡·yr)</th>
+            <th class="num">예상에너지사용량<br>(kWh/yr)</th>
+          </tr>
+        </thead>
+        <tbody id="output1-tbody">
+          <tr><td colspan="6" class="empty-state">사업정보를 입력하면 결과가 표시됩니다.</td></tr>
+        </tbody>
+      </table>
+      <div class="table-footnote" id="output1-footnote" style="display:none;">
+        <p>예상에너지사용량 = 연면적 × 지역계수 × 단위에너지사용량</p>
+      </div>
+
+      <hr class="result-divider" />
+
+      <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;font-weight:600;">
+        신재생에너지 설치비율 (Output_2)
+      </div>
+      <div class="alt-tabs" id="alt-tabs-result"></div>
+      <div id="alt-panes-result">
+        <div class="empty-state">시나리오를 입력하면 결과가 표시됩니다.</div>
+      </div>
+
+      <!-- 시나리오 비교 뷰 (ALT 2개 이상일 때 자동 표시) -->
+      <div id="comparison-section" style="display:none;">
+        <hr class="result-divider" />
+        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;font-weight:600;">
+          전체 시나리오 비교
+        </div>
+        <div id="comparison-wrap"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 우측 패널: 검토결과 -->
+  <div class="right-panel">
+    <div class="review-section-inner">
+      <div class="review-header-row">
+        <div class="review-title">검토결과 (AI 생성)</div>
+        <div class="review-actions">
+          <button class="btn-secondary" id="btn-manage-prompt">작성 지침 관리</button>
+          <button class="btn-primary" id="btn-generate-review">검토결과 생성</button>
+        </div>
+      </div>
+      <div class="api-key-row">
+        <div class="api-key-input-wrap">
+          <input type="password" id="inp-api-key" placeholder="AIza..." autocomplete="off" />
+          <span style="font-size:12px;color:var(--text-hint);white-space:nowrap;">Google Gemini API Key</span>
+        </div>
+        <div class="api-key-hint">Google Gemini API 키를 입력하세요. 키는 브라우저 세션 동안만 유지됩니다.</div>
+      </div>
+      <div class="review-output-wrap">
+        <div class="review-output" id="review-output">
+          <span style="color:var(--text-hint);font-size:13px;">[검토결과 생성] 버튼을 클릭하면 AI가 검토결과를 작성합니다.</span>
+        </div>
+        <button class="btn-copy-review" id="btn-copy-review">복사</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /app-shell -->
+
+<script>
+/* ================================================================
+   신재생에너지 의무설치비율 검토 도구 — 메인 스크립트
+   (file:// 호환: ES module 미사용, window 전역변수 방식)
+================================================================ */
+
+// ── 대지위치 매핑 ──────────────────────────────────────────────
+var 대지위치매핑 = {
+  '강원 영동': '강원영동', '강원 영서': '강원영서',
+  '경기도': '경기', '경상남도': '경남', '경상북도': '경북',
+  '광주광역시': '광주', '대구광역시': '대구', '대전광역시': '대전',
+  '부산광역시': '부산', '서울특별시': '서울', '울산광역시': '울산',
+  '인천광역시': '인천', '전라남도': '전남', '전라북도': '전북',
+  '제주특별자치도': '제주', '충청남도·세종특별자치시': '충남', '충청북도': '충북'
+};
+
+function normalize대지위치(v) { return 대지위치매핑[v] || v; }
+
+function get지역계수(대지위치) {
+  var lib = window.LIB_지역계수;
+  if (!lib) return 1.0;
+  var key = normalize대지위치(대지위치);
+  return (lib[key] && lib[key].value) ? lib[key].value : 1.0;
+}
+
+function get단위에너지사용량(용도) {
+  var lib = window.LIB_단위에너지사용량;
+  if (!lib) return null;
+  for (var i = 0; i < lib.length; i++) {
+    if (lib[i]['건축물 종류'] === 용도) return lib[i]['단위에너지사용량'];
+  }
+  return null;
+}
+
+function get신재생에너지계수(에너지원, 형식) {
+  var lib = window.LIB_신재생에너지계수;
+  if (!lib) return null;
+  for (var i = 0; i < lib.length; i++) {
+    if (lib[i]['에너지원'] === 에너지원 && lib[i]['형식'] === 형식) {
+      return { 단위에너지생산량: lib[i]['단위에너지생산량'], 원별보정계수: lib[i]['원별보정계수'] };
+    }
+  }
+  return null;
+}
+
+function get에너지원목록() {
+  var lib = window.LIB_신재생에너지계수;
+  if (!lib) return [];
+  var seen = {}, result = [];
+  for (var i = 0; i < lib.length; i++) {
+    var e = lib[i]['에너지원'];
+    if (!seen[e]) { seen[e] = true; result.push(e); }
+  }
+  return result;
+}
+
+function get형식목록(에너지원) {
+  var lib = window.LIB_신재생에너지계수;
+  if (!lib) return [];
+  return lib.filter(function(x) { return x['에너지원'] === 에너지원; })
+            .map(function(x) { return x['형식']; });
+}
+
+function get용도목록() {
+  var lib = window.LIB_단위에너지사용량;
+  if (!lib) return [];
+  return lib.map(function(x) { return x['건축물 종류']; });
+}
+
+function get주거구분(용도) { return 용도 === '공동주택' ? '주거' : '비주거'; }
+
+function calc규모등급(용도별연면적목록) {
+  var 주거 = !용도별연면적목록.some(function(x) { return get주거구분(x.용도) === '비주거'; });
+
+  if (주거) {
+    // 공동주택: 세대수 기준
+    var apt = 용도별연면적목록.find(function(x) { return x.용도 === '공동주택'; });
+    var 세대수 = apt ? (apt.세대수 || '') : '';
+    if (세대수 === '1000세대 이상')              return '가';
+    if (세대수 === '300세대 이상~1000세대 미만') return '나';
+    if (세대수 === '30세대 이상~300세대 미만')   return '다';
+    if (세대수 === '30세대 미만')                return '라';
+    return '';
+  } else {
+    // 비주거: 용도별 연면적 합계 기준
+    var 합계 = 용도별연면적목록.reduce(function(s, x) { return s + x.연면적; }, 0);
+    if (합계 >= 100000) return '가';
+    if (합계 >= 10000)  return '나';
+    if (합계 >= 3000)   return '다';
+    return '라';
+  }
+}
+
+function get의무비율(사업형태, 대지위치, 주거구분, 카테고리, 사업연도) {
+  var lib = window.LIB_의무비율;
+  if (!lib) return null;
+
+  var entry;
+  if (사업형태 === '공공') {
+    // 공공 주거(공동주택)는 의무설치 해당없음
+    if (주거구분 === '주거') return null;
+    entry = lib['공공'];
+  } else {
+    // 민간: 대지위치+주거구분+규모등급 키 조회 — 없으면 해당없음
+    var 지역 = normalize대지위치(대지위치);
+    if (!지역) return null;
+    entry = lib[지역 + 주거구분 + 카테고리];
+  }
+
+  if (!entry) return null;
+  var val = entry[String(사업연도)];
+  if (val === undefined || val === '' || val === '자율') return null;
+  var n = Number(val);
+  return isNaN(n) ? null : n;
+}
+
+// ── 숫자 포맷 ──────────────────────────────────────────────────
+function fmt(n) {
+  if (n === null || n === undefined || isNaN(n)) return '-';
+  return Number(n).toLocaleString('ko-KR');
+}
+
+// ── 시나리오 상태 ──────────────────────────────────────────────
+var scenarios = [{ id: 'ALT-1', systems: [] }];
+var activeAltIdx = 0;
+var usageRowId = 0;
+
+// ── 앱 초기화 ──────────────────────────────────────────────────
+function initApp() {
+  var overlay = document.getElementById('loading-overlay');
+  var status  = document.getElementById('header-status');
+  var banner  = document.getElementById('load-error-banner');
+
+  // window 전역변수 확인
+  if (!window.LIB_신재생에너지계수 || !window.LIB_지역계수 ||
+      !window.LIB_단위에너지사용량 || !window.LIB_의무비율) {
+    overlay.classList.add('hidden');
+    banner.textContent = '⚠ 라이브러리 로드 실패: data/ 폴더의 .js 파일을 확인하세요.';
+    banner.classList.add('visible');
+    status.textContent = '라이브러리 로드 실패';
+    status.style.color = 'var(--color-fail)';
+    return;
+  }
+
+  overlay.classList.add('hidden');
+  status.textContent = '라이브러리 로드 완료 ✓';
+  status.style.color = 'var(--color-pass)';
+
+  // 사업연도 옵션
+  var selYr = document.getElementById('sel-사업연도');
+  for (var y = 2020; y <= 2035; y++) {
+    var o = document.createElement('option');
+    o.value = String(y); o.textContent = String(y);
+    selYr.appendChild(o);
+  }
+
+  initSection1();
+  initSection2();
+  initSection4();
+  renderAll();
+}
+
+// ── Section 1 ──────────────────────────────────────────────────
+function initSection1() {
+  addUsageRow();
+  document.getElementById('btn-add-usage').addEventListener('click', addUsageRow);
+
+  document.querySelectorAll('#sel-사업형태, #sel-사업연도, #sel-대지위치, #inp-대지면적, #inp-건축면적, #inp-연면적, #inp-건폐율, #inp-용적률')
+    .forEach(function(el) {
+      el.addEventListener('change', renderAll);
+      el.addEventListener('input', renderAll);
+    });
+}
+
+var 세대수옵션 = [
+  '1000세대 이상',
+  '300세대 이상~1000세대 미만',
+  '30세대 이상~300세대 미만',
+  '30세대 미만'
+];
+
+function addUsageRow() {
+  var list = document.getElementById('usage-list');
+  ++usageRowId;
+
+  // 컨테이너 (용도행 + 세대수행을 묶음)
+  var wrap = document.createElement('div');
+  wrap.className = 'usage-item';
+
+  // 용도 행
+  var div = document.createElement('div');
+  div.className = 'usage-row';
+
+  var sel = document.createElement('select');
+  sel.className = 'usage-sel';
+  sel.innerHTML = '<option value="">용도 선택</option>';
+  get용도목록().forEach(function(u) {
+    var o = document.createElement('option');
+    o.value = u; o.textContent = u;
+    sel.appendChild(o);
+  });
+
+  var inp = document.createElement('input');
+  inp.type = 'number'; inp.className = 'usage-area';
+  inp.placeholder = '연면적'; inp.min = '0'; inp.step = '0.01';
+
+  var btn = document.createElement('button');
+  btn.className = 'btn-delete-row'; btn.textContent = '×';
+  btn.addEventListener('click', function() { wrap.remove(); renderAll(); });
+
+  div.appendChild(sel); div.appendChild(inp); div.appendChild(btn);
+
+  // 세대수 행 (공동주택 선택 시에만 표시)
+  var 세대수행 = document.createElement('div');
+  세대수행.className = 'usage-seda-row';
+  세대수행.style.display = 'none';
+
+  var 세대수레이블 = document.createElement('span');
+  세대수레이블.className = 'usage-seda-label';
+  세대수레이블.textContent = '세대 수';
+
+  var 세대수셀 = document.createElement('select');
+  세대수셀.className = 'usage-seda-sel';
+  세대수옵션.forEach(function(opt) {
+    var o = document.createElement('option');
+    o.value = opt; o.textContent = opt;
+    세대수셀.appendChild(o);
+  });
+
+  세대수행.appendChild(세대수레이블);
+  세대수행.appendChild(세대수셀);
+
+  // 용도 변경 시 세대수 행 show/hide
+  sel.addEventListener('change', function() {
+    세대수행.style.display = sel.value === '공동주택' ? 'flex' : 'none';
+    renderAll();
+  });
+  inp.addEventListener('input', renderAll);
+  세대수셀.addEventListener('change', renderAll);
+
+  wrap.appendChild(div);
+  wrap.appendChild(세대수행);
+  list.appendChild(wrap);
+}
+
+// ── Section 2 ──────────────────────────────────────────────────
+function initSection2() { renderAltTabs(); }
+
+function renderAltTabs() {
+  var tabsIn  = document.getElementById('alt-tabs-input');
+  var panesIn = document.getElementById('alt-panes-input');
+  var tabsRes = document.getElementById('alt-tabs-result');
+
+  tabsIn.innerHTML = '';
+  panesIn.innerHTML = '';
+  tabsRes.innerHTML = '';
+
+  scenarios.forEach(function(sc, idx) {
+    // 입력 탭
+    var tb = document.createElement('button');
+    tb.className = 'alt-tab' + (idx === activeAltIdx ? ' active' : '');
+    tb.textContent = sc.id;
+    tb.addEventListener('click', (function(i){ return function(){ activeAltIdx = i; renderAltTabs(); renderAll(); }; })(idx));
+    tabsIn.appendChild(tb);
+
+    // 결과 탭
+    var rtb = document.createElement('button');
+    rtb.className = 'alt-tab' + (idx === activeAltIdx ? ' active' : '');
+    rtb.textContent = sc.id;
+    rtb.addEventListener('click', (function(i){ return function(){ activeAltIdx = i; renderAltTabs(); renderAll(); }; })(idx));
+    tabsRes.appendChild(rtb);
+
+    // 입력 패널
+    var pane = document.createElement('div');
+    pane.className = 'alt-pane' + (idx === activeAltIdx ? ' active' : '');
+    pane.appendChild(buildScenarioPane(sc, idx));
+    panesIn.appendChild(pane);
+  });
+
+  // + ALT 추가
+  var addBtn = document.createElement('button');
+  addBtn.className = 'alt-tab add-tab';
+  addBtn.textContent = '+ ALT 추가';
+  addBtn.addEventListener('click', function() {
+    scenarios.push({ id: 'ALT-' + (scenarios.length + 1), systems: [] });
+    activeAltIdx = scenarios.length - 1;
+    renderAltTabs(); renderAll();
+  });
+  tabsIn.appendChild(addBtn);
+}
+
+function buildScenarioPane(sc, scIdx) {
+  var wrap = document.createElement('div');
+
+  var hdr = document.createElement('div');
+  hdr.className = 'system-table-header';
+  hdr.innerHTML = '<span>에너지원</span><span>형식</span>' +
+    '<span style="text-align:right">적용용량<br>(kW)</span>' +
+    '<span style="text-align:right">신재생에너지생산량<br>(kWh/yr)</span>' +
+    '<span></span>';
+  wrap.appendChild(hdr);
+
+  var rowsWrap = document.createElement('div');
+  sc.systems.forEach(function(sys, sysIdx) {
+    rowsWrap.appendChild(buildSystemRow(sc, scIdx, sysIdx));
+  });
+  wrap.appendChild(rowsWrap);
+
+  var addBtn = document.createElement('button');
+  addBtn.className = 'btn-add'; addBtn.textContent = '+ 시스템 추가';
+  addBtn.addEventListener('click', function() {
+    sc.systems.push({ 에너지원:'', 형식:'', 단위에너지생산량:0, 원별보정계수:0, 적용용량:0 });
+    renderAltTabs(); renderAll();
+  });
+  wrap.appendChild(addBtn);
+  return wrap;
+}
+
+function buildSystemRow(sc, scIdx, sysIdx) {
+  var sys = sc.systems[sysIdx];
+  var row = document.createElement('div');
+  row.className = 'system-row';
+
+  // 에너지원
+  var selSrc = document.createElement('select');
+  selSrc.innerHTML = '<option value="">에너지원</option>';
+  get에너지원목록().forEach(function(e) {
+    var o = document.createElement('option');
+    o.value = e; o.textContent = e;
+    if (e === sys.에너지원) o.selected = true;
+    selSrc.appendChild(o);
+  });
+
+  // 형식
+  var selType = document.createElement('select');
+  selType.innerHTML = '<option value="">형식 선택</option>';
+  if (sys.에너지원) {
+    get형식목록(sys.에너지원).forEach(function(f) {
+      var o = document.createElement('option');
+      o.value = f; o.textContent = f;
+      if (f === sys.형식) o.selected = true;
+      selType.appendChild(o);
+    });
+  }
+
+  // 적용용량
+  var inpCap = document.createElement('input');
+  inpCap.type = 'number'; inpCap.placeholder = '0';
+  inpCap.min = '0'; inpCap.step = '0.01';
+  inpCap.value = sys.적용용량 || '';
+  inpCap.style.textAlign = 'right';
+
+  // 신재생에너지생산량 (readonly, 강조)
+  var divProd = document.createElement('div');
+  divProd.className = 'production-value';
+  var prodVal = (sys.적용용량 && sys.단위에너지생산량 && sys.원별보정계수)
+    ? fmt(Math.round(sys.적용용량 * sys.단위에너지생산량 * sys.원별보정계수))
+    : '-';
+  divProd.textContent = prodVal;
+
+  // 삭제
+  var btnDel = document.createElement('button');
+  btnDel.className = 'btn-delete-row'; btnDel.textContent = '×';
+  btnDel.addEventListener('click', function() {
+    sc.systems.splice(sysIdx, 1);
+    renderAltTabs(); renderAll();
+  });
+
+  selSrc.addEventListener('change', function() {
+    sys.에너지원 = selSrc.value;
+    sys.형식 = ''; sys.단위에너지생산량 = 0; sys.원별보정계수 = 0;
+    renderAltTabs(); renderAll();
+  });
+
+  selType.addEventListener('change', function() {
+    sys.형식 = selType.value;
+    var c = get신재생에너지계수(sys.에너지원, sys.형식);
+    if (c) { sys.단위에너지생산량 = c.단위에너지생산량; sys.원별보정계수 = c.원별보정계수; }
+    else   { sys.단위에너지생산량 = 0; sys.원별보정계수 = 0; }
+    updateProd();
+    updateMeta();
+    renderAll();
+  });
+
+  inpCap.addEventListener('input', function() {
+    sys.적용용량 = parseFloat(inpCap.value) || 0;
+    updateProd();
+    renderAll();
+  });
+
+  function updateProd() {
+    var p = (sys.적용용량 && sys.단위에너지생산량 && sys.원별보정계수)
+      ? fmt(Math.round(sys.적용용량 * sys.단위에너지생산량 * sys.원별보정계수))
+      : '-';
+    divProd.textContent = p;
+  }
+
+  // meta 줄 (단위생산량 / 보정계수 표시)
+  var metaDiv = document.createElement('div');
+  metaDiv.className = 'system-row-meta';
+  function updateMeta() {
+    if (sys.단위에너지생산량 || sys.원별보정계수) {
+      metaDiv.innerHTML =
+        '<span>단위생산량: <b>' + (sys.단위에너지생산량 || '-') + '</b> kWh/kW</span>' +
+        '<span>원별보정계수: <b>' + (sys.원별보정계수 || '-') + '</b></span>';
+      metaDiv.style.display = 'flex';
+    } else {
+      metaDiv.style.display = 'none';
+    }
+  }
+  updateMeta();
+
+  row.appendChild(selSrc); row.appendChild(selType);
+  row.appendChild(inpCap); row.appendChild(divProd);
+  row.appendChild(btnDel);
+
+  // row + meta를 하나의 wrapper로 반환
+  var wrapper = document.createElement('div');
+  wrapper.appendChild(row);
+  wrapper.appendChild(metaDiv);
+  return wrapper;
+}
+
+// ── 재계산 및 렌더링 ───────────────────────────────────────────
+function collectInput1() {
+  var 용도별 = [];
+  document.querySelectorAll('#usage-list .usage-item').forEach(function(wrap) {
+    var 용도  = wrap.querySelector('.usage-sel').value;
+    var 면적  = parseFloat(wrap.querySelector('.usage-area').value) || 0;
+    if (용도 && 면적 > 0) {
+      var entry = { 용도: 용도, 연면적: 면적 };
+      if (용도 === '공동주택') {
+        var 세대수셀 = wrap.querySelector('.usage-seda-sel');
+        entry.세대수 = 세대수셀 ? 세대수셀.value : '';
+      }
+      용도별.push(entry);
+    }
+  });
+  var 적용연면적 = 용도별.reduce(function(s, x) { return s + x.연면적; }, 0);
+  document.getElementById('total-area-display').innerHTML = fmt(적용연면적) + ' <span>㎡</span>';
+
+  return {
+    사업형태: document.getElementById('sel-사업형태').value,
+    사업연도: document.getElementById('sel-사업연도').value,
+    대지위치: document.getElementById('sel-대지위치').value,
+    대지면적: parseFloat(document.getElementById('inp-대지면적').value) || 0,
+    건축면적: parseFloat(document.getElementById('inp-건축면적').value) || 0,
+    연면적:   parseFloat(document.getElementById('inp-연면적').value) || 0,
+    건폐율:   parseFloat(document.getElementById('inp-건폐율').value) || 0,
+    용적률:   parseFloat(document.getElementById('inp-용적률').value) || 0,
+    카테고리: calc규모등급(용도별),
+    용도별연면적목록: 용도별,
+    적용연면적: 적용연면적
+  };
+}
+
+function calcOutput1(input1) {
+  var 지역계수 = get지역계수(input1.대지위치);
+  var 용도별결과 = input1.용도별연면적목록.map(function(item) {
+    var 단위 = get단위에너지사용량(item.용도) || 0;
+    var 예상 = item.연면적 * 지역계수 * 단위;
+    return { 용도: item.용도, 연면적: item.연면적, 지역계수: 지역계수, 단위에너지사용량: 단위, 예상에너지사용량: 예상 };
+  });
+  var 총연면적 = 용도별결과.reduce(function(s, x) { return s + x.연면적; }, 0);
+  var 총예상   = 용도별결과.reduce(function(s, x) { return s + x.예상에너지사용량; }, 0);
+  return { 용도별결과: 용도별결과, 총연면적: 총연면적, 총예상에너지사용량: 총예상 };
+}
+
+function calcOutput2(input1, output1) {
+  var 주거구분 = input1.용도별연면적목록.some(function(x) { return get주거구분(x.용도) === '비주거'; }) ? '비주거' : '주거';
+
+  return scenarios.map(function(sc) {
+    var systems = sc.systems
+      .filter(function(s) { return s.에너지원 && s.형식 && s.적용용량 > 0; })
+      .map(function(s) {
+        return Object.assign({}, s, {
+          신재생에너지생산량: s.적용용량 * (s.단위에너지생산량 || 0) * (s.원별보정계수 || 0)
+        });
+      });
+
+    var 생산량합계 = systems.reduce(function(sum, s) { return sum + s.신재생에너지생산량; }, 0);
+    var 총에너지   = output1.총예상에너지사용량;
+    var 비율       = 총에너지 > 0 ? (생산량합계 / 총에너지) * 100 : 0;
+    var 의무비율값 = get의무비율(input1.사업형태, input1.대지위치, 주거구분, input1.카테고리, input1.사업연도);
+    var 만족       = 의무비율값 !== null ? (비율 >= 의무비율값 ? 'Yes' : 'No') : '해당없음';
+
+    return { id: sc.id, systems: systems, 생산량합계: 생산량합계, 총에너지사용량: 총에너지, 비율: 비율, 의무비율: 의무비율값, 만족여부: 만족 };
+  });
+}
+
+function renderAll() {
+  var input1  = collectInput1();
+
+  // 규모등급 표시 업데이트
+  var 등급el = document.getElementById('inp-규모등급');
+  if (등급el) 등급el.value = input1.카테고리 || '';
+
+  var output1 = calcOutput1(input1);
+  var output2 = calcOutput2(input1, output1);
+  renderOutput1(output1);
+  renderOutput2Panes(output2, output1);
+  renderComparison(output2, output1);
+  autoSaveState();
+}
+
+function renderOutput1(output1) {
+  var tbody = document.getElementById('output1-tbody');
+  if (!output1.용도별결과.length) {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">사업정보를 입력하면 결과가 표시됩니다.</td></tr>';
+    document.getElementById('output1-footnote').style.display = 'none';
+    return;
+  }
+  var html = '';
+  output1.용도별결과.forEach(function(r, i) {
+    html += '<tr>' +
+      '<td>' + (i+1) + '</td>' +
+      '<td>' + r.용도 + '</td>' +
+      '<td class="num">' + fmt(r.연면적) + '</td>' +
+      '<td class="num">' + r.지역계수 + '</td>' +
+      '<td class="num">' + r.단위에너지사용량 + '</td>' +
+      '<td class="num">' + fmt(Math.round(r.예상에너지사용량)) + '</td>' +
+      '</tr>';
+  });
+  html += '<tr class="total-row">' +
+    '<td colspan="2">합계</td>' +
+    '<td class="num">' + fmt(Math.round(output1.총연면적)) + '</td>' +
+    '<td></td><td></td>' +
+    '<td class="num">' + fmt(Math.round(output1.총예상에너지사용량)) + '</td>' +
+    '</tr>';
+  tbody.innerHTML = html;
+  document.getElementById('output1-footnote').style.display = 'block';
+}
+
+function renderOutput2Panes(altResults, output1) {
+  var panesResult = document.getElementById('alt-panes-result');
+  panesResult.innerHTML = '';
+
+  altResults.forEach(function(alt, idx) {
+    var statusClass = alt.만족여부 === 'Yes' ? 'pass' : alt.만족여부 === 'No' ? 'fail' : 'na';
+    var totalOk = output1.총예상에너지사용량 > 0;
+
+    var pane = document.createElement('div');
+    pane.className = 'alt-pane' + (idx === activeAltIdx ? ' active' : '');
+
+    var kpiHtml = '<div class="kpi-grid">' +
+      '<div class="kpi-card installation">' +
+        '<div class="kpi-card-label">신재생에너지 설치 비율</div>' +
+        '<div class="kpi-value">' + (totalOk && alt.생산량합계 > 0 ? alt.비율.toFixed(1) : '-') + '<span class="kpi-unit">%</span></div>' +
+        '<div class="kpi-sub">생산량 ' + (alt.생산량합계 > 0 ? fmt(Math.round(alt.생산량합계)) : '-') + ' kWh/yr</div>' +
+      '</div>' +
+      '<div class="kpi-card obligation">' +
+        '<div class="kpi-card-label">의무 설치 비율</div>' +
+        '<div class="kpi-value">' + (alt.의무비율 !== null ? alt.의무비율 : '-') + '<span class="kpi-unit">' + (alt.의무비율 !== null ? '%' : '') + '</span></div>' +
+        '<div class="kpi-sub">총에너지 ' + (totalOk ? fmt(Math.round(alt.총에너지사용량)) : '-') + ' kWh/yr</div>' +
+      '</div>' +
+      '<div class="kpi-card status ' + statusClass + '">' +
+        '<div class="kpi-card-label">의무비율 만족 여부</div>' +
+        '<div class="kpi-value">' + alt.만족여부 + '</div>' +
+        '<div class="kpi-sub">' + (alt.만족여부 === '해당없음' ? '의무 대상 아님' : alt.만족여부 === 'Yes' ? '기준 충족' : '기준 미달') + '</div>' +
+      '</div>' +
+    '</div>';
+
+    pane.innerHTML = kpiHtml + buildBarHtml(alt.systems, alt.생산량합계) + buildSysTableHtml(alt.systems);
+    panesResult.appendChild(pane);
+  });
+}
+
+// ── 시나리오 비교 뷰 ───────────────────────────────────────────
+function renderComparison(output2, output1) {
+  var section = document.getElementById('comparison-section');
+  if (!section) return;
+
+  // ALT 1개이거나 유효 데이터 없으면 숨김
+  if (scenarios.length < 2) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+
+  var totalOk = output1.총예상에너지사용량 > 0;
+
+  // 헤더: 구분 | ALT-1 | ALT-2 | ...
+  var thead = '<tr><th style="min-width:110px">구분</th>' +
+    output2.map(function(a) { return '<th class="num">' + a.id + '</th>'; }).join('') + '</tr>';
+
+  // 시스템 구성
+  var r1 = '<tr><td>시스템 구성</td>' +
+    output2.map(function(a) {
+      if (!a.systems.length) return '<td style="color:var(--text-hint)">-</td>';
+      return '<td>' + a.systems.map(function(s) {
+        return '<span style="display:block;font-size:11px">' + s.에너지원 + '<br>' + s.형식 + ' ' + fmt(s.적용용량) + 'kW</span>';
+      }).join('') + '</td>';
+    }).join('') + '</tr>';
+
+  // 생산량 합계
+  var r2 = '<tr><td>생산량 합계 (kWh/yr)</td>' +
+    output2.map(function(a) {
+      return '<td class="num">' + (a.생산량합계 > 0 ? fmt(Math.round(a.생산량합계)) : '-') + '</td>';
+    }).join('') + '</tr>';
+
+  // 총에너지사용량
+  var r3 = '<tr><td>총에너지사용량 (kWh/yr)</td>' +
+    output2.map(function(a) {
+      return '<td class="num">' + (totalOk ? fmt(Math.round(a.총에너지사용량)) : '-') + '</td>';
+    }).join('') + '</tr>';
+
+  // 설치 비율
+  var r4 = '<tr><td>설치 비율 (%)</td>' +
+    output2.map(function(a) {
+      var best = output2.reduce(function(m, x) { return x.비율 > m ? x.비율 : m; }, 0);
+      var isBest = totalOk && a.생산량합계 > 0 && a.비율 === best && best > 0;
+      return '<td class="num" style="' + (isBest ? 'color:var(--accent-yellow);font-weight:600' : '') + '">' +
+        (totalOk && a.생산량합계 > 0 ? a.비율.toFixed(1) + '%' : '-') + '</td>';
+    }).join('') + '</tr>';
+
+  // 의무비율
+  var r5 = '<tr><td>의무비율 (%)</td>' +
+    output2.map(function(a) {
+      return '<td class="num">' + (a.의무비율 !== null ? a.의무비율 + '%' : '-') + '</td>';
+    }).join('') + '</tr>';
+
+  // 만족 여부
+  var r6 = '<tr class="total-row"><td>만족 여부</td>' +
+    output2.map(function(a) {
+      var col = a.만족여부 === 'Yes' ? 'var(--color-pass)' : a.만족여부 === 'No' ? 'var(--color-fail)' : 'var(--color-na)';
+      return '<td class="num" style="color:' + col + '">' + a.만족여부 + '</td>';
+    }).join('') + '</tr>';
+
+  document.getElementById('comparison-wrap').innerHTML =
+    '<table class="result-table comparison-table"><thead>' + thead +
+    '</thead><tbody>' + r1 + r2 + r3 + r4 + r5 + r6 + '</tbody></table>';
+}
+
+function buildBarHtml(systems, total) {
+  if (!systems.length || !total) return '';
+  var segColors = ['#8b5cf6','#f472b6','#34d399','#fbbf24','#60a5fa'];
+  var segs = '', legend = '';
+  systems.forEach(function(s, i) {
+    var pct = (s.신재생에너지생산량 / total * 100).toFixed(1);
+    var col = segColors[i % segColors.length];
+    segs   += '<div style="width:' + pct + '%;height:100%;background:' + col + '"></div>';
+    legend += '<span><span class="bar-legend-dot" style="background:' + col + '"></span>' + s.에너지원 + '(' + s.형식 + ')</span>';
+  });
+  return '<div class="production-bar-wrap">' +
+    '<div class="production-bar-title">에너지원별 생산량 구성</div>' +
+    '<div class="production-bar-track">' + segs + '</div>' +
+    '<div class="bar-legend">' + legend + '</div>' +
+  '</div>';
+}
+
+function buildSysTableHtml(systems) {
+  if (!systems.length) return '<div class="empty-state">시스템을 추가하세요.</div>';
+  var rows = systems.map(function(s) {
+    return '<tr><td>' + s.에너지원 + '</td><td>' + s.형식 + '</td>' +
+      '<td class="num">' + fmt(s.적용용량) + '</td>' +
+      '<td class="num" style="color:var(--accent-yellow)">' + fmt(Math.round(s.신재생에너지생산량)) + '</td></tr>';
+  }).join('');
+  return '<table class="result-table"><thead><tr>' +
+    '<th>에너지원</th><th>형식</th>' +
+    '<th class="num">적용용량 (kW)</th>' +
+    '<th class="num">생산량 (kWh/yr)</th>' +
+    '</tr></thead><tbody>' + rows + '</tbody></table>';
+}
+
+// ── localStorage 저장/불러오기 ─────────────────────────────────
+var _autoSaveTimer = null;
+function autoSaveState() {
+  // 입력 중 디바운스 300ms
+  clearTimeout(_autoSaveTimer);
+  _autoSaveTimer = setTimeout(function() { saveFormState(); }, 300);
+}
+
+function saveFormState() {
+  try {
+    var input1 = collectInput1();
+    localStorage.setItem('formState_v1', JSON.stringify({
+      input1: input1,
+      scenarios: scenarios,
+      activeAltIdx: activeAltIdx,
+      savedAt: new Date().toLocaleString('ko-KR')
+    }));
+  } catch(e) {}
+}
+
+function loadFormState() {
+  try {
+    var raw = localStorage.getItem('formState_v1');
+    if (!raw) { alert('저장된 데이터가 없습니다.'); return; }
+    var state = JSON.parse(raw);
+    var i1 = state.input1;
+    if (!i1) return;
+
+    // 기본 필드 복원
+    document.getElementById('sel-사업형태').value = i1.사업형태 || '';
+    document.getElementById('sel-사업연도').value = i1.사업연도 || '';
+    document.getElementById('sel-대지위치').value = i1.대지위치 || '';
+    document.getElementById('inp-대지면적').value = i1.대지면적 || '';
+    document.getElementById('inp-건축면적').value = i1.건축면적 || '';
+    document.getElementById('inp-연면적').value   = i1.연면적   || '';
+    document.getElementById('inp-건폐율').value   = i1.건폐율   || '';
+    document.getElementById('inp-용적률').value   = i1.용적률   || '';
+    // 규모등급은 renderAll()에서 자동 갱신됨
+
+    // 용도별 연면적 복원
+    var list = document.getElementById('usage-list');
+    list.innerHTML = '';
+    usageRowId = 0;
+    (i1.용도별연면적목록 || []).forEach(function(item) {
+      addUsageRow();
+      var wraps = list.querySelectorAll('.usage-item');
+      var last  = wraps[wraps.length - 1];
+      var 용도셀 = last.querySelector('.usage-sel');
+      용도셀.value = item.용도 || '';
+      last.querySelector('.usage-area').value = item.연면적 || '';
+      if (item.용도 === '공동주택') {
+        var 세대수행 = last.querySelector('.usage-seda-row');
+        var 세대수셀 = last.querySelector('.usage-seda-sel');
+        if (세대수행) 세대수행.style.display = 'flex';
+        if (세대수셀 && item.세대수) 세대수셀.value = item.세대수;
+      }
+    });
+    if (!i1.용도별연면적목록 || !i1.용도별연면적목록.length) addUsageRow();
+
+    // 시나리오 복원
+    if (state.scenarios && state.scenarios.length) {
+      scenarios = state.scenarios;
+      activeAltIdx = state.activeAltIdx || 0;
+    }
+
+    renderAltTabs();
+    renderAll();
+    alert((state.savedAt ? state.savedAt + '에 ' : '') + '저장된 데이터를 불러왔습니다.');
+  } catch(e) { alert('불러오기 실패: ' + e.message); }
+}
+
+// ── Section 4 ──────────────────────────────────────────────────
+var activePromptName = '기본 지침 (default)';
+
+var DEFAULT_PROMPT = '당신은 건축물 신재생에너지 의무설치 분야의 전문 컨설턴트입니다.\n아래 계산 데이터를 바탕으로 검토 의견서를 작성하세요.\n\n[필수 작성 항목 — 반드시 모두 포함]\n\n1. 사업 개요\n   - 사업형태(공공/민간), 사업연도, 대지위치, 주요 용도, 연면적(㎡)을 2~3문장으로 요약하세요.\n\n2. 예상에너지사용량 산출\n   - 용도별 연면적 × 지역계수 × 단위에너지사용량 = 예상에너지사용량(kWh/yr) 결과를 서술하세요.\n   - 건물 전체 총 예상에너지사용량(kWh/yr)을 명시하세요.\n\n3. 시나리오별 검토 (ALT가 여러 개인 경우 각각 별도 항목으로 작성)\n   각 ALT에 대해 반드시 아래 내용을 포함하세요:\n   - 적용된 신재생에너지 에너지원 및 형식 (예: 태양광-단결정, 연료전지-PEMFC)\n   - 설치 용량 (kW)\n   - 연간 신재생에너지 생산량 (kWh/yr)\n   - 신재생에너지 설치비율 (%)\n   - 법적 의무설치비율 (%)\n   - 의무비율 충족 여부 (충족 / 미달)\n\n4. 시나리오 비교 검토\n   - ALT가 2개 이상인 경우: 각 ALT의 에너지원 구성, 설치비율, 의무비율 충족 여부를 표 또는 비교 문장으로 정리하세요.\n   - ALT가 1개인 경우: 의무비율 대비 여유율 또는 부족분을 언급하세요.\n   - 권고 시나리오와 그 이유를 명시하세요.\n\n5. 유의사항 또는 추가 검토 필요 사항 (해당 시)\n\n[작성 원칙]\n- 수치는 반드시 단위와 함께 표기하세요 (예: 1,234 kWh/yr, 15%).\n- 인사말·마무리 문구 없이 검토 본문만 작성하세요.\n- 전체 분량 제한 없이 항목을 빠짐없이 완성하세요.';
+
+function getPrompts() {
+  try { var s = localStorage.getItem('reviewPrompts'); if (s) return JSON.parse(s); } catch(e) {}
+  return [{ name: '기본 지침 (default)', body: DEFAULT_PROMPT }];
+}
+function savePrompts(p) { localStorage.setItem('reviewPrompts', JSON.stringify(p)); }
+
+// 기본 지침은 항상 최신 DEFAULT_PROMPT로 동기화
+(function syncDefaultPrompt() {
+  var prompts = getPrompts();
+  var idx = prompts.findIndex(function(p) { return p.name === '기본 지침 (default)'; });
+  if (idx >= 0) {
+    prompts[idx].body = DEFAULT_PROMPT;
+  } else {
+    prompts.unshift({ name: '기본 지침 (default)', body: DEFAULT_PROMPT });
+  }
+  savePrompts(prompts);
+})();
+
+function initSection4() {
+  var saved = sessionStorage.getItem('gemini_api_key');
+  if (saved) document.getElementById('inp-api-key').value = saved;
+
+  document.getElementById('inp-api-key').addEventListener('input', function(e) {
+    sessionStorage.setItem('gemini_api_key', e.target.value);
+  });
+  document.getElementById('btn-manage-prompt').addEventListener('click', openModal);
+  document.getElementById('btn-copy-review').addEventListener('click', copyReview);
+  document.getElementById('btn-generate-review').addEventListener('click', onGenerateClick);
+  document.getElementById('btn-save-state').addEventListener('click', function() {
+    saveFormState();
+    var btn = document.getElementById('btn-save-state');
+    btn.textContent = '저장됨 ✓';
+    setTimeout(function() { btn.textContent = '저장'; }, 1500);
+  });
+  document.getElementById('btn-load-state').addEventListener('click', loadFormState);
+
+  document.getElementById('btn-modal-close').addEventListener('click', closeModal);
+  document.getElementById('btn-cancel-modal').addEventListener('click', closeModal);
+  document.getElementById('modal-overlay').addEventListener('click', function(e) {
+    if (e.target === document.getElementById('modal-overlay')) closeModal();
+  });
+  document.getElementById('prompt-select').addEventListener('change', loadPromptToTextarea);
+  document.getElementById('btn-new-prompt').addEventListener('click', onNewPrompt);
+  document.getElementById('btn-delete-prompt').addEventListener('click', onDeletePrompt);
+  document.getElementById('btn-save-prompt').addEventListener('click', onSavePrompt);
+}
+
+function openModal() {
+  var prompts = getPrompts();
+  var sel = document.getElementById('prompt-select');
+  sel.innerHTML = '';
+  prompts.forEach(function(p) {
+    var o = document.createElement('option');
+    o.value = p.name; o.textContent = p.name;
+    if (p.name === activePromptName) o.selected = true;
+    sel.appendChild(o);
+  });
+  loadPromptToTextarea();
+  document.getElementById('modal-overlay').classList.remove('hidden');
+}
+
+function closeModal() { document.getElementById('modal-overlay').classList.add('hidden'); }
+
+function loadPromptToTextarea() {
+  var prompts = getPrompts();
+  var name = document.getElementById('prompt-select').value;
+  var found = prompts.find(function(p) { return p.name === name; });
+  document.getElementById('prompt-textarea').value = found ? found.body : '';
+  document.getElementById('btn-delete-prompt').disabled = (name === '기본 지침 (default)');
+}
+
+function onNewPrompt() {
+  var name = prompt('새 지침 이름을 입력하세요:');
+  if (!name) return;
+  var prompts = getPrompts();
+  if (prompts.find(function(p) { return p.name === name; })) { alert('이미 존재하는 지침 이름입니다.'); return; }
+  prompts.push({ name: name, body: '' });
+  savePrompts(prompts);
+  var sel = document.getElementById('prompt-select');
+  var o = document.createElement('option');
+  o.value = name; o.textContent = name; o.selected = true;
+  sel.appendChild(o);
+  document.getElementById('prompt-textarea').value = '';
+  document.getElementById('btn-delete-prompt').disabled = false;
+}
+
+function onDeletePrompt() {
+  var name = document.getElementById('prompt-select').value;
+  if (name === '기본 지침 (default)') return;
+  if (!confirm('"' + name + '" 지침을 삭제하시겠습니까?')) return;
+  var prompts = getPrompts().filter(function(p) { return p.name !== name; });
+  savePrompts(prompts);
+  activePromptName = '기본 지침 (default)';
+  openModal();
+}
+
+function onSavePrompt() {
+  var name = document.getElementById('prompt-select').value;
+  var body = document.getElementById('prompt-textarea').value;
+  var prompts = getPrompts();
+  var idx = prompts.findIndex(function(p) { return p.name === name; });
+  if (idx >= 0) prompts[idx].body = body;
+  savePrompts(prompts);
+  activePromptName = name;
+  closeModal();
+}
+
+function copyReview() {
+  var text = document.getElementById('review-output').innerText;
+  navigator.clipboard.writeText(text).then(function() {
+    var btn = document.getElementById('btn-copy-review');
+    btn.textContent = '복사됨!';
+    setTimeout(function() { btn.textContent = '복사'; }, 1500);
+  });
+}
+
+function onGenerateClick() {
+  var apiKey = document.getElementById('inp-api-key').value || sessionStorage.getItem('gemini_api_key') || '';
+  if (!apiKey.trim()) { alert('API 키를 입력해주세요.'); return; }
+
+  var input1 = collectInput1();
+  if (!input1.용도별연면적목록.length) { alert('사업정보와 시나리오를 먼저 입력해주세요.'); return; }
+
+  var output1  = calcOutput1(input1);
+  var output2  = calcOutput2(input1, output1);
+  var prompts  = getPrompts();
+  var p = prompts.find(function(x) { return x.name === activePromptName; }) || prompts[0];
+
+  generateReview(p.body, { input1: input1, output1: output1, output2: output2 }, apiKey);
+}
+
+function buildUserMessage(calcData) {
+  var input1 = calcData.input1, output1 = calcData.output1, output2 = calcData.output2;
+  var lines = [
+    '## 사업 개요',
+    '- 사업형태: ' + (input1.사업형태 || '미입력'),
+    '- 사업연도: ' + (input1.사업연도 || '미입력'),
+    '- 대지위치: ' + (input1.대지위치 || '미입력'),
+    '- 연면적: ' + fmt(input1.연면적) + ' ㎡',
+    '- 적용연면적: ' + fmt(input1.적용연면적) + ' ㎡',
+    '- 용도별 연면적:'
+  ];
+  input1.용도별연면적목록.forEach(function(x) {
+    var line = '  - ' + x.용도 + ': ' + fmt(x.연면적) + ' ㎡';
+    if (x.세대수) line += ' (' + x.세대수 + ')';
+    lines.push(line);
+  });
+  lines.push('', '## 예상에너지사용량 (Output_1)');
+  lines.push('- 총예상에너지사용량: ' + fmt(Math.round(output1.총예상에너지사용량)) + ' kWh/yr');
+  lines.push('- 용도별 상세:');
+  output1.용도별결과.forEach(function(x) {
+    lines.push('  - ' + x.용도 + ': ' + fmt(x.연면적) + '㎡ × ' + x.지역계수 + ' × ' + x.단위에너지사용량 + ' = ' + fmt(Math.round(x.예상에너지사용량)) + ' kWh/yr');
+  });
+  lines.push('', '## 신재생에너지 시나리오 (Output_2)');
+  output2.forEach(function(alt) {
+    lines.push('### ' + alt.id);
+    alt.systems.forEach(function(s) {
+      lines.push('  - ' + s.에너지원 + ' (' + s.형식 + '): ' + fmt(s.적용용량) + ' kW → ' + fmt(Math.round(s.신재생에너지생산량)) + ' kWh/yr');
+    });
+    lines.push('- 생산량 합계: ' + fmt(Math.round(alt.생산량합계)) + ' kWh/yr');
+    lines.push('- 총에너지사용량: ' + fmt(Math.round(alt.총에너지사용량)) + ' kWh/yr');
+    lines.push('- 신재생에너지 비율: ' + alt.비율.toFixed(1) + '%');
+    lines.push('- 의무비율: ' + (alt.의무비율 !== null ? alt.의무비율 + '%' : '해당없음'));
+    lines.push('- 만족 여부: ' + alt.만족여부);
+  });
+  return lines.join('\n');
+}
+
+async function generateReview(promptText, calcData, apiKey) {
+  var btn    = document.getElementById('btn-generate-review');
+  var output = document.getElementById('review-output');
+  btn.disabled = true; btn.textContent = '⏳ 생성 중...';
+  output.classList.add('generating');
+  output.innerHTML = '<span class="generating-cursor">생성 중...</span>';
+
+  var accumulated = '';
+
+  function escapeHtml(str) {
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function appendToken(text) {
+    accumulated += text;
+    output.innerHTML = escapeHtml(accumulated).replace(/\n/g, '<br>');
+  }
+
+  try {
+    var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:streamGenerateContent?alt=sse&key=' + encodeURIComponent(apiKey);
+
+    var resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: promptText }] },
+        contents: [{ role: 'user', parts: [{ text: buildUserMessage(calcData) }] }],
+        generationConfig: { maxOutputTokens: 8192 }
+      })
+    });
+
+    if (!resp.ok) {
+      var errText = await resp.text();
+      try { var errJson = JSON.parse(errText); errText = (errJson.error && errJson.error.message) || errText; } catch(e) {}
+      throw new Error('API 오류 ' + resp.status + ': ' + errText);
+    }
+
+    var reader  = resp.body.getReader();
+    var decoder = new TextDecoder();
+    var buffer  = '';
+
+    while (true) {
+      var result = await reader.read();
+      if (result.done) break;
+      buffer += decoder.decode(result.value, { stream: true });
+      var lines = buffer.split('\n');
+      buffer = lines.pop(); // 마지막 불완전 라인 보존
+      for (var i = 0; i < lines.length; i++) {
+        var line = lines[i].trim();
+        if (!line.startsWith('data: ')) continue;
+        var raw = line.slice(6).trim();
+        if (raw === '[DONE]') continue;
+        try {
+          var data = JSON.parse(raw);
+          var text = data.candidates &&
+                     data.candidates[0] &&
+                     data.candidates[0].content &&
+                     data.candidates[0].content.parts &&
+                     data.candidates[0].content.parts[0] &&
+                     data.candidates[0].content.parts[0].text;
+          if (text) appendToken(text);
+        } catch(e) {}
+      }
+    }
+  } catch(err) {
+    output.innerHTML = '<span style="color:var(--color-fail)">오류: ' + escapeHtml(err.message) + '</span>';
+  } finally {
+    btn.disabled = false; btn.textContent = '검토결과 생성';
+    output.classList.remove('generating');
+  }
+}
+
+// ── 앱 시작 ────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', function() { initApp(); });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,22 @@
+// data/지역계수라이브러리.js
+window.LIB_지역계수 = {
+   "강원":     { "value": 0.97, "solar_annual": 1335.13 },
+   "경기":     { "value": 0.99, "solar_annual": 1269.17 },
+   "경남":     { "value": 1,    "solar_annual": 1389.15 },
+   "경북":     { "value": 0.98, "solar_annual": 1373.8  },
+   "광주":     { "value": 1.01, "solar_annual": 1396.88 },
+   "대구":     { "value": 1.04, "solar_annual": 1328.88 },
+   "대전":     { "value": 1,    "solar_annual": 1427.24 },
+   "부산":     { "value": 0.93, "solar_annual": 1394.2  },
+   "서울":     { "value": 1,    "solar_annual": 1219.32 },
+   "세종":     { "value": 0.99, "solar_annual": 1336.98 },
+   "울산":     { "value": 0.93, "solar_annual": 1373.8  },
+   "인천":     { "value": 0.97, "solar_annual": 1327.71 },
+   "전남":     { "value": 0.99, "solar_annual": 1423.57 },
+   "전북":     { "value": 1.04, "solar_annual": 1376.23 },
+   "제주":     { "value": 0.97, "solar_annual": 1305.32 },
+   "충남":     { "value": 0.99, "solar_annual": 1336.98 },
+   "충북":     { "value": 1,    "solar_annual": 1332.13 },
+   "강원영동": { "value": 0.97, "solar_annual": 1335.13 },
+   "강원영서": { "value": 1,    "solar_annual": 1338.5  }
+};
