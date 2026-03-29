@@ -535,8 +535,6 @@ function buildScenarioPane(sc, scIdx) {
   var hdr = document.createElement('div');
   hdr.className = 'system-table-header';
   hdr.innerHTML = '<span>에너지원</span><span>형식</span>' +
-    '<span style="text-align:right">적용용량<br>(kW)</span>' +
-    '<span style="text-align:right">신재생에너지생산량<br>(kWh/yr)</span>' +
     '<span></span>';
   wrap.appendChild(hdr);
 
@@ -650,13 +648,39 @@ function buildSystemRow(sc, scIdx, sysIdx) {
   }
   updateMeta();
 
-  row.appendChild(selSrc); row.appendChild(selType);
-  row.appendChild(inpCap); row.appendChild(divProd);
+  // 1줄: 에너지원 | 형식 | ×
+  row.appendChild(selSrc);
+  row.appendChild(selType);
   row.appendChild(btnDel);
 
-  // row + meta를 하나의 wrapper로 반환
+  // 2줄: 적용용량 | 생산량
+  var rowNum = document.createElement('div');
+  rowNum.className = 'system-row-num';
+
+  var capWrap = document.createElement('div');
+  capWrap.className = 'system-num-cell';
+  var capLabel = document.createElement('span');
+  capLabel.className = 'system-num-label';
+  capLabel.textContent = '용량 (kW)';
+  capWrap.appendChild(capLabel);
+  capWrap.appendChild(inpCap);
+
+  var prodWrap = document.createElement('div');
+  prodWrap.className = 'system-num-cell';
+  var prodLabel = document.createElement('span');
+  prodLabel.className = 'system-num-label';
+  prodLabel.textContent = '생산량 (kWh/yr)';
+  prodWrap.appendChild(prodLabel);
+  prodWrap.appendChild(divProd);
+
+  rowNum.appendChild(capWrap);
+  rowNum.appendChild(prodWrap);
+
+  // row + rowNum + meta를 하나의 wrapper로 반환
   var wrapper = document.createElement('div');
+  wrapper.className = 'system-row-wrap';
   wrapper.appendChild(row);
+  wrapper.appendChild(rowNum);
   wrapper.appendChild(metaDiv);
   return wrapper;
 }

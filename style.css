@@ -416,42 +416,73 @@ select {
 .alt-tab.add-tab:hover { color: var(--text-secondary); }
 
 /* ================================================================
-   시스템 입력 테이블
+   시스템 입력 테이블 (2줄 레이아웃)
    ================================================================ */
+
+/* 헤더: 에너지원 | 형식 | (× 공간) */
 .system-table-header {
   display: grid;
-  grid-template-columns: 1fr 1fr 80px 110px 28px;
-  gap: 8px;
+  grid-template-columns: 1fr 1fr 28px;
+  gap: 6px;
   font-size: 11px;
   color: var(--text-hint);
-  margin-bottom: 6px;
-  padding: 0 4px;
+  margin-bottom: 4px;
+  padding: 0 2px;
 }
+
+/* 시스템 행 전체 래퍼 */
+.system-row-wrap {
+  margin-bottom: 8px;
+}
+
+/* 1줄: 에너지원 | 형식 | × */
 .system-row {
   display: grid;
-  grid-template-columns: 1fr 1fr 80px 110px 28px;
-  gap: 8px;
+  grid-template-columns: 1fr 1fr 28px;
+  gap: 6px;
   align-items: center;
   margin-bottom: 4px;
 }
+
+/* 2줄: 적용용량 | 신재생에너지생산량 */
+.system-row-num {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+.system-num-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.system-num-label {
+  font-size: 10px;
+  color: var(--text-hint);
+  padding-left: 2px;
+}
+.system-num-cell input {
+  text-align: right;
+}
+
 /* 단위생산량/보정계수 mini 표시 */
 .system-row-meta {
-  grid-column: 1 / -1;
   display: flex;
-  gap: 16px;
+  gap: 12px;
   font-size: 11px;
   color: var(--text-hint);
-  padding: 0 4px 8px;
+  padding: 2px 2px 8px;
   border-bottom: 1px solid rgba(46,50,71,0.4);
   margin-bottom: 4px;
 }
 .system-row-meta span { white-space: nowrap; }
-.system-row .production-value {
+
+.production-value {
   background: var(--bg-input-readonly);
   border: 1px solid var(--border-default);
   border-radius: 8px;
-  padding: 9px 12px;
-  font-size: 13px;
+  padding: 6px 10px;
+  font-size: 12px;
   color: var(--accent-yellow);
   text-align: right;
   white-space: nowrap;
