@@ -941,3 +941,41 @@ select {
   border-color: var(--border-focus);
   color: var(--text-secondary);
 }
+
+/* ─── 리포트 버튼 그룹 ─────────────────────── */
+.report-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 16px;
+  flex-wrap: wrap;
+}
+.report-btn-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-right: 4px;
+}
+
+/* ─── 표지 이미지 업로드 영역 ──────────────── */
+.cover-image-drop {
+  border: 1px dashed var(--border-default);
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 12px;
+  color: var(--text-hint);
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.15s;
+  background: var(--bg-input);
+}
+.cover-image-drop:hover {
+  border-color: var(--accent-purple);
+  color: var(--text-secondary);
+}
+
+/* ─── 구분선 ────────────────────────────────── */
+.section-divider {
+  height: 1px;
+  background: var(--border-default);
+  margin: 16px 0;
+}

@@ -7,6 +7,16 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 
+  <!-- 리포트 스타일 -->
+  <link rel="stylesheet" href="report/reportStyle.css">
+
+  <!-- PDF 생성 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <!-- Word 다운로드 -->
+  <script src="https://cdn.jsdelivr.net/npm/html-docx-js/dist/html-docx.js"></script>
+
   <!-- 라이브러리 데이터 (window 전역변수 방식 — file:// CORS 우회) -->
   <script src="data/신재생에너지계수라이브러리.js"></script>
   <script src="data/지역계수라이브러리.js"></script>
@@ -63,6 +73,22 @@
     <!-- Section 1: 사업정보 -->
     <div class="section-card input-section">
       <div class="section-title">사업정보 입력</div>
+
+      <!-- 프로젝트명 (표지 서브헤더) -->
+      <div class="field-group">
+        <label class="field-label">프로젝트명</label>
+        <input type="text" id="input-project-name" placeholder="예: 대구 롯데몰">
+      </div>
+
+      <!-- 표지 이미지 업로드 -->
+      <div class="field-group">
+        <label class="field-label">표지 이미지 <span class="field-hint">(선택, 클릭하여 업로드)</span></label>
+        <div id="cover-image-drop" class="cover-image-drop">
+          <span id="cover-image-label">이미지를 선택하거나 드래그하세요</span>
+          <input type="file" id="input-cover-image" accept="image/*" style="display:none">
+        </div>
+        <img id="cover-image-preview" style="display:none; max-height:80px; margin-top:8px; border-radius:6px;">
+      </div>
 
       <div class="field-row-2col">
         <div class="field-group">
@@ -233,10 +259,41 @@
         </div>
         <button class="btn-copy-review" id="btn-copy-review">복사</button>
       </div>
+      <!-- 리포트 버튼 그룹 -->
+      <div class="section-divider"></div>
+      <div class="report-btn-group">
+        <span class="report-btn-label">리포트</span>
+        <button class="btn-secondary" id="btn-report-preview">리포트 미리보기</button>
+        <button class="btn-secondary" id="btn-report-pdf">PDF 다운로드</button>
+        <button class="btn-secondary" id="btn-report-html">HTML 저장</button>
+        <button class="btn-secondary" id="btn-report-word">Word 저장</button>
+      </div>
     </div>
   </div>
 
 </div><!-- /app-shell -->
+
+<!-- 리포트 미리보기 모달 -->
+<div id="report-modal" style="display:none; position:fixed; inset:0; z-index:9999;
+  background:rgba(0,0,0,0.8); flex-direction:column; align-items:center; justify-content:center;">
+
+  <!-- 상단 툴바 -->
+  <div style="width:100%; max-width:900px; display:flex; align-items:center;
+    justify-content:space-between; padding:12px 16px; background:#1a1d27; border-radius:12px 12px 0 0;">
+    <span style="color:#e8e8f0; font-size:14px; font-weight:600;">리포트 미리보기</span>
+    <div style="display:flex; gap:8px;">
+      <button class="btn-primary" id="modal-btn-pdf">PDF 다운로드</button>
+      <button class="btn-secondary" id="modal-btn-html">HTML 저장</button>
+      <button class="btn-secondary" id="modal-btn-word">Word 저장</button>
+      <button class="btn-secondary" id="modal-btn-close"
+        style="margin-left:8px;">✕ 닫기</button>
+    </div>
+  </div>
+
+  <!-- iframe 미리보기 -->
+  <iframe id="report-iframe" style="width:100%; max-width:900px; flex:1;
+    border:none; background:#fff; border-radius:0 0 12px 12px;"></iframe>
+</div>
 
 <script>
 /* ================================================================
@@ -761,6 +818,12 @@ function renderAll() {
 
   var output1 = calcOutput1(input1);
   var output2 = calcOutput2(input1, output1);
+
+  // 리포트 모듈이 참조할 수 있도록 전역 저장
+  window.LAST_INPUT1  = input1;
+  window.LAST_OUTPUT1 = output1;
+  window.LAST_OUTPUT2 = output2;
+
   renderOutput1(output1);
   renderOutput2Panes(output2, output1);
   renderComparison(output2, output1);
@@ -1244,8 +1307,84 @@ async function generateReview(promptText, calcData, apiKey) {
 }
 
 // ── 앱 시작 ────────────────────────────────────────────────────
-window.addEventListener('DOMContentLoaded', function() { initApp(); });
+window.addEventListener('DOMContentLoaded', function() {
+  initApp();
+
+  // ── 표지 이미지 업로드 ───────────────────────────────────────
+  document.getElementById('cover-image-drop').addEventListener('click', function() {
+    document.getElementById('input-cover-image').click();
+  });
+
+  document.getElementById('input-cover-image').addEventListener('change', function(e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      window.COVER_IMAGE_BASE64 = ev.target.result;
+      document.getElementById('cover-image-preview').src = ev.target.result;
+      document.getElementById('cover-image-preview').style.display = 'block';
+      document.getElementById('cover-image-label').textContent = file.name;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // ── 기본 로고 사전 로드 ──────────────────────────────────────
+  fetch('assets/logo.png')
+    .then(function(r) { return r.blob(); })
+    .then(function(blob) {
+      var reader = new FileReader();
+      reader.onload = function(e) { window.LOGO_IMAGE_BASE64 = e.target.result; };
+      reader.readAsDataURL(blob);
+    })
+    .catch(function() { window.LOGO_IMAGE_BASE64 = null; });
+
+  // ── 리포트 버튼 이벤트 ──────────────────────────────────────
+  document.getElementById('btn-report-preview').addEventListener('click', function() {
+    var data = collectReportData();
+    if (!data) return;
+    showReportModal(data);
+  });
+
+  document.getElementById('btn-report-pdf').addEventListener('click', async function() {
+    var data = collectReportData();
+    if (!data) return;
+    await downloadReportPDF(buildReport(data));
+  });
+
+  document.getElementById('btn-report-html').addEventListener('click', function() {
+    var data = collectReportData();
+    if (!data) return;
+    downloadReportHTML(buildReport(data));
+  });
+
+  document.getElementById('btn-report-word').addEventListener('click', function() {
+    var data = collectReportData();
+    if (!data) return;
+    downloadReportWord(buildReport(data));
+  });
+});
+
+// 리포트 데이터 수집 — 계산 결과 없으면 경고 후 null 반환
+function collectReportData() {
+  if (!window.LAST_OUTPUT1 || !window.LAST_OUTPUT2) {
+    alert('계산 결과가 없습니다. 입력값을 먼저 채워주세요.');
+    return null;
+  }
+  return {
+    input1:      window.LAST_INPUT1,
+    output1:     window.LAST_OUTPUT1,
+    output2:     window.LAST_OUTPUT2,
+    reviewHTML:  document.getElementById('review-output') ? document.getElementById('review-output').innerHTML : '',
+    projectName: document.getElementById('input-project-name') ? document.getElementById('input-project-name').value : '',
+    coverImage:  window.COVER_IMAGE_BASE64 || null,
+    logoImage:   window.LOGO_IMAGE_BASE64  || null,
+  };
+}
 </script>
+
+<script src="report/reportBuilder.js"></script>
+<script src="report/reportViewer.js"></script>
+<script src="report/reportPdf.js"></script>
 
 </body>
 </html>
