@@ -243,6 +243,15 @@
         <div class="review-title">검토결과 (AI 생성)</div>
         <div class="review-actions">
           <button class="btn-secondary" id="btn-manage-prompt">작성 지침 관리</button>
+          <button class="btn-secondary" id="btn-report-preview">리포트 미리보기</button>
+          <div class="report-save-dropdown" id="report-save-dropdown">
+            <button class="btn-secondary report-save-btn" id="btn-report-save-toggle">저장 ▾</button>
+            <div class="report-save-menu" id="report-save-menu">
+              <button id="btn-report-pdf">PDF 다운로드</button>
+              <button id="btn-report-html">HTML 저장</button>
+              <button id="btn-report-word">Word 저장</button>
+            </div>
+          </div>
           <button class="btn-primary" id="btn-generate-review">검토결과 생성</button>
         </div>
       </div>
@@ -258,15 +267,6 @@
           <span style="color:var(--text-hint);font-size:13px;">[검토결과 생성] 버튼을 클릭하면 AI가 검토결과를 작성합니다.</span>
         </div>
         <button class="btn-copy-review" id="btn-copy-review">복사</button>
-      </div>
-      <!-- 리포트 버튼 그룹 -->
-      <div class="section-divider"></div>
-      <div class="report-btn-group">
-        <span class="report-btn-label">리포트</span>
-        <button class="btn-secondary" id="btn-report-preview">리포트 미리보기</button>
-        <button class="btn-secondary" id="btn-report-pdf">PDF 다운로드</button>
-        <button class="btn-secondary" id="btn-report-html">HTML 저장</button>
-        <button class="btn-secondary" id="btn-report-word">Word 저장</button>
       </div>
     </div>
   </div>
@@ -1338,6 +1338,19 @@ window.addEventListener('DOMContentLoaded', function() {
     })
     .catch(function() { window.LOGO_IMAGE_BASE64 = null; });
 
+  // ── 리포트 저장 드롭다운 ─────────────────────────────────────
+  document.getElementById('btn-report-save-toggle').addEventListener('click', function(e) {
+    e.stopPropagation();
+    var menu = document.getElementById('report-save-menu');
+    menu.classList.toggle('open');
+  });
+  document.addEventListener('click', function() {
+    document.getElementById('report-save-menu').classList.remove('open');
+  });
+  document.getElementById('report-save-menu').addEventListener('click', function(e) {
+    e.stopPropagation();
+  });
+
   // ── 리포트 버튼 이벤트 ──────────────────────────────────────
   document.getElementById('btn-report-preview').addEventListener('click', function() {
     var data = collectReportData();
@@ -1346,18 +1359,21 @@ window.addEventListener('DOMContentLoaded', function() {
   });
 
   document.getElementById('btn-report-pdf').addEventListener('click', async function() {
+    document.getElementById('report-save-menu').classList.remove('open');
     var data = collectReportData();
     if (!data) return;
     await downloadReportPDF(buildReport(data));
   });
 
   document.getElementById('btn-report-html').addEventListener('click', function() {
+    document.getElementById('report-save-menu').classList.remove('open');
     var data = collectReportData();
     if (!data) return;
     downloadReportHTML(buildReport(data));
   });
 
   document.getElementById('btn-report-word').addEventListener('click', function() {
+    document.getElementById('report-save-menu').classList.remove('open');
     var data = collectReportData();
     if (!data) return;
     downloadReportWord(buildReport(data));
