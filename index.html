@@ -113,7 +113,10 @@
           <span id="cover-image-label">이미지를 선택하거나 드래그하세요</span>
           <input type="file" id="input-cover-image" accept="image/*" style="display:none">
         </div>
-        <img id="cover-image-preview" style="display:none; max-height:80px; margin-top:8px; border-radius:6px;">
+        <div id="cover-image-preview-wrap" style="display:none; position:relative; display:inline-block; margin-top:8px;">
+          <img id="cover-image-preview" style="max-height:80px; border-radius:6px; display:block;">
+          <button id="btn-remove-cover-image" title="이미지 삭제" style="position:absolute; top:-6px; right:-6px; width:20px; height:20px; border-radius:50%; background:var(--bg-card); border:1px solid var(--border-default); color:var(--text-secondary); font-size:12px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;">×</button>
+        </div>
       </div>
 
       <div class="field-row-2col">
@@ -1105,9 +1108,19 @@ function applyProjectState(state) {
   if (state.coverImage) {
     window.COVER_IMAGE_BASE64 = state.coverImage;
     var preview = document.getElementById('cover-image-preview');
-    if (preview) { preview.src = state.coverImage; preview.style.display = 'block'; }
+    var wrap = document.getElementById('cover-image-preview-wrap');
+    if (preview) preview.src = state.coverImage;
+    if (wrap) wrap.style.display = 'inline-block';
     var label = document.getElementById('cover-image-label');
     if (label) label.textContent = '이미지가 설정되었습니다.';
+  } else {
+    window.COVER_IMAGE_BASE64 = null;
+    var preview = document.getElementById('cover-image-preview');
+    var wrap = document.getElementById('cover-image-preview-wrap');
+    if (preview) preview.src = '';
+    if (wrap) wrap.style.display = 'none';
+    var label = document.getElementById('cover-image-label');
+    if (label) label.textContent = '이미지를 선택하거나 드래그하세요';
   }
 
   renderAltTabs();
@@ -1199,18 +1212,16 @@ function savePrompts(p) { localStorage.setItem('reviewPrompts', JSON.stringify(p
   savePrompts(prompts);
 })();
 
-var DEFAULT_API_KEY = 'AIzaSyBa-rSz5LHYkRBcZRm9c1cVc2ds2vX_wxY';
-
 function initSection4() {
   var saved = sessionStorage.getItem('gemini_api_key');
-  document.getElementById('inp-api-key').value = saved || DEFAULT_API_KEY;
+  if (saved) document.getElementById('inp-api-key').value = saved;
 
   document.getElementById('inp-api-key').addEventListener('input', function(e) {
     sessionStorage.setItem('gemini_api_key', e.target.value);
   });
 
   document.getElementById('btn-reset-api-key').addEventListener('click', function() {
-    document.getElementById('inp-api-key').value = DEFAULT_API_KEY;
+    document.getElementById('inp-api-key').value = '';
     sessionStorage.removeItem('gemini_api_key');
   });
 
@@ -1311,7 +1322,7 @@ function copyReview() {
 }
 
 function onGenerateClick() {
-  var apiKey = document.getElementById('inp-api-key').value || sessionStorage.getItem('gemini_api_key') || DEFAULT_API_KEY;
+  var apiKey = document.getElementById('inp-api-key').value || sessionStorage.getItem('gemini_api_key') || '';
   if (!apiKey.trim()) { alert('API 키를 입력해주세요.'); return; }
 
   var input1 = collectInput1();
@@ -1454,10 +1465,19 @@ window.addEventListener('DOMContentLoaded', function() {
     reader.onload = function(ev) {
       window.COVER_IMAGE_BASE64 = ev.target.result;
       document.getElementById('cover-image-preview').src = ev.target.result;
-      document.getElementById('cover-image-preview').style.display = 'block';
+      document.getElementById('cover-image-preview-wrap').style.display = 'inline-block';
       document.getElementById('cover-image-label').textContent = file.name;
     };
     reader.readAsDataURL(file);
+  });
+
+  document.getElementById('btn-remove-cover-image').addEventListener('click', function(e) {
+    e.stopPropagation();
+    window.COVER_IMAGE_BASE64 = null;
+    document.getElementById('cover-image-preview').src = '';
+    document.getElementById('cover-image-preview-wrap').style.display = 'none';
+    document.getElementById('cover-image-label').textContent = '이미지를 선택하거나 드래그하세요';
+    document.getElementById('input-cover-image').value = '';
   });
 
   // ── 기본 로고 사전 로드 ──────────────────────────────────────
