@@ -652,6 +652,28 @@ select {
 .right-panel {
   display: flex;
   flex-direction: column;
+  position: relative;
+}
+.btn-gear {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 10;
+  background: transparent;
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  padding: 6px 8px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.btn-gear:hover {
+  color: var(--text-primary);
+  border-color: var(--accent-purple);
+  background: rgba(255,255,255,0.05);
 }
 .review-section-inner {
   display: flex;
@@ -804,6 +826,35 @@ select {
   font-family: 'Noto Sans KR', sans-serif;
 }
 .modal-close:hover { color: var(--text-primary); }
+.modal-section-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 10px;
+}
+.modal-api-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.modal-api-row input {
+  flex: 1;
+  font-family: monospace;
+  letter-spacing: 0.05em;
+}
+.modal-api-hint {
+  font-size: 11px;
+  color: var(--text-hint);
+  margin-bottom: 4px;
+}
+.modal-section-divider {
+  border: none;
+  border-top: 1px solid var(--border-default);
+  margin: 20px 0;
+}
 .modal-prompt-row {
   display: flex;
   gap: 8px;

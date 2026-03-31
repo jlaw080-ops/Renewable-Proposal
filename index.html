@@ -35,9 +35,19 @@
 <div id="modal-overlay" class="modal-overlay hidden">
   <div class="modal-box">
     <div class="modal-header">
-      <span class="modal-title">검토결과 작성 지침 관리</span>
+      <span class="modal-title">설정</span>
       <button class="modal-close" id="btn-modal-close">×</button>
     </div>
+    <!-- API 키 섹션 -->
+    <div class="modal-section-title">Google Gemini API Key</div>
+    <div class="modal-api-row">
+      <input type="password" id="inp-api-key" placeholder="AIza..." autocomplete="off" />
+      <button class="btn-secondary" id="btn-reset-api-key" title="기본값으로 초기화">초기화</button>
+    </div>
+    <div class="modal-api-hint">키를 직접 입력하면 기본값 대신 해당 키가 사용됩니다. 브라우저 세션 동안 유지됩니다.</div>
+    <div class="modal-section-divider"></div>
+    <!-- 작성 지침 섹션 -->
+    <div class="modal-section-title">검토결과 작성 지침</div>
     <div class="modal-prompt-row">
       <select id="prompt-select"></select>
       <button class="btn-secondary" id="btn-new-prompt">+ 새로만들기</button>
@@ -238,11 +248,16 @@
 
   <!-- 우측 패널: 검토결과 -->
   <div class="right-panel">
+    <button class="btn-gear" id="btn-manage-prompt" title="설정">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"></circle>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+      </svg>
+    </button>
     <div class="review-section-inner">
       <div class="review-header-row">
         <div class="review-title">검토결과 (AI 생성)</div>
         <div class="review-actions">
-          <button class="btn-secondary" id="btn-manage-prompt">작성 지침 관리</button>
           <button class="btn-secondary" id="btn-report-preview">리포트 미리보기</button>
           <div class="report-save-dropdown" id="report-save-dropdown">
             <button class="btn-secondary report-save-btn" id="btn-report-save-toggle">저장 ▾</button>
@@ -254,13 +269,6 @@
           </div>
           <button class="btn-primary" id="btn-generate-review">검토결과 생성</button>
         </div>
-      </div>
-      <div class="api-key-row">
-        <div class="api-key-input-wrap">
-          <input type="password" id="inp-api-key" placeholder="AIza..." autocomplete="off" />
-          <span style="font-size:12px;color:var(--text-hint);white-space:nowrap;">Google Gemini API Key</span>
-        </div>
-        <div class="api-key-hint">Google Gemini API 키를 입력하세요. 키는 브라우저 세션 동안만 유지됩니다.</div>
       </div>
       <div class="review-output-wrap">
         <div class="review-output" id="review-output">
@@ -1080,13 +1088,21 @@ function savePrompts(p) { localStorage.setItem('reviewPrompts', JSON.stringify(p
   savePrompts(prompts);
 })();
 
+var DEFAULT_API_KEY = 'AIzaSyBa-rSz5LHYkRBcZRm9c1cVc2ds2vX_wxY';
+
 function initSection4() {
   var saved = sessionStorage.getItem('gemini_api_key');
-  if (saved) document.getElementById('inp-api-key').value = saved;
+  document.getElementById('inp-api-key').value = saved || DEFAULT_API_KEY;
 
   document.getElementById('inp-api-key').addEventListener('input', function(e) {
     sessionStorage.setItem('gemini_api_key', e.target.value);
   });
+
+  document.getElementById('btn-reset-api-key').addEventListener('click', function() {
+    document.getElementById('inp-api-key').value = DEFAULT_API_KEY;
+    sessionStorage.removeItem('gemini_api_key');
+  });
+
   document.getElementById('btn-manage-prompt').addEventListener('click', openModal);
   document.getElementById('btn-copy-review').addEventListener('click', copyReview);
   document.getElementById('btn-generate-review').addEventListener('click', onGenerateClick);
@@ -1179,7 +1195,7 @@ function copyReview() {
 }
 
 function onGenerateClick() {
-  var apiKey = document.getElementById('inp-api-key').value || sessionStorage.getItem('gemini_api_key') || '';
+  var apiKey = document.getElementById('inp-api-key').value || sessionStorage.getItem('gemini_api_key') || DEFAULT_API_KEY;
   if (!apiKey.trim()) { alert('API 키를 입력해주세요.'); return; }
 
   var input1 = collectInput1();
