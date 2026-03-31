@@ -128,42 +128,50 @@ header {
 
 /* 좌측 패널 전용 compact 스타일 */
 .left-panel .section-card {
-  padding: 14px 16px;
-  margin: 8px;
+  padding: 10px 14px;
+  margin: 6px;
 }
 .left-panel .section-title {
   font-size: 13px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 .left-panel .field-label {
   font-size: 11px;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 .left-panel .field-group {
-  margin-bottom: 8px;
+  margin-bottom: 5px;
 }
 .left-panel .field-row-2col {
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: 6px;
+  margin-bottom: 5px;
 }
 .left-panel input[type="number"],
 .left-panel input[type="text"],
 .left-panel select {
   font-size: 13px;
-  padding: 6px 10px;
+  padding: 4px 8px;
+  border-radius: 6px;
 }
 .left-panel .usage-row {
   gap: 6px;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
+}
+.left-panel .usage-item {
+  margin-bottom: 3px;
 }
 .left-panel .total-area-row {
-  margin-top: 6px;
+  margin-top: 4px;
   font-size: 12px;
 }
 .left-panel .btn-add {
-  padding: 6px 12px;
+  padding: 4px 10px;
   font-size: 12px;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
+}
+.left-panel .cover-image-drop {
+  padding: 7px 12px;
+  font-size: 12px;
 }
 .section-title::before {
   content: '●';
