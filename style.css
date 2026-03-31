@@ -826,6 +826,46 @@ select {
   font-family: 'Noto Sans KR', sans-serif;
 }
 .modal-close:hover { color: var(--text-primary); }
+
+/* 프로젝트 목록 */
+.project-list-container {
+  max-height: 360px;
+  overflow-y: auto;
+  margin-bottom: 4px;
+}
+.project-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 4px;
+  border-bottom: 1px solid var(--border-default);
+}
+.project-list-item:last-child { border-bottom: none; }
+.project-list-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+.project-list-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.project-list-date {
+  font-size: 11px;
+  color: var(--text-hint);
+}
+.project-list-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
 .modal-section-title {
   font-size: 12px;
   font-weight: 600;

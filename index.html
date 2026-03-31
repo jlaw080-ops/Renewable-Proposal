@@ -63,6 +63,22 @@
   </div>
 </div>
 
+<!-- 프로젝트 불러오기 모달 -->
+<div id="project-load-modal" class="modal-overlay hidden">
+  <div class="modal-box" style="width:480px;">
+    <div class="modal-header">
+      <span class="modal-title">저장된 프로젝트 불러오기</span>
+      <button class="modal-close" id="btn-project-modal-close">×</button>
+    </div>
+    <div id="project-list-container" class="project-list-container">
+      <!-- JS로 렌더링 -->
+    </div>
+    <div class="modal-footer" style="justify-content:flex-end;">
+      <button class="btn-secondary" id="btn-project-modal-cancel">닫기</button>
+    </div>
+  </div>
+</div>
+
 <!-- 앱 셸 -->
 <div class="app-shell">
 
@@ -994,75 +1010,170 @@ function buildSysTableHtml(systems) {
     '</tr></thead><tbody>' + rows + '</tbody></table>';
 }
 
-// ── localStorage 저장/불러오기 ─────────────────────────────────
+// ── 프로젝트 다중 저장/불러오기 ────────────────────────────────
 var _autoSaveTimer = null;
 function autoSaveState() {
-  // 입력 중 디바운스 300ms
   clearTimeout(_autoSaveTimer);
-  _autoSaveTimer = setTimeout(function() { saveFormState(); }, 300);
+  _autoSaveTimer = setTimeout(function() { /* 자동저장은 하지 않음 */ }, 300);
 }
 
+function getProjects() {
+  try { var s = localStorage.getItem('projects_v2'); if (s) return JSON.parse(s); } catch(e) {}
+  return [];
+}
+function saveProjects(list) { localStorage.setItem('projects_v2', JSON.stringify(list)); }
+
 function saveFormState() {
+  var projectName = (document.getElementById('input-project-name').value || '').trim();
+  if (!projectName) {
+    alert('프로젝트명을 입력한 후 저장해주세요.\n(좌측 패널 상단의 프로젝트명 입력란)');
+    return;
+  }
   try {
     var input1 = collectInput1();
-    localStorage.setItem('formState_v1', JSON.stringify({
+    var reviewHTML = document.getElementById('review-output') ? document.getElementById('review-output').innerHTML : '';
+    var state = {
+      name: projectName,
+      savedAt: new Date().toLocaleString('ko-KR'),
       input1: input1,
-      scenarios: scenarios,
+      scenarios: JSON.parse(JSON.stringify(scenarios)),
       activeAltIdx: activeAltIdx,
-      savedAt: new Date().toLocaleString('ko-KR')
-    }));
-  } catch(e) {}
+      reviewHTML: reviewHTML,
+      coverImage: window.COVER_IMAGE_BASE64 || null,
+      projectName: projectName
+    };
+    var projects = getProjects();
+    var idx = projects.findIndex(function(p) { return p.name === projectName; });
+    if (idx >= 0) {
+      projects[idx] = state;
+    } else {
+      projects.push(state);
+    }
+    saveProjects(projects);
+    var btn = document.getElementById('btn-save-state');
+    btn.textContent = '저장됨 ✓';
+    setTimeout(function() { btn.textContent = '저장'; }, 1500);
+  } catch(e) { alert('저장 실패: ' + e.message); }
+}
+
+function applyProjectState(state) {
+  var i1 = state.input1;
+  if (!i1) return;
+
+  // 기본 필드 복원
+  document.getElementById('input-project-name').value = state.projectName || state.name || '';
+  document.getElementById('sel-사업형태').value = i1.사업형태 || '';
+  document.getElementById('sel-사업연도').value = i1.사업연도 || '';
+  document.getElementById('sel-대지위치').value = i1.대지위치 || '';
+  document.getElementById('inp-대지면적').value = i1.대지면적 || '';
+  document.getElementById('inp-건축면적').value = i1.건축면적 || '';
+  document.getElementById('inp-연면적').value   = i1.연면적   || '';
+  document.getElementById('inp-건폐율').value   = i1.건폐율   || '';
+  document.getElementById('inp-용적률').value   = i1.용적률   || '';
+
+  // 용도별 연면적 복원
+  var list = document.getElementById('usage-list');
+  list.innerHTML = '';
+  usageRowId = 0;
+  (i1.용도별연면적목록 || []).forEach(function(item) {
+    addUsageRow();
+    var wraps = list.querySelectorAll('.usage-item');
+    var last  = wraps[wraps.length - 1];
+    last.querySelector('.usage-sel').value = item.용도 || '';
+    last.querySelector('.usage-area').value = item.연면적 || '';
+    if (item.용도 === '공동주택') {
+      var 세대수행 = last.querySelector('.usage-seda-row');
+      var 세대수셀 = last.querySelector('.usage-seda-sel');
+      if (세대수행) 세대수행.style.display = 'flex';
+      if (세대수셀 && item.세대수) 세대수셀.value = item.세대수;
+    }
+  });
+  if (!i1.용도별연면적목록 || !i1.용도별연면적목록.length) addUsageRow();
+
+  // 시나리오 복원
+  if (state.scenarios && state.scenarios.length) {
+    scenarios = state.scenarios;
+    activeAltIdx = state.activeAltIdx || 0;
+  }
+
+  // 검토결과 복원
+  if (state.reviewHTML && document.getElementById('review-output')) {
+    document.getElementById('review-output').innerHTML = state.reviewHTML;
+  }
+
+  // 표지 이미지 복원
+  if (state.coverImage) {
+    window.COVER_IMAGE_BASE64 = state.coverImage;
+    var preview = document.getElementById('cover-image-preview');
+    if (preview) { preview.src = state.coverImage; preview.style.display = 'block'; }
+    var label = document.getElementById('cover-image-label');
+    if (label) label.textContent = '이미지가 설정되었습니다.';
+  }
+
+  renderAltTabs();
+  renderAll();
 }
 
 function loadFormState() {
-  try {
-    var raw = localStorage.getItem('formState_v1');
-    if (!raw) { alert('저장된 데이터가 없습니다.'); return; }
-    var state = JSON.parse(raw);
-    var i1 = state.input1;
-    if (!i1) return;
+  var projects = getProjects();
+  if (!projects.length) { alert('저장된 프로젝트가 없습니다.'); return; }
+  renderProjectListModal(projects);
+  document.getElementById('project-load-modal').classList.remove('hidden');
+}
 
-    // 기본 필드 복원
-    document.getElementById('sel-사업형태').value = i1.사업형태 || '';
-    document.getElementById('sel-사업연도').value = i1.사업연도 || '';
-    document.getElementById('sel-대지위치').value = i1.대지위치 || '';
-    document.getElementById('inp-대지면적').value = i1.대지면적 || '';
-    document.getElementById('inp-건축면적').value = i1.건축면적 || '';
-    document.getElementById('inp-연면적').value   = i1.연면적   || '';
-    document.getElementById('inp-건폐율').value   = i1.건폐율   || '';
-    document.getElementById('inp-용적률').value   = i1.용적률   || '';
-    // 규모등급은 renderAll()에서 자동 갱신됨
+function renderProjectListModal(projects) {
+  var container = document.getElementById('project-list-container');
+  container.innerHTML = '';
+  if (!projects.length) {
+    container.innerHTML = '<div style="color:var(--text-hint);font-size:13px;padding:16px 0;">저장된 프로젝트가 없습니다.</div>';
+    return;
+  }
+  projects.forEach(function(proj, idx) {
+    var item = document.createElement('div');
+    item.className = 'project-list-item';
 
-    // 용도별 연면적 복원
-    var list = document.getElementById('usage-list');
-    list.innerHTML = '';
-    usageRowId = 0;
-    (i1.용도별연면적목록 || []).forEach(function(item) {
-      addUsageRow();
-      var wraps = list.querySelectorAll('.usage-item');
-      var last  = wraps[wraps.length - 1];
-      var 용도셀 = last.querySelector('.usage-sel');
-      용도셀.value = item.용도 || '';
-      last.querySelector('.usage-area').value = item.연면적 || '';
-      if (item.용도 === '공동주택') {
-        var 세대수행 = last.querySelector('.usage-seda-row');
-        var 세대수셀 = last.querySelector('.usage-seda-sel');
-        if (세대수행) 세대수행.style.display = 'flex';
-        if (세대수셀 && item.세대수) 세대수셀.value = item.세대수;
-      }
+    var info = document.createElement('div');
+    info.className = 'project-list-info';
+    info.innerHTML = '<span class="project-list-name">' + escapeHtml(proj.name) + '</span>' +
+      '<span class="project-list-date">' + escapeHtml(proj.savedAt || '') + '</span>';
+
+    var btnLoad = document.createElement('button');
+    btnLoad.className = 'btn-primary';
+    btnLoad.textContent = '불러오기';
+    btnLoad.style.fontSize = '12px';
+    btnLoad.style.padding = '6px 14px';
+    btnLoad.addEventListener('click', function() {
+      applyProjectState(proj);
+      document.getElementById('project-load-modal').classList.add('hidden');
     });
-    if (!i1.용도별연면적목록 || !i1.용도별연면적목록.length) addUsageRow();
 
-    // 시나리오 복원
-    if (state.scenarios && state.scenarios.length) {
-      scenarios = state.scenarios;
-      activeAltIdx = state.activeAltIdx || 0;
-    }
+    var btnDel = document.createElement('button');
+    btnDel.className = 'btn-secondary';
+    btnDel.textContent = '삭제';
+    btnDel.style.fontSize = '12px';
+    btnDel.style.padding = '6px 10px';
+    btnDel.addEventListener('click', function(e) {
+      e.stopPropagation();
+      if (!confirm('"' + proj.name + '" 프로젝트를 삭제하시겠습니까?')) return;
+      var list = getProjects();
+      list.splice(list.findIndex(function(p) { return p.name === proj.name; }), 1);
+      saveProjects(list);
+      renderProjectListModal(list);
+    });
 
-    renderAltTabs();
-    renderAll();
-    alert((state.savedAt ? state.savedAt + '에 ' : '') + '저장된 데이터를 불러왔습니다.');
-  } catch(e) { alert('불러오기 실패: ' + e.message); }
+    var actions = document.createElement('div');
+    actions.className = 'project-list-actions';
+    actions.appendChild(btnLoad);
+    actions.appendChild(btnDel);
+
+    item.appendChild(info);
+    item.appendChild(actions);
+    container.appendChild(item);
+  });
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 // ── Section 4 ──────────────────────────────────────────────────
@@ -1106,13 +1217,18 @@ function initSection4() {
   document.getElementById('btn-manage-prompt').addEventListener('click', openModal);
   document.getElementById('btn-copy-review').addEventListener('click', copyReview);
   document.getElementById('btn-generate-review').addEventListener('click', onGenerateClick);
-  document.getElementById('btn-save-state').addEventListener('click', function() {
-    saveFormState();
-    var btn = document.getElementById('btn-save-state');
-    btn.textContent = '저장됨 ✓';
-    setTimeout(function() { btn.textContent = '저장'; }, 1500);
-  });
+  document.getElementById('btn-save-state').addEventListener('click', saveFormState);
   document.getElementById('btn-load-state').addEventListener('click', loadFormState);
+  document.getElementById('btn-project-modal-close').addEventListener('click', function() {
+    document.getElementById('project-load-modal').classList.add('hidden');
+  });
+  document.getElementById('btn-project-modal-cancel').addEventListener('click', function() {
+    document.getElementById('project-load-modal').classList.add('hidden');
+  });
+  document.getElementById('project-load-modal').addEventListener('click', function(e) {
+    if (e.target === document.getElementById('project-load-modal'))
+      document.getElementById('project-load-modal').classList.add('hidden');
+  });
 
   document.getElementById('btn-modal-close').addEventListener('click', closeModal);
   document.getElementById('btn-cancel-modal').addEventListener('click', closeModal);
