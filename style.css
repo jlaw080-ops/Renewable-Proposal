@@ -34,7 +34,7 @@ body {
   font-family: 'Noto Sans KR', sans-serif;
   font-size: 14px;
   min-height: 100vh;
-  overflow: hidden;
+  overflow: auto;
 }
 
 /* --- 스크롤바 --- */
@@ -52,8 +52,9 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
 .app-shell {
   display: grid;
   grid-template-rows: auto 1fr;
-  grid-template-columns: 0.8fr 2fr 1fr;
+  grid-template-columns: minmax(260px, 0.8fr) minmax(380px, 2fr) minmax(280px, 1fr);
   height: 100vh;
+  min-width: 960px;
   overflow: hidden;
 }
 
