@@ -7,6 +7,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 
+  <!-- 환경 설정 (API 키 등) -->
+  <script src="config.js"></script>
+
   <!-- 리포트 스타일 -->
   <link rel="stylesheet" href="report/reportStyle.css">
 
@@ -1214,15 +1217,19 @@ function savePrompts(p) { localStorage.setItem('reviewPrompts', JSON.stringify(p
 
 function initSection4() {
   var saved = sessionStorage.getItem('gemini_api_key');
-  if (saved) document.getElementById('inp-api-key').value = saved;
+  var defaultKey = (typeof APP_CONFIG !== 'undefined') ? APP_CONFIG.GEMINI_API_KEY : '';
+  document.getElementById('inp-api-key').value = saved || defaultKey;
+  if (!saved && defaultKey) sessionStorage.setItem('gemini_api_key', defaultKey);
 
   document.getElementById('inp-api-key').addEventListener('input', function(e) {
     sessionStorage.setItem('gemini_api_key', e.target.value);
   });
 
   document.getElementById('btn-reset-api-key').addEventListener('click', function() {
-    document.getElementById('inp-api-key').value = '';
-    sessionStorage.removeItem('gemini_api_key');
+    var defaultKey = (typeof APP_CONFIG !== 'undefined') ? APP_CONFIG.GEMINI_API_KEY : '';
+    document.getElementById('inp-api-key').value = defaultKey;
+    if (defaultKey) sessionStorage.setItem('gemini_api_key', defaultKey);
+    else sessionStorage.removeItem('gemini_api_key');
   });
 
   document.getElementById('btn-manage-prompt').addEventListener('click', openModal);
