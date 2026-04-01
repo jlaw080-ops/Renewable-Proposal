@@ -1260,6 +1260,11 @@ function initSection4() {
 }
 
 function openModal() {
+  // API 키 입력란: sessionStorage 값 또는 config.js 기본값으로 채움
+  var savedKey = sessionStorage.getItem('gemini_api_key');
+  var defaultKey = (typeof APP_CONFIG !== 'undefined') ? APP_CONFIG.GEMINI_API_KEY : '';
+  document.getElementById('inp-api-key').value = savedKey || defaultKey;
+
   var prompts = getPrompts();
   var sel = document.getElementById('prompt-select');
   sel.innerHTML = '';
