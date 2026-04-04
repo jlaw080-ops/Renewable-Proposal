@@ -107,125 +107,139 @@
   <div class="left-panel">
     <div class="load-error-banner" id="load-error-banner"></div>
 
-    <!-- Section 1: 사업정보 -->
-    <div class="section-card input-section">
-      <div class="section-title">사업정보 입력</div>
+    <!-- 좌측 패널 탭 내비게이션 -->
+    <nav class="left-panel-tabs" role="tablist" aria-label="입력 섹션 전환">
+      <button class="left-tab active" role="tab" aria-selected="true" aria-controls="panel-business" id="tab-business" data-panel="panel-business">
+        <span class="left-tab-dot" style="background:var(--dot-input)"></span>
+        사업정보
+      </button>
+      <button class="left-tab" role="tab" aria-selected="false" aria-controls="panel-scenario" id="tab-scenario" data-panel="panel-scenario">
+        <span class="left-tab-dot" style="background:var(--dot-scenario)"></span>
+        시나리오
+      </button>
+    </nav>
 
-      <!-- 프로젝트명 (표지 서브헤더) -->
-      <div class="field-group">
-        <label class="field-label">프로젝트명</label>
-        <input type="text" id="input-project-name" placeholder="예: 대구 롯데몰">
-      </div>
-
-      <!-- 표지 이미지 업로드 -->
-      <div class="field-group">
-        <label class="field-label">표지 이미지 <span class="field-hint">(선택, 클릭하여 업로드)</span></label>
-        <div id="cover-image-drop" class="cover-image-drop">
-          <span id="cover-image-label">이미지를 선택하거나 드래그하세요</span>
-          <input type="file" id="input-cover-image" accept="image/*" style="display:none">
-        </div>
-        <div id="cover-image-preview-wrap" style="display:none; position:relative; display:inline-block; margin-top:8px;">
-          <img id="cover-image-preview" style="max-height:80px; border-radius:6px; display:block;">
-          <button id="btn-remove-cover-image" title="이미지 삭제" style="position:absolute; top:-6px; right:-6px; width:20px; height:20px; border-radius:50%; background:var(--bg-card); border:1px solid var(--border-default); color:var(--text-secondary); font-size:12px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;">×</button>
-        </div>
-      </div>
-
-      <div class="field-row-2col">
+    <!-- 탭 패널 1: 사업정보 -->
+    <div class="left-tab-panel active" id="panel-business" role="tabpanel" aria-labelledby="tab-business">
+      <div class="section-card input-section">
+        <!-- 프로젝트명 (표지 서브헤더) -->
         <div class="field-group">
-          <label class="field-label" for="sel-사업형태">사업형태</label>
-          <select id="sel-사업형태">
+          <label class="field-label">프로젝트명</label>
+          <input type="text" id="input-project-name" placeholder="예: 대구 롯데몰">
+        </div>
+
+        <!-- 표지 이미지 업로드 -->
+        <div class="field-group">
+          <label class="field-label">표지 이미지 <span class="field-hint">(선택, 클릭하여 업로드)</span></label>
+          <div id="cover-image-drop" class="cover-image-drop">
+            <span id="cover-image-label">이미지를 선택하거나 드래그하세요</span>
+            <input type="file" id="input-cover-image" accept="image/*" style="display:none">
+          </div>
+          <div id="cover-image-preview-wrap" style="display:none; position:relative; display:inline-block; margin-top:8px;">
+            <img id="cover-image-preview" style="max-height:80px; border-radius:6px; display:block;">
+            <button id="btn-remove-cover-image" title="이미지 삭제" style="position:absolute; top:-6px; right:-6px; width:20px; height:20px; border-radius:50%; background:var(--bg-card); border:1px solid var(--border-default); color:var(--text-secondary); font-size:12px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;">×</button>
+          </div>
+        </div>
+
+        <div class="field-row-2col">
+          <div class="field-group">
+            <label class="field-label" for="sel-사업형태">사업형태</label>
+            <select id="sel-사업형태">
+              <option value="">선택</option>
+              <option value="공공">공공</option>
+              <option value="민간">민간</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="sel-사업연도">사업연도</label>
+            <select id="sel-사업연도">
+              <option value="">선택</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="sel-대지위치">대지위치</label>
+          <select id="sel-대지위치">
             <option value="">선택</option>
-            <option value="공공">공공</option>
-            <option value="민간">민간</option>
+            <option value="강원 영동">강원 영동</option>
+            <option value="강원 영서">강원 영서</option>
+            <option value="경기도">경기도</option>
+            <option value="경상남도">경상남도</option>
+            <option value="경상북도">경상북도</option>
+            <option value="광주광역시">광주광역시</option>
+            <option value="대구광역시">대구광역시</option>
+            <option value="대전광역시">대전광역시</option>
+            <option value="부산광역시">부산광역시</option>
+            <option value="서울특별시">서울특별시</option>
+            <option value="울산광역시">울산광역시</option>
+            <option value="인천광역시">인천광역시</option>
+            <option value="전라남도">전라남도</option>
+            <option value="전라북도">전라북도</option>
+            <option value="제주특별자치도">제주특별자치도</option>
+            <option value="충청남도·세종특별자치시">충청남도·세종특별자치시</option>
+            <option value="충청북도">충청북도</option>
           </select>
         </div>
-        <div class="field-group">
-          <label class="field-label" for="sel-사업연도">사업연도</label>
-          <select id="sel-사업연도">
-            <option value="">선택</option>
-          </select>
-        </div>
-      </div>
 
-      <div class="field-group">
-        <label class="field-label" for="sel-대지위치">대지위치</label>
-        <select id="sel-대지위치">
-          <option value="">선택</option>
-          <option value="강원 영동">강원 영동</option>
-          <option value="강원 영서">강원 영서</option>
-          <option value="경기도">경기도</option>
-          <option value="경상남도">경상남도</option>
-          <option value="경상북도">경상북도</option>
-          <option value="광주광역시">광주광역시</option>
-          <option value="대구광역시">대구광역시</option>
-          <option value="대전광역시">대전광역시</option>
-          <option value="부산광역시">부산광역시</option>
-          <option value="서울특별시">서울특별시</option>
-          <option value="울산광역시">울산광역시</option>
-          <option value="인천광역시">인천광역시</option>
-          <option value="전라남도">전라남도</option>
-          <option value="전라북도">전라북도</option>
-          <option value="제주특별자치도">제주특별자치도</option>
-          <option value="충청남도·세종특별자치시">충청남도·세종특별자치시</option>
-          <option value="충청북도">충청북도</option>
-        </select>
-      </div>
+        <div class="field-row-2col">
+          <div class="field-group">
+            <label class="field-label" for="inp-대지면적">대지면적 <span class="input-suffix">㎡</span></label>
+            <input type="number" id="inp-대지면적" placeholder="0" min="0" step="0.01" />
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="inp-건축면적">건축면적 <span class="input-suffix">㎡</span></label>
+            <input type="number" id="inp-건축면적" placeholder="0" min="0" step="0.01" />
+          </div>
+        </div>
 
-      <div class="field-row-2col">
-        <div class="field-group">
-          <label class="field-label" for="inp-대지면적">대지면적 <span class="input-suffix">㎡</span></label>
-          <input type="number" id="inp-대지면적" placeholder="0" min="0" step="0.01" />
+        <div class="field-row-2col">
+          <div class="field-group">
+            <label class="field-label" for="inp-연면적">연면적 <span class="input-suffix">㎡</span></label>
+            <input type="number" id="inp-연면적" placeholder="0" min="0" step="0.01" />
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="inp-건폐율">건폐율 <span class="input-suffix">%</span></label>
+            <input type="number" id="inp-건폐율" placeholder="0" min="0" max="100" step="0.01" />
+          </div>
         </div>
-        <div class="field-group">
-          <label class="field-label" for="inp-건축면적">건축면적 <span class="input-suffix">㎡</span></label>
-          <input type="number" id="inp-건축면적" placeholder="0" min="0" step="0.01" />
-        </div>
-      </div>
 
-      <div class="field-row-2col">
-        <div class="field-group">
-          <label class="field-label" for="inp-연면적">연면적 <span class="input-suffix">㎡</span></label>
-          <input type="number" id="inp-연면적" placeholder="0" min="0" step="0.01" />
+        <div class="field-row-2col">
+          <div class="field-group">
+            <label class="field-label" for="inp-용적률">용적률 <span class="input-suffix">%</span></label>
+            <input type="number" id="inp-용적률" placeholder="0" min="0" step="0.01" />
+          </div>
+          <div class="field-group">
+            <label class="field-label">
+              규모등급
+              <span class="tooltip-wrap" style="display:inline-flex;align-items:center;gap:4px;">
+                <span class="tooltip-icon">?</span>
+                <span class="tooltip-text">주거: 세대수 기준 / 비주거: 용도별 연면적 합계 기준으로 자동 결정됩니다</span>
+              </span>
+            </label>
+            <input type="text" id="inp-규모등급" readonly placeholder="자동 결정" />
+          </div>
         </div>
-        <div class="field-group">
-          <label class="field-label" for="inp-건폐율">건폐율 <span class="input-suffix">%</span></label>
-          <input type="number" id="inp-건폐율" placeholder="0" min="0" max="100" step="0.01" />
-        </div>
-      </div>
 
-      <div class="field-row-2col">
         <div class="field-group">
-          <label class="field-label" for="inp-용적률">용적률 <span class="input-suffix">%</span></label>
-          <input type="number" id="inp-용적률" placeholder="0" min="0" step="0.01" />
-        </div>
-        <div class="field-group">
-          <label class="field-label">
-            규모등급
-            <span class="tooltip-wrap" style="display:inline-flex;align-items:center;gap:4px;">
-              <span class="tooltip-icon">?</span>
-              <span class="tooltip-text">주거: 세대수 기준 / 비주거: 용도별 연면적 합계 기준으로 자동 결정됩니다</span>
-            </span>
-          </label>
-          <input type="text" id="inp-규모등급" readonly placeholder="자동 결정" />
-        </div>
-      </div>
-
-      <div class="field-group">
-        <label class="field-label">용도별 연면적</label>
-        <div id="usage-list"></div>
-        <button class="btn-add" id="btn-add-usage">+ 용도 추가</button>
-        <div class="total-area-row">
-          <span class="total-area-label">적용연면적 합계</span>
-          <span class="total-area-value" id="total-area-display">0 <span>㎡</span></span>
+          <label class="field-label">용도별 연면적</label>
+          <div id="usage-list"></div>
+          <button class="btn-add" id="btn-add-usage">+ 용도 추가</button>
+          <div class="total-area-row">
+            <span class="total-area-label">적용연면적 합계</span>
+            <span class="total-area-value" id="total-area-display">0 <span>㎡</span></span>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Section 2: 시나리오 -->
-    <div class="section-card scenario-section">
-      <div class="section-title">시나리오 입력 (신재생에너지)</div>
-      <div class="alt-tabs" id="alt-tabs-input"></div>
-      <div id="alt-panes-input"></div>
+    <!-- 탭 패널 2: 시나리오 -->
+    <div class="left-tab-panel" id="panel-scenario" role="tabpanel" aria-labelledby="tab-scenario">
+      <div class="section-card scenario-section">
+        <div class="section-title">시나리오 (신재생에너지)</div>
+        <div class="alt-tabs" id="alt-tabs-input"></div>
+        <div id="alt-panes-input"></div>
+      </div>
     </div>
   </div>
 
@@ -489,10 +503,33 @@ function initApp() {
     selYr.appendChild(o);
   }
 
+  initLeftPanelTabs();
   initSection1();
   initSection2();
   initSection4();
   renderAll();
+}
+
+// ── 좌측 패널 탭 전환 ─────────────────────────────────────────
+function initLeftPanelTabs() {
+  var tabs = document.querySelectorAll('.left-tab');
+  tabs.forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      // 탭 활성 상태 전환
+      tabs.forEach(function(t) {
+        t.classList.remove('active');
+        t.setAttribute('aria-selected', 'false');
+      });
+      tab.classList.add('active');
+      tab.setAttribute('aria-selected', 'true');
+
+      // 패널 전환
+      var panels = document.querySelectorAll('.left-tab-panel');
+      panels.forEach(function(p) { p.classList.remove('active'); });
+      var targetId = tab.getAttribute('data-panel');
+      document.getElementById(targetId).classList.add('active');
+    });
+  });
 }
 
 // ── Section 1 ──────────────────────────────────────────────────

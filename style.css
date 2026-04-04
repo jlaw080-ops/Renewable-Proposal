@@ -148,9 +148,77 @@ header {
 /* --- 좌측 패널 (사업정보 입력) --- */
 .left-panel {
   border-right: 1px solid var(--border-default);
-  overflow-y: auto;
   min-height: 0;
   background: var(--bg-page);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* 좌측 패널 탭 내비게이션 */
+.left-panel-tabs {
+  display: flex;
+  gap: 0;
+  padding: 0 8px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-default);
+  flex-shrink: 0;
+}
+.left-tab {
+  flex: 1;
+  padding: 10px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-hint);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+  font-family: 'Noto Sans KR', sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+.left-tab:hover {
+  color: var(--text-secondary);
+  background: rgba(42, 191, 191, 0.03);
+}
+.left-tab.active {
+  color: var(--text-primary);
+  border-bottom-color: var(--accent-primary);
+  background: rgba(42, 191, 191, 0.05);
+}
+.left-tab-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  opacity: 0.5;
+  transition: opacity 0.2s;
+}
+.left-tab.active .left-tab-dot {
+  opacity: 1;
+}
+
+/* 좌측 패널 탭 콘텐츠 */
+.left-tab-panel {
+  display: none;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+.left-tab-panel.active {
+  display: block;
+}
+
+/* 탭 안 섹션카드는 border-left 제거 (탭 자체가 구분) */
+.left-tab-panel .section-card {
+  border-left-width: 1px;
+  border-left-color: var(--border-default);
 }
 
 /* --- 중앙 패널 (계산결과) --- */
