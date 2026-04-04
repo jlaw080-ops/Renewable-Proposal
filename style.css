@@ -1,28 +1,61 @@
 /* ================================================================
    신재생에너지 의무설치비율 검토 도구 — style.css
+   ENERGINNO Brand Design System
    ================================================================ */
 
-/* --- CSS 변수 --- */
+/* --- CSS 변수 (ENERGINNO Brand Palette) ---
+   Primary: Teal (#2ABFBF) — 브랜드 메인 컬러, 로고 기반
+   Accent:  Warm Amber (#E5A84B) — 데이터 강조, CTA 보조
+   Signal:  에너지 도메인에 맞는 의미적 색상
+   ------------------------------------------------------------ */
 :root {
-  --bg-page:           #0f1117;
-  --bg-card:           #1a1d27;
-  --bg-card-inner:     #22263a;
-  --bg-input:          #2a2e42;
-  --bg-input-readonly: #1e2133;
-  --text-primary:      #e8e8f0;
-  --text-secondary:    #8b8fa8;
-  --text-hint:         #5a5e75;
-  --border-default:    #2e3247;
-  --border-focus:      #5b5fef;
-  --accent-purple:     #8b5cf6;
-  --accent-yellow:     #d4f53c;
-  --accent-pink:       #f472b6;
-  --color-pass:        #4ade80;
-  --color-fail:        #f87171;
-  --color-na:          #6b7280;
-  --dot-purple:        #8b5cf6;
-  --dot-yellow:        #d4f53c;
-  --dot-pink:          #f472b6;
+  /* 배경 — 차가운 청록 톤으로 브랜드 연결 */
+  --bg-page:           #0B1215;
+  --bg-card:           #111B20;
+  --bg-card-inner:     #162226;
+  --bg-input:          #1C2A2F;
+  --bg-input-readonly: #13202A;
+
+  /* 텍스트 — 충분한 명암비 확보 (WCAG AA+) */
+  --text-primary:      #E8EDEF;
+  --text-secondary:    #94A3AB;
+  --text-hint:         #607078;
+
+  /* 테두리 */
+  --border-default:    #243038;
+  --border-focus:      #2ABFBF;
+
+  /* 브랜드 컬러 */
+  --accent-primary:    #2ABFBF;
+  --accent-primary-dim:#1E8A8A;
+  --accent-warm:       #E5A84B;
+  --accent-warm-dim:   #C48B33;
+
+  /* 시맨틱 컬러 */
+  --color-pass:        #34D399;
+  --color-fail:        #F87171;
+  --color-na:          #6B7B84;
+
+  /* 섹션 도트 — 각 패널 구분 */
+  --dot-input:         #2ABFBF;
+  --dot-scenario:      #E5A84B;
+  --dot-result:        #34D399;
+  --dot-review:        #7DD3E8;
+
+  /* 데이터 시각화 팔레트 */
+  --chart-1:           #2ABFBF;
+  --chart-2:           #E5A84B;
+  --chart-3:           #34D399;
+  --chart-4:           #7DD3E8;
+  --chart-5:           #F0946C;
+
+  /* 레거시 호환 (JS에서 참조하는 변수) */
+  --accent-purple:     #2ABFBF;
+  --accent-yellow:     #E5A84B;
+  --accent-pink:       #7DD3E8;
+  --dot-purple:        #2ABFBF;
+  --dot-yellow:        #E5A84B;
+  --dot-pink:          #7DD3E8;
 }
 
 /* --- 전역 리셋 --- */
@@ -31,16 +64,21 @@
 body {
   background-color: var(--bg-page);
   color: var(--text-primary);
-  font-family: 'Noto Sans KR', sans-serif;
+  font-family: 'Noto Sans KR', 'IBM Plex Sans', sans-serif;
   font-size: 14px;
+  line-height: 1.6;
   min-height: 100vh;
   overflow: auto;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* --- 스크롤바 --- */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border-default); border-radius: 3px; }
+/* 숫자·데이터 전용 모노스페이스 */
+.num, .kpi-value, .production-value, .total-area-value,
+input[type="number"], .readonly-value {
+  font-family: 'IBM Plex Mono', 'Fira Code', monospace;
+  letter-spacing: -0.01em;
+}
 
 /* --- 숫자 입력 화살표 숨김 --- */
 input[type=number]::-webkit-inner-spin-button,
@@ -60,24 +98,44 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
 
 /* --- 헤더 --- */
 header {
-  background-color: var(--bg-page);
-  border-bottom: 1px solid var(--border-default);
-  padding: 14px 24px;
+  background-color: var(--bg-card);
+  border-bottom: 2px solid transparent;
+  border-image: linear-gradient(90deg, var(--accent-primary), var(--accent-primary-dim), transparent) 1;
+  padding: 0 24px;
+  height: 52px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   grid-column: 1 / -1;
 }
+.header-logo {
+  height: 28px;
+  width: auto;
+  margin-right: 12px;
+  vertical-align: middle;
+}
 .header-title {
   font-size: 15px;
   font-weight: 600;
   color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  letter-spacing: -0.01em;
 }
 .header-title::before {
-  content: '●';
-  color: var(--accent-yellow);
-  margin-right: 8px;
-  font-size: 10px;
+  content: '';
+  display: none;
+}
+.header-divider {
+  width: 1px;
+  height: 18px;
+  background: var(--border-default);
+}
+.header-subtitle {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-secondary);
 }
 .header-user {
   display: flex;
@@ -92,6 +150,7 @@ header {
   border-right: 1px solid var(--border-default);
   overflow-y: auto;
   min-height: 0;
+  background: var(--bg-page);
 }
 
 /* --- 중앙 패널 (계산결과) --- */
@@ -99,12 +158,14 @@ header {
   border-right: 1px solid var(--border-default);
   overflow-y: auto;
   min-height: 0;
+  background: linear-gradient(180deg, var(--bg-card) 0%, var(--bg-page) 120px);
 }
 
 /* --- 우측 패널 (검토결과) --- */
 .right-panel {
   overflow-y: auto;
   min-height: 0;
+  background: var(--bg-page);
 }
 
 /* ================================================================
@@ -112,46 +173,56 @@ header {
    ================================================================ */
 .section-card {
   background: var(--bg-card);
-  border-radius: 16px;
+  border-radius: 12px;
   padding: 20px 24px;
   margin: 12px;
   border: 1px solid var(--border-default);
+  border-left: 3px solid var(--border-default);
+  transition: border-left-color 0.2s;
 }
+.section-card.input-section    { border-left-color: var(--dot-input); }
+.section-card.scenario-section { border-left-color: var(--dot-scenario); }
+.section-card.result-section   { border-left-color: var(--dot-result); }
+.section-card.review-section   { border-left-color: var(--dot-review); }
+
 .section-title {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 18px;
   display: flex;
   align-items: center;
   gap: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 /* 좌측 패널 전용 compact 스타일 */
 .left-panel .section-card {
-  padding: 10px 14px;
-  margin: 6px;
+  padding: 12px 14px;
+  margin: 8px;
+  border-radius: 10px;
 }
 .left-panel .section-title {
-  font-size: 13px;
-  margin-bottom: 8px;
+  font-size: 12px;
+  margin-bottom: 10px;
 }
 .left-panel .field-label {
   font-size: 11px;
-  margin-bottom: 2px;
+  margin-bottom: 3px;
 }
 .left-panel .field-group {
-  margin-bottom: 5px;
+  margin-bottom: 6px;
 }
 .left-panel .field-row-2col {
   gap: 6px;
-  margin-bottom: 5px;
+  margin-bottom: 6px;
 }
 .left-panel input[type="number"],
 .left-panel input[type="text"],
 .left-panel select {
   font-size: 13px;
-  padding: 4px 8px;
+  padding: 5px 8px;
   border-radius: 6px;
 }
 .left-panel .usage-row {
@@ -159,29 +230,34 @@ header {
   margin-bottom: 4px;
 }
 .left-panel .usage-item {
-  margin-bottom: 3px;
+  margin-bottom: 4px;
 }
 .left-panel .total-area-row {
-  margin-top: 4px;
+  margin-top: 6px;
   font-size: 12px;
 }
 .left-panel .btn-add {
-  padding: 4px 10px;
+  padding: 5px 10px;
   font-size: 12px;
   margin-bottom: 2px;
 }
 .left-panel .cover-image-drop {
-  padding: 7px 12px;
+  padding: 8px 12px;
   font-size: 12px;
 }
+
+/* 섹션 도트 — 타이틀 옆 작은 컬러 인디케이터 */
 .section-title::before {
-  content: '●';
-  font-size: 9px;
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
-.section-card.input-section    .section-title::before { color: var(--dot-purple); }
-.section-card.scenario-section .section-title::before { color: var(--dot-yellow); }
-.section-card.result-section   .section-title::before { color: var(--dot-yellow); }
-.section-card.review-section   .section-title::before { color: var(--dot-pink); }
+.section-card.input-section    .section-title::before { background: var(--dot-input); }
+.section-card.scenario-section .section-title::before { background: var(--dot-scenario); }
+.section-card.result-section   .section-title::before { background: var(--dot-result); }
+.section-card.review-section   .section-title::before { background: var(--dot-review); }
 
 /* ================================================================
    입력 필드
@@ -191,6 +267,7 @@ header {
   color: var(--text-secondary);
   margin-bottom: 6px;
   display: block;
+  font-weight: 500;
 }
 .field-group {
   margin-bottom: 12px;
@@ -201,18 +278,19 @@ input[type="password"],
 select {
   background: var(--bg-input);
   border: 1px solid var(--border-default);
-  border-radius: 8px;
+  border-radius: 6px;
   color: var(--text-primary);
   font-size: 14px;
   padding: 9px 12px;
   width: 100%;
   box-sizing: border-box;
-  transition: border-color 0.15s;
+  transition: border-color 0.2s, box-shadow 0.2s;
   font-family: 'Noto Sans KR', sans-serif;
 }
 input:focus, select:focus {
   outline: none;
-  border-color: var(--border-focus);
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px rgba(42, 191, 191, 0.15);
 }
 input[readonly] {
   background: var(--bg-input-readonly);
@@ -220,9 +298,10 @@ input[readonly] {
   cursor: default;
 }
 .input-suffix {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-hint);
-  margin-left: 4px;
+  margin-left: 3px;
+  font-family: 'IBM Plex Mono', monospace;
 }
 .field-row-2col {
   display: grid;
@@ -351,78 +430,96 @@ select {
   padding: 10px;
   background: transparent;
   border: 1px dashed var(--border-default);
-  border-radius: 8px;
+  border-radius: 6px;
   color: var(--text-secondary);
   font-size: 13px;
   cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
   margin-top: 8px;
   font-family: 'Noto Sans KR', sans-serif;
 }
 .btn-add:hover {
-  border-color: var(--accent-purple);
-  color: var(--accent-purple);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  background: rgba(42, 191, 191, 0.05);
 }
 .btn-primary {
-  background: var(--accent-purple);
-  color: #fff;
+  background: var(--accent-primary);
+  color: #0B1215;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   padding: 10px 20px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 700;
   cursor: pointer;
-  transition: opacity 0.15s;
+  transition: background 0.2s, transform 0.1s;
   font-family: 'Noto Sans KR', sans-serif;
+  letter-spacing: 0.01em;
 }
-.btn-primary:hover { opacity: 0.85; }
-.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-primary:hover {
+  background: #25ABAB;
+}
+.btn-primary:active {
+  transform: scale(0.98);
+}
+.btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
 .btn-secondary {
   background: var(--bg-input);
   color: var(--text-secondary);
   border: 1px solid var(--border-default);
-  border-radius: 8px;
+  border-radius: 6px;
   padding: 9px 16px;
   font-size: 13px;
   cursor: pointer;
-  transition: border-color 0.15s;
+  transition: border-color 0.2s, color 0.2s;
   font-family: 'Noto Sans KR', sans-serif;
 }
-.btn-secondary:hover { border-color: var(--border-focus); }
+.btn-secondary:hover {
+  border-color: var(--accent-primary);
+  color: var(--text-primary);
+}
 
 /* ================================================================
    ALT 탭
    ================================================================ */
 .alt-tabs {
   display: flex;
-  gap: 4px;
+  gap: 2px;
   margin-bottom: 16px;
   border-bottom: 1px solid var(--border-default);
   padding-bottom: 0;
   flex-wrap: wrap;
 }
 .alt-tab {
-  padding: 7px 16px;
-  font-size: 13px;
-  font-weight: 500;
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 600;
   color: var(--text-secondary);
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
   cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
+  transition: color 0.2s, border-color 0.2s;
   margin-bottom: -1px;
   font-family: 'Noto Sans KR', sans-serif;
+  letter-spacing: 0.02em;
+}
+.alt-tab:hover {
+  color: var(--text-primary);
 }
 .alt-tab.active {
-  color: var(--accent-yellow);
-  border-bottom-color: var(--accent-yellow);
+  color: var(--accent-warm);
+  border-bottom-color: var(--accent-warm);
 }
 .alt-tab.add-tab {
   color: var(--text-hint);
   font-size: 12px;
 }
-.alt-tab.add-tab:hover { color: var(--text-secondary); }
+.alt-tab.add-tab:hover { color: var(--accent-primary); }
 
 /* ================================================================
    시스템 입력 테이블 (2줄 레이아웃)
@@ -489,23 +586,25 @@ select {
 .production-value {
   background: var(--bg-input-readonly);
   border: 1px solid var(--border-default);
-  border-radius: 8px;
+  border-radius: 6px;
   padding: 6px 10px;
   font-size: 12px;
-  color: var(--accent-yellow);
+  color: var(--accent-warm);
   text-align: right;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-family: 'IBM Plex Mono', monospace;
 }
 .readonly-value {
   background: var(--bg-input-readonly);
   border: 1px solid var(--border-default);
-  border-radius: 8px;
+  border-radius: 6px;
   padding: 9px 12px;
   font-size: 13px;
   color: var(--text-secondary);
   text-align: right;
+  font-family: 'IBM Plex Mono', monospace;
 }
 
 /* ================================================================
@@ -519,43 +618,68 @@ select {
 }
 .kpi-card {
   background: var(--bg-card-inner);
-  border-radius: 12px;
-  padding: 20px;
+  border-radius: 10px;
+  padding: 18px 20px;
   border: 1px solid var(--border-default);
+  position: relative;
+  overflow: hidden;
 }
+/* 카드 상단 미세한 컬러 라인 — 독창적 디테일 */
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--border-default);
+}
+.kpi-card.installation::before { background: var(--accent-warm); }
+.kpi-card.status.pass::before  { background: var(--color-pass); }
+.kpi-card.status.fail::before  { background: var(--color-fail); }
+
 .kpi-card-label {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-secondary);
   margin-bottom: 10px;
   display: flex;
   align-items: center;
   gap: 6px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 .kpi-card-label::before {
-  content: '●';
-  font-size: 8px;
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
-.kpi-card.installation .kpi-card-label::before { color: var(--dot-yellow); }
-.kpi-card.installation .kpi-value { color: var(--accent-yellow); }
-.kpi-card.obligation   .kpi-card-label::before { color: var(--text-hint); }
+.kpi-card.installation .kpi-card-label::before { background: var(--accent-warm); }
+.kpi-card.installation .kpi-value { color: var(--accent-warm); }
+.kpi-card.obligation   .kpi-card-label::before { background: var(--text-hint); }
 .kpi-card.obligation   .kpi-value { color: var(--text-primary); }
-.kpi-card.status       .kpi-card-label::before { color: var(--text-hint); }
+.kpi-card.status       .kpi-card-label::before { background: var(--text-hint); }
 .kpi-card.status.pass  .kpi-value { color: var(--color-pass); }
 .kpi-card.status.fail  .kpi-value { color: var(--color-fail); }
 .kpi-card.status.na    .kpi-value { color: var(--color-na); }
 .kpi-value {
-  font-size: 36px;
+  font-size: 32px;
   font-weight: 700;
   line-height: 1.1;
+  font-family: 'IBM Plex Mono', monospace;
 }
 .kpi-unit {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 400;
+  color: var(--text-secondary);
 }
 .kpi-sub {
-  font-size: 12px;
-  color: var(--text-secondary);
-  margin-top: 6px;
+  font-size: 11px;
+  color: var(--text-hint);
+  margin-top: 8px;
+  font-family: 'IBM Plex Mono', monospace;
 }
 
 /* ================================================================
@@ -587,10 +711,10 @@ select {
   display: flex;
   margin-bottom: 8px;
 }
-.bar-segment-solar { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
-.bar-segment-geo   { background: linear-gradient(90deg, #f472b6, #fb7185); }
-.bar-segment-fuel  { background: linear-gradient(90deg, #34d399, #6ee7b7); }
-.bar-segment-other { background: linear-gradient(90deg, #fbbf24, #fcd34d); }
+.bar-segment-solar { background: var(--chart-1); }
+.bar-segment-geo   { background: var(--chart-5); }
+.bar-segment-fuel  { background: var(--chart-3); }
+.bar-segment-other { background: var(--chart-2); }
 .bar-legend {
   display: flex;
   gap: 16px;
@@ -616,26 +740,36 @@ select {
   font-size: 13px;
 }
 .result-table th {
-  font-size: 11px;
-  font-weight: 500;
+  font-size: 10px;
+  font-weight: 600;
   color: var(--text-hint);
   text-align: left;
-  padding: 8px 12px;
+  padding: 10px 12px;
   border-bottom: 1px solid var(--border-default);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 .result-table td {
   padding: 11px 12px;
   color: var(--text-primary);
-  border-bottom: 1px solid rgba(46, 50, 71, 0.5);
+  border-bottom: 1px solid rgba(36, 48, 56, 0.5);
+}
+.result-table tbody tr:hover td {
+  background: rgba(42, 191, 191, 0.03);
 }
 .result-table tr:last-child td { border-bottom: none; }
 .result-table .total-row td {
-  color: var(--accent-yellow);
+  color: var(--accent-warm);
   font-weight: 600;
   border-top: 1px solid var(--border-default);
   padding-top: 14px;
+  font-family: 'IBM Plex Mono', monospace;
 }
-.result-table .num { text-align: right; }
+.result-table .num {
+  text-align: right;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+}
 .table-footnote {
   font-size: 11px;
   color: var(--text-hint);
@@ -644,6 +778,7 @@ select {
   background: var(--bg-card-inner);
   padding: 10px 14px;
   border-radius: 8px;
+  border-left: 2px solid var(--accent-primary-dim);
 }
 .table-footnote p { margin: 0; }
 .table-footnote p::before { content: '* '; }
@@ -670,19 +805,19 @@ select {
   z-index: 10;
   background: transparent;
   border: 1px solid var(--border-default);
-  border-radius: 8px;
+  border-radius: 6px;
   padding: 6px 8px;
   color: var(--text-secondary);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
 }
 .btn-gear:hover {
-  color: var(--text-primary);
-  border-color: var(--accent-purple);
-  background: rgba(255,255,255,0.05);
+  color: var(--accent-primary);
+  border-color: var(--accent-primary);
+  background: rgba(42, 191, 191, 0.08);
 }
 .review-section-inner {
   display: flex;
@@ -706,9 +841,12 @@ select {
   gap: 8px;
 }
 .review-title::before {
-  content: '●';
-  font-size: 9px;
-  color: var(--dot-pink);
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--dot-review);
+  flex-shrink: 0;
 }
 .review-actions {
   display: flex;
@@ -750,7 +888,7 @@ select {
 .review-output {
   background: var(--bg-card-inner);
   border: 1px solid var(--border-default);
-  border-radius: 12px;
+  border-radius: 10px;
   padding: 20px;
   flex: 1;
   min-height: 0;
@@ -758,8 +896,9 @@ select {
   line-height: 1.8;
   color: var(--text-primary);
   white-space: pre-wrap;
+  overflow-y: auto;
 }
-.review-output.generating { color: var(--text-primary); opacity: 0.75; }
+.review-output.generating { color: var(--text-primary); opacity: 0.8; }
 
 /* 생성 중 커서 애니메이션 */
 @keyframes blink {
@@ -767,7 +906,7 @@ select {
   50%       { opacity: 0; }
 }
 .generating-cursor {
-  color: var(--accent-yellow);
+  color: var(--accent-primary);
   font-size: 13px;
   animation: blink 1s step-start infinite;
 }
@@ -807,10 +946,11 @@ select {
 .modal-box {
   background: var(--bg-card);
   border: 1px solid var(--border-default);
-  border-radius: 16px;
+  border-radius: 12px;
   padding: 28px;
   width: 560px;
   max-width: 90vw;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
 }
 .modal-header {
   display: flex;
@@ -967,7 +1107,7 @@ select {
   width: 32px;
   height: 32px;
   border: 3px solid var(--border-default);
-  border-top-color: var(--accent-purple);
+  border-top-color: var(--accent-primary);
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }
@@ -976,16 +1116,6 @@ select {
   color: var(--text-secondary);
 }
 @keyframes spin { to { transform: rotate(360deg); } }
-
-/* ================================================================
-   빈 상태
-   ================================================================ */
-.empty-state {
-  text-align: center;
-  padding: 40px 20px;
-  color: var(--text-hint);
-  font-size: 13px;
-}
 
 /* ALT 탭 컨텐츠 패널 */
 .alt-pane { display: none; }
@@ -1001,12 +1131,13 @@ select {
 /* ── 시나리오 비교 테이블 ── */
 .comparison-table th {
   background: var(--bg-card-inner);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
-  color: var(--accent-yellow);
+  color: var(--accent-warm);
   text-align: center;
   padding: 10px 12px;
   border-bottom: 1px solid var(--border-default);
+  letter-spacing: 0.02em;
 }
 .comparison-table th:first-child {
   color: var(--text-hint);
@@ -1093,7 +1224,7 @@ select {
   background: var(--bg-input);
 }
 .cover-image-drop:hover {
-  border-color: var(--accent-purple);
+  border-color: var(--accent-primary);
   color: var(--text-secondary);
 }
 
@@ -1102,4 +1233,68 @@ select {
   height: 1px;
   background: var(--border-default);
   margin: 16px 0;
+}
+
+/* ================================================================
+   접근성 & 인터랙션 피드백
+   ================================================================ */
+
+/* 포커스 링 — 키보드 네비게이션 */
+:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: none; /* box-shadow 스타일이 대신 적용 */
+}
+
+/* 모든 클릭 가능 요소에 cursor-pointer */
+button, .alt-tab, .cover-image-drop, select,
+.project-list-item, .btn-delete-row, .tooltip-icon {
+  cursor: pointer;
+}
+
+/* 감소된 모션 선호 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ================================================================
+   독창적 디자인 요소 — 미세한 브랜드 터치
+   ================================================================ */
+
+/* 패널 구분 — 미세한 그라디언트 라인 대신 점선이 아닌 실선 */
+.left-panel::after,
+.center-panel::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 1px;
+  pointer-events: none;
+}
+
+/* 빈 상태 — 더 정제된 느낌 */
+.empty-state {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--text-hint);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* 스크롤바 개선 — 브랜드 색상 미세 반영 */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-primary-dim);
 }

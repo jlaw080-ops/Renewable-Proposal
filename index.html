@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>신재생에너지 의무설치비율 검토 도구</title>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 
   <!-- 환경 설정 (API 키 등) — config.js와 동일한 내용 -->
@@ -91,7 +91,11 @@
 
   <!-- 헤더 -->
   <header>
-    <span class="header-title">신재생에너지 의무설치비율 검토 도구</span>
+    <span class="header-title">
+      <img src="assets/logo.png" alt="ENERGINNO" class="header-logo" />
+      <span class="header-divider"></span>
+      <span>신재생에너지 의무설치비율 검토 도구</span>
+    </span>
     <div class="header-user">
       <button class="btn-sm-outline" id="btn-load-state" title="저장된 입력값 불러오기">불러오기</button>
       <button class="btn-sm-outline" id="btn-save-state" title="현재 입력값 저장">저장</button>
@@ -274,7 +278,7 @@
 
   <!-- 우측 패널: 검토결과 -->
   <div class="right-panel">
-    <button class="btn-gear" id="btn-manage-prompt" title="설정">
+    <button class="btn-gear" id="btn-manage-prompt" title="설정" aria-label="설정 열기">
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="3"></circle>
         <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>

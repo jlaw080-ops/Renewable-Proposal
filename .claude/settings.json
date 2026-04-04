@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python \"C:\\\\Users\\\\jlaw8\\\\.claude\\\\skills\\\\ui-ux-pro-max\\\\scripts\\\\search.py\" \"energy engineering dashboard professional tool dark\" --design-system -p \"ENERGINNO 신재생에너지 검토도구\")",
+      "Bash(python \"C:\\\\Users\\\\jlaw8\\\\.claude\\\\skills\\\\ui-ux-pro-max\\\\scripts\\\\search.py\" \"dashboard data engineering\" --domain color -n 5)",
+      "Bash(python \"C:\\\\Users\\\\jlaw8\\\\.claude\\\\skills\\\\ui-ux-pro-max\\\\scripts\\\\search.py\" \"professional technical korean\" --domain typography -n 5)",
+      "Bash(python \"C:\\\\Users\\\\jlaw8\\\\.claude\\\\skills\\\\ui-ux-pro-max\\\\scripts\\\\search.py\" \"accessibility contrast form input\" --domain ux -n 8)"
+    ]
+  }
+}
