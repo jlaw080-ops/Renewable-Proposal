@@ -73,21 +73,7 @@ function downloadReportHTML(reportHTML) {
   _downloadBlob(reportHTML, _filename('html'), 'text/html;charset=utf-8');
 }
 
-// ── Word 저장 (.docx) ───────────────────────────────
-function downloadReportWord(reportHTML) {
-  if (!window.htmlDocx) {
-    alert('html-docx-js 라이브러리가 로드되지 않았습니다.');
-    return;
-  }
-  // 외부 스타일시트를 인라인으로 교체 (Word는 외부 CSS 미지원)
-  var inlined = reportHTML.replace(
-    /<link[^>]*reportStyle\.css[^>]*>/,
-    '<style>' + _getReportStyleInline() + '</style>'
-  );
-  var blob = window.htmlDocx.asBlob(inlined);
-  _downloadBlob(blob, _filename('docx'),
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-}
+// ── Word 저장 (.docx) — report/reportDocx.js로 이관 ──
 
 // ── 공통 유틸 ───────────────────────────────────────
 function _downloadBlob(content, filename, type) {
@@ -103,20 +89,3 @@ function _downloadBlob(content, filename, type) {
   URL.revokeObjectURL(a.href);
 }
 
-// Word용 CSS 인라인 (reportStyle.css 핵심 스타일)
-function _getReportStyleInline() {
-  return [
-    'body { font-family: "Malgun Gothic", sans-serif; font-size: 11pt; }',
-    'table { width: 100%; border-collapse: collapse; margin-bottom: 12pt; }',
-    'th { background: #2c3e50; color: white; padding: 5pt 8pt; font-size: 9pt; border: 1pt solid #bbb; }',
-    'td { padding: 5pt 8pt; border: 1pt solid #ddd; font-size: 9pt; }',
-    '.status-pass { color: #2e7d32; font-weight: bold; }',
-    '.status-fail { color: #c62828; font-weight: bold; }',
-    '.total-row td { font-weight: bold; background: #eaf0fb; }',
-    '.highlight-row td { background: #fff9e6; font-weight: bold; }',
-    '.col-label { background: #f0f4f8; font-weight: bold; width: 35%; }',
-    'h1 { font-size: 28pt; font-weight: bold; }',
-    'h2 { font-size: 16pt; font-weight: 600; border-bottom: 2pt solid #2c3e50; padding-bottom: 4pt; }',
-    'h3 { font-size: 11pt; font-weight: 600; color: #2c3e50; margin: 14pt 0 6pt; }',
-  ].join(' ');
-}

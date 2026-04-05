@@ -79,27 +79,27 @@ export function buildUserMessage(calcData) {
  *
  * @param {string} systemPrompt  - 시스템 프롬프트 (프롬프트 관리에서 선택)
  * @param {{ input1, output1, output2 }} calcData  - 계산 결과
- * @param {string} apiKey        - Anthropic API Key (sessionStorage에서 전달)
  * @param {{ onToken?: Function, onDone?: Function, onError?: Function }} callbacks
  *   - onToken(text: string): 토큰 수신 시마다 호출
  *   - onDone():              스트림 완료 시 호출
  *   - onError(err: Error):   오류 시 호출
  */
-export async function generateReview(systemPrompt, calcData, apiKey, callbacks) {
+export async function generateReview(systemPrompt, calcData, callbacks) {
   var onToken = (callbacks && callbacks.onToken) || function() {};
   var onDone  = (callbacks && callbacks.onDone)  || function() {};
   var onError = (callbacks && callbacks.onError) || function(e) { console.error(e); };
 
   try {
-    var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + MODEL + ':streamGenerateContent?alt=sse&key=' + encodeURIComponent(apiKey);
+    var url = '/api/review';
 
     var resp = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        model: MODEL,
         system_instruction: { parts: [{ text: systemPrompt }] },
         contents: [{ role: 'user', parts: [{ text: buildUserMessage(calcData) }] }],
-        generationConfig: { maxOutputTokens: 2048 }
+        generationConfig: { maxOutputTokens: 8192 }
       })
     });
 

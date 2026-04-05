@@ -7,11 +7,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 
-  <!-- 환경 설정 (API 키 등) — config.js와 동일한 내용 -->
+  <!-- 환경 설정 -->
   <script>
-  var APP_CONFIG = {
-    GEMINI_API_KEY: 'AIzaSyBpYrVO1MIWOdWU3cUIQcG9QT4_nA3AyeM'
-  };
+  var APP_CONFIG = {};
   </script>
 
   <!-- 리포트 스타일 -->
@@ -21,8 +19,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
-  <!-- Word 다운로드 -->
-  <script src="https://cdn.jsdelivr.net/npm/html-docx-js/dist/html-docx.js"></script>
+  <!-- Word 다운로드 (docx-js) -->
+  <script src="https://unpkg.com/docx@9/build/index.umd.min.js"></script>
 
   <!-- 라이브러리 데이터 (window 전역변수 방식 — file:// CORS 우회) -->
   <script src="data/신재생에너지계수라이브러리.js"></script>
@@ -45,14 +43,6 @@
       <span class="modal-title">설정</span>
       <button class="modal-close" id="btn-modal-close">×</button>
     </div>
-    <!-- API 키 섹션 -->
-    <div class="modal-section-title">Google Gemini API Key</div>
-    <div class="modal-api-row">
-      <input type="password" id="inp-api-key" placeholder="AIza..." autocomplete="off" />
-      <button class="btn-secondary" id="btn-reset-api-key" title="기본값으로 초기화">초기화</button>
-    </div>
-    <div class="modal-api-hint">키를 직접 입력하면 기본값 대신 해당 키가 사용됩니다. 브라우저 세션 동안 유지됩니다.</div>
-    <div class="modal-section-divider"></div>
     <!-- 작성 지침 섹션 -->
     <div class="modal-section-title">검토결과 작성 지침</div>
     <div class="modal-prompt-row">
@@ -97,6 +87,7 @@
       <span>신재생에너지 의무설치비율 검토 도구</span>
     </span>
     <div class="header-user">
+      <button class="btn-sm-outline" id="btn-reset-all" title="모든 입력값 초기화">초기화</button>
       <button class="btn-sm-outline" id="btn-load-state" title="저장된 입력값 불러오기">불러오기</button>
       <button class="btn-sm-outline" id="btn-save-state" title="현재 입력값 저장">저장</button>
       <span id="header-status">라이브러리 로딩 중...</span>
@@ -473,6 +464,49 @@ function fmt(n) {
 var scenarios = [{ id: 'ALT-1', systems: [] }];
 var activeAltIdx = 0;
 var usageRowId = 0;
+
+// ── 전체 입력값 초기화 ─────────────────────────────────────────
+function resetAllInputs() {
+  if (!confirm('모든 입력값을 초기화하시겠습니까?')) return;
+
+  // Section 1 — 사업정보
+  document.getElementById('input-project-name').value = '';
+  document.getElementById('sel-사업형태').value = '';
+  document.getElementById('sel-사업연도').value = '';
+  document.getElementById('sel-대지위치').value = '';
+  ['inp-대지면적','inp-건축면적','inp-연면적','inp-건폐율','inp-용적률'].forEach(function(id) {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('inp-규모등급').value = '';
+
+  // 용도별 연면적 목록 초기화
+  document.getElementById('usage-list').innerHTML = '';
+  usageRowId = 0;
+  addUsageRow();
+
+  // 표지 이미지 초기화
+  window.COVER_IMAGE_BASE64 = null;
+  var previewWrap = document.getElementById('cover-image-preview-wrap');
+  if (previewWrap) previewWrap.style.display = 'none';
+  var coverLabel = document.getElementById('cover-image-label');
+  if (coverLabel) coverLabel.textContent = '이미지를 선택하거나 드래그하세요';
+
+  // Section 2 — 시나리오 초기화
+  scenarios = [{ id: 'ALT-1', systems: [] }];
+  activeAltIdx = 0;
+  renderAltTabs();
+
+  // 결과 영역 초기화
+  window.LAST_INPUT1 = null;
+  window.LAST_OUTPUT1 = null;
+  window.LAST_OUTPUT2 = null;
+
+  // 검토 의견 초기화
+  var reviewEl = document.getElementById('review-output');
+  if (reviewEl) reviewEl.innerHTML = '<span style="color:var(--text-hint);font-size:13px;">[검토결과 생성] 버튼을 클릭하면 AI가 검토결과를 작성합니다.</span>';
+
+  renderAll();
+}
 
 // ── 앱 초기화 ──────────────────────────────────────────────────
 function initApp() {
@@ -1261,25 +1295,10 @@ function savePrompts(p) { localStorage.setItem('reviewPrompts', JSON.stringify(p
 })();
 
 function initSection4() {
-  var saved = sessionStorage.getItem('gemini_api_key');
-  var defaultKey = (typeof APP_CONFIG !== 'undefined') ? APP_CONFIG.GEMINI_API_KEY : '';
-  document.getElementById('inp-api-key').value = saved || defaultKey;
-  if (!saved && defaultKey) sessionStorage.setItem('gemini_api_key', defaultKey);
-
-  document.getElementById('inp-api-key').addEventListener('input', function(e) {
-    sessionStorage.setItem('gemini_api_key', e.target.value);
-  });
-
-  document.getElementById('btn-reset-api-key').addEventListener('click', function() {
-    var defaultKey = (typeof APP_CONFIG !== 'undefined') ? APP_CONFIG.GEMINI_API_KEY : '';
-    document.getElementById('inp-api-key').value = defaultKey;
-    if (defaultKey) sessionStorage.setItem('gemini_api_key', defaultKey);
-    else sessionStorage.removeItem('gemini_api_key');
-  });
-
   document.getElementById('btn-manage-prompt').addEventListener('click', openModal);
   document.getElementById('btn-copy-review').addEventListener('click', copyReview);
   document.getElementById('btn-generate-review').addEventListener('click', onGenerateClick);
+  document.getElementById('btn-reset-all').addEventListener('click', resetAllInputs);
   document.getElementById('btn-save-state').addEventListener('click', saveFormState);
   document.getElementById('btn-load-state').addEventListener('click', loadFormState);
   document.getElementById('btn-project-modal-close').addEventListener('click', function() {
@@ -1305,11 +1324,6 @@ function initSection4() {
 }
 
 function openModal() {
-  // API 키 입력란: sessionStorage 값 또는 config.js 기본값으로 채움
-  var savedKey = sessionStorage.getItem('gemini_api_key');
-  var defaultKey = (typeof APP_CONFIG !== 'undefined') ? APP_CONFIG.GEMINI_API_KEY : '';
-  document.getElementById('inp-api-key').value = savedKey || defaultKey;
-
   var prompts = getPrompts();
   var sel = document.getElementById('prompt-select');
   sel.innerHTML = '';
@@ -1379,9 +1393,6 @@ function copyReview() {
 }
 
 function onGenerateClick() {
-  var apiKey = document.getElementById('inp-api-key').value || sessionStorage.getItem('gemini_api_key') || '';
-  if (!apiKey.trim()) { alert('API 키를 입력해주세요.'); return; }
-
   var input1 = collectInput1();
   if (!input1.용도별연면적목록.length) { alert('사업정보와 시나리오를 먼저 입력해주세요.'); return; }
 
@@ -1390,7 +1401,7 @@ function onGenerateClick() {
   var prompts  = getPrompts();
   var p = prompts.find(function(x) { return x.name === activePromptName; }) || prompts[0];
 
-  generateReview(p.body, { input1: input1, output1: output1, output2: output2 }, apiKey);
+  generateReview(p.body, { input1: input1, output1: output1, output2: output2 });
 }
 
 function buildUserMessage(calcData) {
@@ -1430,7 +1441,7 @@ function buildUserMessage(calcData) {
   return lines.join('\n');
 }
 
-async function generateReview(promptText, calcData, apiKey) {
+async function generateReview(promptText, calcData) {
   var btn    = document.getElementById('btn-generate-review');
   var output = document.getElementById('review-output');
   btn.disabled = true; btn.textContent = '⏳ 생성 중...';
@@ -1453,9 +1464,7 @@ async function generateReview(promptText, calcData, apiKey) {
   }
 
   try {
-    var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:streamGenerateContent?alt=sse&key=' + encodeURIComponent(apiKey);
-
-    var resp = await fetch(url, {
+    var resp = await fetch('/api/review', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1480,7 +1489,7 @@ async function generateReview(promptText, calcData, apiKey) {
       if (result.done) break;
       buffer += decoder.decode(result.value, { stream: true });
       var lines = buffer.split('\n');
-      buffer = lines.pop(); // 마지막 불완전 라인 보존
+      buffer = lines.pop();
       for (var i = 0; i < lines.length; i++) {
         var line = lines[i].trim();
         if (!line.startsWith('data: ')) continue;
@@ -1585,7 +1594,7 @@ window.addEventListener('DOMContentLoaded', function() {
     document.getElementById('report-save-menu').classList.remove('open');
     var data = collectReportData();
     if (!data) return;
-    downloadReportWord(buildReport(data));
+    downloadReportWord(data);
   });
 });
 
@@ -1610,6 +1619,7 @@ function collectReportData() {
 <script src="report/reportBuilder.js"></script>
 <script src="report/reportViewer.js"></script>
 <script src="report/reportPdf.js"></script>
+<script src="report/reportDocx.js"></script>
 
 </body>
 </html>

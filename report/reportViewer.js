@@ -4,10 +4,12 @@
 'use strict';
 
 var _currentReportHTML = '';
+var _currentReportData = null;
 
 function showReportModal(data) {
   var html = buildReport(data);
   _currentReportHTML = html;
+  _currentReportData = data;
 
   // iframe에 srcdoc으로 주입 (CORS 없이 로컬 렌더링)
   var iframe = document.getElementById('report-iframe');
@@ -30,7 +32,7 @@ function showReportModal(data) {
     downloadReportHTML(_currentReportHTML);
   };
   document.getElementById('modal-btn-word').onclick = function() {
-    downloadReportWord(_currentReportHTML);
+    downloadReportWord(_currentReportData);
   };
   document.getElementById('modal-btn-close').onclick = closeReportModal;
 
