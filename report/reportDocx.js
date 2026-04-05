@@ -127,6 +127,7 @@ function _makeHeader(sectionName, pageNum) {
 
 /* 페이지 제목 (파란 하단선) */
 function _pageTitle(text) {
+  var D = _D();
   return _p([_tr(text, { bold: true, size: 28, color: _DOCX_CLR.textMain })], {
     spacing: { after: 240 },
     border: { bottom: { style: D.BorderStyle.SINGLE, size: 4, color: _DOCX_CLR.dark, space: 6 } },
