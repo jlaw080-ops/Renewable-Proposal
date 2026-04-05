@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -sL \"https://unpkg.com/docx@9/package.json\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('main:', d.get\\('main',''\\)\\); print\\('browser:', d.get\\('browser',''\\)\\); print\\('unpkg:', d.get\\('unpkg',''\\)\\)\")",
+      "Bash(curl -sL \"https://unpkg.com/docx@8/package.json\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('main:', d.get\\('main',''\\)\\); print\\('browser:', d.get\\('browser',''\\)\\); print\\('unpkg:', d.get\\('unpkg',''\\)\\); print\\('version:', d.get\\('version',''\\)\\)\")",
+      "Bash(curl -sL \"https://unpkg.com/docx@8/build/index.umd.js\")"
+    ]
+  }
+}
