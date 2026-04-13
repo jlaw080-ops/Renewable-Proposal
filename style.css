@@ -1366,3 +1366,342 @@ button, .alt-tab, .cover-image-drop, select,
 ::-webkit-scrollbar-thumb:hover {
   background: var(--accent-primary-dim);
 }
+
+/* ================================================================
+   AI 추천 기능 — 카카오맵 + 제약조건 + 추천 결과 카드
+   ================================================================ */
+
+/* 지도 검색 */
+.map-search-row {
+  display: flex;
+  gap: 8px;
+}
+.map-search-row input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-size: 13px;
+}
+.map-search-row button {
+  padding: 8px 16px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+/* 지도 위치 정보 */
+.map-location-info {
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  font-size: 12px;
+}
+.map-info-row {
+  display: flex;
+  gap: 8px;
+  padding: 3px 0;
+}
+.map-info-label {
+  color: var(--text-secondary);
+  min-width: 60px;
+  flex-shrink: 0;
+}
+
+/* 섹션 부제목 */
+.section-subtitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-default);
+}
+
+/* 제약조건 그룹 */
+.constraint-group {
+  margin-bottom: 14px;
+}
+.constraint-group-title {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent-primary);
+  margin-bottom: 6px;
+}
+.constraint-note {
+  font-size: 12px;
+  color: var(--text-secondary);
+  padding: 8px 10px;
+  background: rgba(229, 168, 75, 0.08);
+  border-radius: 6px;
+  border-left: 3px solid var(--accent-yellow);
+  line-height: 1.5;
+}
+.constraint-warn {
+  color: var(--color-fail);
+  font-size: 11px;
+  font-weight: 600;
+}
+.field-label-sm {
+  display: block;
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+/* 라디오/체크박스 */
+.radio-row, .checkbox-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.radio-label, .checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.radio-label input, .checkbox-label input {
+  accent-color: var(--accent-primary);
+}
+
+/* 제약조건 textarea */
+#constraint-custom {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-family: inherit;
+  resize: vertical;
+}
+
+/* AI 추천 실행 버튼 */
+.btn-recommend-run {
+  width: 100%;
+  padding: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  margin-top: 8px;
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-yellow));
+  border: none;
+  border-radius: 8px;
+  color: #0B1215;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.btn-recommend-run:hover {
+  opacity: 0.9;
+}
+.btn-recommend-run:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 추천 결과 영역 */
+.recommend-result {
+  min-height: 60px;
+}
+
+/* 로딩 */
+.recommend-loading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 16px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+/* 에러 */
+.recommend-error {
+  padding: 16px;
+  color: var(--color-fail);
+  font-size: 13px;
+  background: rgba(248, 113, 113, 0.08);
+  border-radius: 6px;
+}
+
+/* 최선안 선정 이유 */
+.recommend-reasoning {
+  display: flex;
+  gap: 8px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  background: rgba(42, 191, 191, 0.08);
+  border: 1px solid rgba(42, 191, 191, 0.2);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+.recommend-reasoning-icon {
+  flex-shrink: 0;
+  font-size: 16px;
+}
+
+/* 추천 카드 그리드 */
+.recommend-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* 추천 카드 */
+.recommend-card {
+  padding: 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: 10px;
+  transition: border-color 0.2s;
+}
+.recommend-card.best {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 1px var(--accent-primary), 0 2px 12px rgba(42, 191, 191, 0.15);
+}
+
+/* 카드 헤더 */
+.recommend-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.recommend-badge {
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #0B1215;
+  background: var(--accent-primary);
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.recommend-rank {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+}
+.recommend-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* 전략 설명 */
+.recommend-strategy {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
+
+/* 시스템 구성 */
+.recommend-systems {
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  background: var(--bg-base);
+  border-radius: 6px;
+}
+.recommend-sys-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 12px;
+}
+.recommend-sys-source {
+  font-weight: 600;
+  color: var(--accent-primary);
+  min-width: 50px;
+}
+.recommend-sys-type {
+  color: var(--text-secondary);
+  flex: 1;
+}
+.recommend-sys-cap {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--accent-yellow);
+}
+
+/* 예상 비율 */
+.recommend-ratio {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  background: rgba(42, 191, 191, 0.06);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.recommend-ratio-value {
+  font-size: 18px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--accent-primary);
+}
+
+/* 장점/단점 */
+.recommend-pros, .recommend-cons {
+  margin-bottom: 6px;
+}
+.recommend-pro-item {
+  font-size: 12px;
+  color: var(--color-pass);
+  padding: 2px 0;
+  line-height: 1.4;
+}
+.recommend-con-item {
+  font-size: 12px;
+  color: var(--color-fail);
+  padding: 2px 0;
+  line-height: 1.4;
+}
+
+/* 제약 분석 */
+.recommend-constraint-analysis {
+  font-size: 11px;
+  color: var(--text-secondary);
+  padding: 6px 10px;
+  background: var(--bg-base);
+  border-radius: 4px;
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
+
+/* 시나리오 적용 버튼 */
+.btn-apply-recommend {
+  width: 100%;
+  padding: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: transparent;
+  border: 1px solid var(--accent-primary);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-apply-recommend:hover {
+  background: rgba(42, 191, 191, 0.1);
+}
+
+/* 추천 섹션 카드 */
+.recommend-section {
+  padding-bottom: 16px;
+}
+.recommend-section .section-title {
+  margin-bottom: 14px;
+}

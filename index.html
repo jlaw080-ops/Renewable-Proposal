@@ -7,6 +7,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 
+  <!-- 카카오맵 SDK -->
+  <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=b18abed707b223b8986ff979a8cb8517&libraries=services&autoload=false"></script>
+
   <!-- 환경 설정 -->
   <script>
   var APP_CONFIG = {};
@@ -107,6 +110,10 @@
       <button class="left-tab" role="tab" aria-selected="false" aria-controls="panel-scenario" id="tab-scenario" data-panel="panel-scenario">
         <span class="left-tab-dot" style="background:var(--dot-scenario)"></span>
         시나리오
+      </button>
+      <button class="left-tab" role="tab" aria-selected="false" aria-controls="panel-recommend" id="tab-recommend" data-panel="panel-recommend">
+        <span class="left-tab-dot" style="background:var(--accent-yellow)"></span>
+        AI 추천
       </button>
     </nav>
 
@@ -233,6 +240,110 @@
       </div>
     </div>
   </div>
+    <!-- 탭 패널 3: AI 추천 -->
+    <div class="left-tab-panel" id="panel-recommend" role="tabpanel" aria-labelledby="tab-recommend">
+      <div class="section-card recommend-section">
+        <div class="section-title">AI 기반 에너지원 조합 추천</div>
+
+        <!-- 카카오맵 -->
+        <div class="field-group">
+          <label class="field-label">대지 위치 (지도 선택)</label>
+          <div class="map-search-row">
+            <input type="text" id="map-search-input" placeholder="주소 또는 장소명 검색" />
+            <button class="btn-secondary" id="btn-map-search" type="button">검색</button>
+          </div>
+          <div id="kakao-map-container" style="width:100%;height:220px;border-radius:8px;overflow:hidden;margin-top:8px;background:var(--bg-card);border:1px solid var(--border-default);"></div>
+          <div id="map-location-info" class="map-location-info" style="display:none;">
+            <div class="map-info-row"><span class="map-info-label">주소</span><span id="map-selected-address">-</span></div>
+            <div class="map-info-row"><span class="map-info-label">좌표</span><span id="map-selected-coords">-</span></div>
+            <div class="map-info-row"><span class="map-info-label">지역 매핑</span><span id="map-selected-region">-</span></div>
+          </div>
+        </div>
+
+        <hr class="result-divider" />
+
+        <!-- 제약조건 -->
+        <div class="section-subtitle">제약조건 설정</div>
+
+        <div class="constraint-group">
+          <label class="constraint-group-title">태양광</label>
+          <div class="field-row-2col">
+            <div class="field-group">
+              <label class="field-label-sm">옥상 가용면적 <span class="input-suffix">㎡</span></label>
+              <input type="number" id="constraint-solar-roof" placeholder="0" min="0" step="1" />
+            </div>
+            <div class="field-group">
+              <label class="field-label-sm">부지 가용면적 <span class="input-suffix">㎡</span></label>
+              <input type="number" id="constraint-solar-ground" placeholder="0" min="0" step="1" />
+            </div>
+          </div>
+        </div>
+
+        <div class="constraint-group">
+          <label class="constraint-group-title">지열</label>
+          <div class="field-group">
+            <label class="field-label-sm">부지 가용면적 <span class="input-suffix">㎡</span></label>
+            <input type="number" id="constraint-geo-area" placeholder="0" min="0" step="1" />
+          </div>
+          <div class="field-group" style="margin-top:8px;">
+            <label class="field-label-sm">인근 지하철 노선</label>
+            <div class="radio-row">
+              <label class="radio-label"><input type="radio" name="constraint-subway" id="constraint-subway-no" value="no" checked /> 없음</label>
+              <label class="radio-label"><input type="radio" name="constraint-subway" id="constraint-subway-yes" value="yes" /> 있음 <span class="constraint-warn">지열 제한</span></label>
+            </div>
+          </div>
+        </div>
+
+        <div class="constraint-group">
+          <label class="constraint-group-title">연료전지</label>
+          <div class="constraint-note">높은 보정계수 및 에너지생산량 / 높은 비용 - AI가 예산 제약과 연동하여 판단합니다.</div>
+        </div>
+
+        <div class="constraint-group">
+          <label class="constraint-group-title">예산</label>
+          <div class="field-row-2col">
+            <div class="field-group">
+              <label class="field-label-sm">최소 <span class="input-suffix">만원</span></label>
+              <input type="number" id="constraint-budget-min" placeholder="0" min="0" step="100" />
+            </div>
+            <div class="field-group">
+              <label class="field-label-sm">최대 <span class="input-suffix">만원</span></label>
+              <input type="number" id="constraint-budget-max" placeholder="무제한" min="0" step="100" />
+            </div>
+          </div>
+        </div>
+
+        <div class="constraint-group">
+          <label class="constraint-group-title">우선순위</label>
+          <div class="radio-row">
+            <label class="radio-label"><input type="radio" name="constraint-priority" value="cost" /> 비용 절감</label>
+            <label class="radio-label"><input type="radio" name="constraint-priority" value="efficiency" /> 효율 극대화</label>
+            <label class="radio-label"><input type="radio" name="constraint-priority" value="balanced" checked /> 균형</label>
+          </div>
+        </div>
+
+        <div class="constraint-group">
+          <label class="constraint-group-title">제외할 에너지원</label>
+          <div class="checkbox-row" id="exclude-sources-wrap">
+          </div>
+        </div>
+
+        <div class="constraint-group">
+          <label class="constraint-group-title">기타 제약사항</label>
+          <textarea id="constraint-custom" rows="2" placeholder="예: 소음 제한 지역, 문화재 인접, 특정 설비 선호 등"></textarea>
+        </div>
+
+        <button class="btn-primary btn-recommend-run" id="btn-run-recommend" type="button">AI 추천 실행</button>
+
+        <hr class="result-divider" />
+
+        <!-- 추천 결과 -->
+        <div id="recommend-result" class="recommend-result">
+          <span class="empty-state" style="padding:24px 16px;">[AI 추천 실행] 버튼을 클릭하면 최적 조합안 3개를 생성합니다.</span>
+        </div>
+      </div>
+    </div>
+
 
   <!-- 중앙 패널 -->
   <div class="center-panel">
@@ -508,6 +619,58 @@ function resetAllInputs() {
   renderAll();
 }
 
+
+// ── AI 추천 탭 초기화 ─────────────────────────────────────────
+function initRecommendTab() {
+  // 카카오맵 초기화
+  if (window.KakaoMapModule) {
+    window.KakaoMapModule.init('kakao-map-container');
+  }
+
+  // 지도 검색 버튼
+  var searchBtn = document.getElementById('btn-map-search');
+  var searchInput = document.getElementById('map-search-input');
+  if (searchBtn && searchInput) {
+    searchBtn.addEventListener('click', function() {
+      var keyword = searchInput.value.trim();
+      if (keyword && window.KakaoMapModule) {
+        window.KakaoMapModule.search(keyword);
+      }
+    });
+    searchInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        searchBtn.click();
+      }
+    });
+  }
+
+  // 제외 에너지원 체크박스 동적 생성
+  var excludeWrap = document.getElementById('exclude-sources-wrap');
+  if (excludeWrap) {
+    var sources = get에너지원목록();
+    sources.forEach(function(src) {
+      var label = document.createElement('label');
+      label.className = 'checkbox-label';
+      var cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.className = 'constraint-exclude-cb';
+      cb.value = src;
+      label.appendChild(cb);
+      label.appendChild(document.createTextNode(' ' + src));
+      excludeWrap.appendChild(label);
+    });
+  }
+
+  // AI 추천 실행 버튼
+  var runBtn = document.getElementById('btn-run-recommend');
+  if (runBtn) {
+    runBtn.addEventListener('click', function() {
+      if (window.RecommendEngine) window.RecommendEngine.run();
+    });
+  }
+}
+
 // ── 앱 초기화 ──────────────────────────────────────────────────
 function initApp() {
   var overlay = document.getElementById('loading-overlay');
@@ -541,6 +704,7 @@ function initApp() {
   initSection1();
   initSection2();
   initSection4();
+  initRecommendTab();
   renderAll();
 }
 
@@ -1616,6 +1780,9 @@ function collectReportData() {
 }
 </script>
 
+<script src="map/kakaoMap.js"></script>
+<script src="recommend/recommendPrompt.js"></script>
+<script src="recommend/recommendEngine.js"></script>
 <script src="report/reportBuilder.js"></script>
 <script src="report/reportViewer.js"></script>
 <script src="report/reportPdf.js"></script>
