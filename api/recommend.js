@@ -1,37 +1,36 @@
-// api/recommend.js — Vercel Edge Function for AI recommendation
+// api/recommend.js — Vercel Serverless Function for AI recommendation
+// Node.js runtime (60s timeout) + streaming
 
-export const config = { runtime: 'edge' };
+export const config = {
+  maxDuration: 60,
+  supportsResponseStreaming: true,
+};
 
-export default async function handler(req) {
+export default async function handler(req, res) {
+  // CORS
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
   if (req.method === 'OPTIONS') {
-    return new Response(null, {
-      status: 204,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-      },
-    });
+    res.status(204).end();
+    return;
   }
 
   if (req.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-      status: 405,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    res.status(405).json({ error: 'Method not allowed' });
+    return;
   }
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    return new Response(JSON.stringify({ error: 'API key not configured' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    res.status(500).json({ error: 'API key not configured' });
+    return;
   }
 
   try {
-    const body = await req.json();
-    const model = body.model || 'gemini-2.5-pro';
+    const body = req.body;
+    const model = body.model || 'gemini-2.0-flash';
     const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':streamGenerateContent?alt=sse&key=' + encodeURIComponent(apiKey);
 
     const geminiResp = await fetch(url, {
@@ -50,25 +49,31 @@ export default async function handler(req) {
 
     if (!geminiResp.ok) {
       const errText = await geminiResp.text();
-      return new Response(errText, {
-        status: geminiResp.status,
-        headers: { 'Content-Type': 'text/plain' },
-      });
+      res.status(geminiResp.status).send(errText);
+      return;
     }
 
-    return new Response(geminiResp.body, {
-      status: 200,
-      headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
-        'Access-Control-Allow-Origin': '*',
-      },
-    });
+    // SSE 스트림 전달
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
+    const reader = geminiResp.body.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const chunk = decoder.decode(value, { stream: true });
+      res.write(chunk);
+    }
+
+    res.end();
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    if (!res.headersSent) {
+      res.status(500).json({ error: err.message });
+    } else {
+      res.end();
+    }
   }
 }
