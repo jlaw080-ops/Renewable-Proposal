@@ -1,5 +1,6 @@
 // map/kakaoMap.js
-// 주소 검색 모듈 — OpenStreetMap Nominatim 기반 (카카오맵 대체)
+// 주소 검색 모듈 — 네이버 지도 Geocoding API 기반
+// Vercel 프록시(/api/geocode)를 통해 호출하여 API 키 노출 방지
 
 (function() {
   "use strict";
@@ -28,23 +29,23 @@
 
   var 강원영동 = ["강릉시","동해시","삼척시","속초시","양양군","고성군","태백시"];
 
-  function resolveRegionFromNominatim(nominatimResult) {
-    var addr = nominatimResult.address || {};
-    var state = addr.state || addr.province || '';
-    var county = addr.county || addr.city_district || addr.city || '';
+  // 네이버 Geocoding 응답에서 지역 매핑
+  function resolveRegionFromNaver(address) {
+    var sido = address.sido || '';
+    var sigugun = address.sigugun || '';
 
     // 강원 영동/영서 구분
-    if (state.indexOf('강원') >= 0) {
+    if (sido.indexOf('강원') >= 0) {
       for (var i = 0; i < 강원영동.length; i++) {
-        if (county.indexOf(강원영동[i]) >= 0) return '강원 영동';
+        if (sigugun.indexOf(강원영동[i]) >= 0) return '강원 영동';
       }
       return '강원 영서';
     }
 
     // 세종 포함 충남
-    if (state.indexOf('세종') >= 0) return '충청남도·세종특별자치시';
+    if (sido.indexOf('세종') >= 0) return '충청남도·세종특별자치시';
 
-    return 시도매핑[state] || null;
+    return 시도매핑[sido] || null;
   }
 
   // 지도 초기화 (컨테이너 숨김 처리)
@@ -63,39 +64,43 @@
     if (addrEl) addrEl.textContent = '검색 중...';
     if (infoEl) infoEl.style.display = 'block';
 
-    var url = 'https://nominatim.openstreetmap.org/search?q='
-      + encodeURIComponent(keyword)
-      + '&format=json&countrycodes=kr&limit=1&accept-language=ko&addressdetails=1';
+    // Vercel 배포 환경: /api/geocode 프록시 사용
+    // 로컬 file:// 환경: 직접 호출 불가 → Live Server 필요
+    var url = '/api/geocode?query=' + encodeURIComponent(keyword);
 
     fetch(url, { headers: { 'Accept': 'application/json' } })
       .then(function(res) { return res.json(); })
       .then(function(data) {
-        if (!data || data.length === 0) {
+        if (!data || !data.addresses || data.addresses.length === 0) {
           alert('검색 결과가 없습니다: ' + keyword);
           if (infoEl) infoEl.style.display = 'none';
           return;
         }
 
-        var result = data[0];
-        var lat = parseFloat(result.lat);
-        var lng = parseFloat(result.lon);
+        var result = data.addresses[0];
+        var lat = parseFloat(result.y);
+        var lng = parseFloat(result.x);
 
-        // 한국어 주소 조합
-        var addr = result.address || {};
-        var parts = [];
-        if (addr.state) parts.push(addr.state);
-        if (addr.county || addr.city_district) parts.push(addr.county || addr.city_district);
-        if (addr.suburb || addr.neighbourhood) parts.push(addr.suburb || addr.neighbourhood);
-        var fullAddress = parts.length > 0 ? parts.join(' ') : result.display_name;
+        // 주소 조합
+        var fullAddress = result.roadAddress || result.jibunAddress || keyword;
 
-        var region = resolveRegionFromNominatim(result);
+        // 지역 매핑
+        var addrDetail = result.addressElements || [];
+        var addrObj = {};
+        for (var i = 0; i < addrDetail.length; i++) {
+          var el = addrDetail[i];
+          var types = el.types || [];
+          if (types.indexOf('SIDO') >= 0) addrObj.sido = el.longName;
+          if (types.indexOf('SIGUGUN') >= 0) addrObj.sigugun = el.longName;
+        }
+        var region = resolveRegionFromNaver(addrObj);
 
         selectedLocation = { lat: lat, lng: lng, address: fullAddress, region: region };
         updateLocationUI();
         syncToMainForm();
       })
       .catch(function(err) {
-        console.error('[Map] Nominatim 검색 오류:', err);
+        console.error('[Map] 네이버 Geocoding 검색 오류:', err);
         alert('주소 검색 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
         if (infoEl) infoEl.style.display = 'none';
       });
