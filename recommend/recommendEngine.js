@@ -71,8 +71,13 @@
           if (raw === "[DONE]") continue;
           try {
             var d = JSON.parse(raw);
-            var t = d.candidates && d.candidates[0] && d.candidates[0].content && d.candidates[0].content.parts && d.candidates[0].content.parts[0] && d.candidates[0].content.parts[0].text;
-            if (t) accumulated += t;
+            var parts = d.candidates && d.candidates[0] && d.candidates[0].content && d.candidates[0].content.parts;
+            if (parts) {
+              parts.forEach(function(part) {
+                // thought: true 부분(thinking 토큰)은 제외하고 실제 응답 텍스트만 누적
+                if (!part.thought && part.text) accumulated += part.text;
+              });
+            }
           } catch(e) {}
         }
       }
