@@ -50,7 +50,12 @@
         body: JSON.stringify({
           system_instruction: { parts: [{ text: window.RecommendPrompt.SYSTEM_PROMPT }] },
           contents: [{ role: "user", parts: [{ text: userMessage }] }],
-          generationConfig: { maxOutputTokens: 4096, temperature: 0.7, responseMimeType: "application/json" }
+          generationConfig: {
+            maxOutputTokens: 8192,
+            temperature: 0.7,
+            responseMimeType: "application/json",
+            thinkingConfig: { thinkingBudget: 0 }
+          }
         })
       });
       if (!resp.ok) { var errText = await resp.text(); throw new Error("API " + resp.status + ": " + errText); }
@@ -85,7 +90,15 @@
       var bs = jsonStr.indexOf("{");
       var be = jsonStr.lastIndexOf("}");
       if (bs >= 0 && be > bs) jsonStr = jsonStr.substring(bs, be + 1);
-      var result = JSON.parse(jsonStr);
+      var result;
+      try {
+        result = JSON.parse(jsonStr);
+      } catch(parseErr) {
+        var posMatch = parseErr.message.match(/position (\d+)/);
+        var pos = posMatch ? parseInt(posMatch[1]) : 0;
+        var ctx = jsonStr.substring(Math.max(0, pos - 60), pos + 60);
+        throw new Error('JSON 파싱 오류 (pos ' + pos + '): ...' + ctx + '...');
+      }
       window.LAST_RECOMMEND_RESULT = result;
       renderRecommendations(result);
     } catch(err) {
