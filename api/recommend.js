@@ -30,7 +30,7 @@ export default async function handler(req, res) {
 
   try {
     const body = req.body;
-    const model = body.model || 'gemini-2.0-flash';
+    const model = body.model || 'gemini-2.5-flash';
     const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':streamGenerateContent?alt=sse&key=' + encodeURIComponent(apiKey);
 
     const geminiResp = await fetch(url, {
