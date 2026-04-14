@@ -6,8 +6,11 @@
     return {
       solarRoofArea: parseFloat(document.getElementById("constraint-solar-roof").value) || 0,
       solarGroundArea: parseFloat(document.getElementById("constraint-solar-ground").value) || 0,
+      solarNote: (document.getElementById("constraint-solar-note").value || "").trim(),
       geothermalArea: parseFloat(document.getElementById("constraint-geo-area").value) || 0,
       nearSubway: document.getElementById("constraint-subway-yes").checked,
+      geothermalNote: (document.getElementById("constraint-geo-note").value || "").trim(),
+      fuelCellNote: (document.getElementById("constraint-fuel-note").value || "").trim(),
       budgetMin: parseFloat(document.getElementById("constraint-budget-min").value) || 0,
       budgetMax: parseFloat(document.getElementById("constraint-budget-max").value) || 0,
       priority: document.querySelector("input[name=constraint-priority]:checked")

@@ -1471,8 +1471,8 @@ button, .alt-tab, .cover-image-drop, select,
   accent-color: var(--accent-primary);
 }
 
-/* 제약조건 textarea */
-#constraint-custom {
+/* 제약조건 textarea (모달 내부 공용) */
+.constraint-textarea {
   width: 100%;
   padding: 8px 10px;
   border: 1px solid var(--border-default);
@@ -1482,6 +1482,80 @@ button, .alt-tab, .cover-image-drop, select,
   font-size: 12px;
   font-family: inherit;
   resize: vertical;
+  box-sizing: border-box;
+}
+.constraint-textarea:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+}
+
+/* 제약조건 모달 */
+.constraint-modal-box {
+  width: 560px;
+  max-width: 92vw;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+}
+.constraint-modal-body {
+  overflow-y: auto;
+  flex: 1;
+  padding-right: 4px;
+  margin-bottom: 16px;
+}
+.constraint-modal-body::-webkit-scrollbar { width: 4px; }
+.constraint-modal-body::-webkit-scrollbar-thumb { background: var(--border-default); border-radius: 2px; }
+.constraint-modal-divider {
+  height: 1px;
+  background: var(--border-default);
+  margin: 12px 0;
+  opacity: 0.5;
+}
+
+/* 제약조건 요약 행 */
+.constraint-summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.constraint-summary-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.constraint-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+.constraint-badge-empty {
+  background: rgba(255,255,255,0.07);
+  color: var(--text-hint);
+}
+.constraint-badge-set {
+  background: rgba(var(--accent-primary-rgb, 229,168,75), 0.15);
+  color: var(--accent-primary);
+  border: 1px solid rgba(var(--accent-primary-rgb, 229,168,75), 0.3);
+}
+.constraint-summary-text {
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 10px;
+  padding: 6px 10px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 6px;
+  word-break: break-all;
+}
+.btn-constraint-open {
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-size: 12px;
+  padding: 6px 12px;
 }
 
 /* AI 추천 실행 버튼 */

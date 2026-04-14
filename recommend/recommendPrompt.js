@@ -96,8 +96,11 @@
     lines.push('## 제약조건');
     if (constraints.solarRoofArea > 0) lines.push('- 태양광 옥상 가용면적: ' + constraints.solarRoofArea + ' ㎡ (약 ' + Math.floor(constraints.solarRoofArea / 5) + 'kW 설치 가능)');
     if (constraints.solarGroundArea > 0) lines.push('- 태양광 부지 가용면적: ' + constraints.solarGroundArea + ' ㎡ (약 ' + Math.floor(constraints.solarGroundArea / 5) + 'kW 설치 가능)');
+    if (constraints.solarNote) lines.push('- 태양광 추가 조건: ' + constraints.solarNote);
     if (constraints.geothermalArea > 0) lines.push('- 지열 가용면적: ' + constraints.geothermalArea + ' ㎡ (약 ' + Math.floor(constraints.geothermalArea / 50) + 'RT 설치 가능)');
     if (constraints.nearSubway) lines.push('- 인근 지하철 노선 존재: 지열 시스템 설치 제한 또는 불가');
+    if (constraints.geothermalNote) lines.push('- 지열 추가 조건: ' + constraints.geothermalNote);
+    if (constraints.fuelCellNote) lines.push('- 연료전지 추가 조건: ' + constraints.fuelCellNote);
     if (constraints.budgetMin > 0 || constraints.budgetMax > 0) lines.push('- 예산 범위: ' + (constraints.budgetMin || 0) + ' ~ ' + (constraints.budgetMax || '무제한') + ' 만원');
     if (constraints.excludeSources && constraints.excludeSources.length > 0) lines.push('- 제외 에너지원: ' + constraints.excludeSources.join(', '));
     if (constraints.priority) {
