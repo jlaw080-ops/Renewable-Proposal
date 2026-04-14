@@ -1083,7 +1083,7 @@ function calcOutput2(input1, output1) {
 
     var 생산량합계 = systems.reduce(function(sum, s) { return sum + s.신재생에너지생산량; }, 0);
     var 총에너지   = output1.총예상에너지사용량;
-    var 비율       = 총에너지 > 0 ? (생산량합계 / 총에너지) * 100 : 0;
+    var 비율       = 총에너지 > 0 ? Math.round((생산량합계 / 총에너지) * 1000) / 10 : 0;
     var 의무비율값 = get의무비율(input1.사업형태, input1.대지위치, 주거구분, input1.카테고리, input1.사업연도);
     var 만족       = 의무비율값 !== null ? (비율 >= 의무비율값 ? 'Yes' : 'No') : '해당없음';
 
