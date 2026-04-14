@@ -8,7 +8,6 @@
   <link rel="stylesheet" href="style.css" />
 
   <!-- 카카오맵 SDK -->
-  <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=b18abed707b223b8986ff979a8cb8517&libraries=services&autoload=false"></script>
 
   <!-- 환경 설정 -->
   <script>
@@ -364,12 +363,12 @@
 
         <!-- 카카오맵 -->
         <div class="field-group">
-          <label class="field-label">대지 위치 (지도 선택)</label>
+          <label class="field-label">대지 위치 (주소 검색)</label>
           <div class="map-search-row">
-            <input type="text" id="map-search-input" placeholder="주소 또는 장소명 검색" />
+            <input type="text" id="map-search-input" placeholder="주소 검색 (예: 서울시 강남구 삼성동)" />
             <button class="btn-secondary" id="btn-map-search" type="button">검색</button>
           </div>
-          <div id="kakao-map-container" style="width:100%;height:220px;border-radius:8px;overflow:hidden;margin-top:8px;background:var(--bg-card);border:1px solid var(--border-default);"></div>
+          <div id="kakao-map-container"></div>
           <div id="map-location-info" class="map-location-info" style="display:none;">
             <div class="map-info-row"><span class="map-info-label">주소</span><span id="map-selected-address">-</span></div>
             <div class="map-info-row"><span class="map-info-label">좌표</span><span id="map-selected-coords">-</span></div>
