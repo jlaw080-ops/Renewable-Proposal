@@ -1,6 +1,6 @@
 // map/kakaoMap.js
-// 주소 검색 모듈 — 네이버 지도 Geocoding API 기반
-// Vercel 프록시(/api/geocode)를 통해 호출하여 API 키 노출 방지
+// 주소 검색 모듈 — 네이버 지도 Dynamic Map SDK (Geocoder 서브모듈)
+// Client ID는 index.html의 SDK 스크립트 태그에 포함, Web 서비스 URL로 접근 제한
 
 (function() {
   "use strict";
@@ -8,7 +8,7 @@
   var selectedLocation = null;
 
   var 시도매핑 = {
-    "서울": "서울특별시", "서울특별시": "서울특별시",
+    "서울": "서울특별시", "서울특별시": "서울특별시", "서울시": "서울특별시",
     "부산": "부산광역시", "부산광역시": "부산광역시",
     "대구": "대구광역시", "대구광역시": "대구광역시",
     "인천": "인천광역시", "인천광역시": "인천광역시",
@@ -30,14 +30,21 @@
   var 강원영동 = ["강릉시","동해시","삼척시","속초시","양양군","고성군","태백시"];
 
   // 네이버 Geocoding 응답에서 지역 매핑
-  function resolveRegionFromNaver(address) {
-    var sido = address.sido || '';
-    var sigugun = address.sigugun || '';
+  function resolveRegionFromNaver(addrElements) {
+    var sido = '';
+    var sigugun = '';
+
+    for (var i = 0; i < addrElements.length; i++) {
+      var el = addrElements[i];
+      var types = el.types || [];
+      if (types.indexOf('SIDO') >= 0) sido = el.longName;
+      if (types.indexOf('SIGUGUN') >= 0) sigugun = el.longName;
+    }
 
     // 강원 영동/영서 구분
     if (sido.indexOf('강원') >= 0) {
-      for (var i = 0; i < 강원영동.length; i++) {
-        if (sigugun.indexOf(강원영동[i]) >= 0) return '강원 영동';
+      for (var j = 0; j < 강원영동.length; j++) {
+        if (sigugun.indexOf(강원영동[j]) >= 0) return '강원 영동';
       }
       return '강원 영서';
     }
@@ -64,46 +71,37 @@
     if (addrEl) addrEl.textContent = '검색 중...';
     if (infoEl) infoEl.style.display = 'block';
 
-    // Vercel 배포 환경: /api/geocode 프록시 사용
-    // 로컬 file:// 환경: 직접 호출 불가 → Live Server 필요
-    var url = '/api/geocode?query=' + encodeURIComponent(keyword);
+    // 네이버 Maps SDK가 로드되지 않은 경우
+    if (typeof naver === 'undefined' || !naver.maps || !naver.maps.Service) {
+      alert('네이버 지도 SDK가 로드되지 않았습니다. 페이지를 새로고침해 주세요.');
+      if (infoEl) infoEl.style.display = 'none';
+      return;
+    }
 
-    fetch(url, { headers: { 'Accept': 'application/json' } })
-      .then(function(res) { return res.json(); })
-      .then(function(data) {
-        if (!data || !data.addresses || data.addresses.length === 0) {
-          alert('검색 결과가 없습니다: ' + keyword);
-          if (infoEl) infoEl.style.display = 'none';
-          return;
-        }
-
-        var result = data.addresses[0];
-        var lat = parseFloat(result.y);
-        var lng = parseFloat(result.x);
-
-        // 주소 조합
-        var fullAddress = result.roadAddress || result.jibunAddress || keyword;
-
-        // 지역 매핑
-        var addrDetail = result.addressElements || [];
-        var addrObj = {};
-        for (var i = 0; i < addrDetail.length; i++) {
-          var el = addrDetail[i];
-          var types = el.types || [];
-          if (types.indexOf('SIDO') >= 0) addrObj.sido = el.longName;
-          if (types.indexOf('SIGUGUN') >= 0) addrObj.sigugun = el.longName;
-        }
-        var region = resolveRegionFromNaver(addrObj);
-
-        selectedLocation = { lat: lat, lng: lng, address: fullAddress, region: region };
-        updateLocationUI();
-        syncToMainForm();
-      })
-      .catch(function(err) {
-        console.error('[Map] 네이버 Geocoding 검색 오류:', err);
-        alert('주소 검색 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
+    naver.maps.Service.geocode({ query: keyword }, function(status, response) {
+      if (status !== naver.maps.Service.Status.OK) {
+        alert('검색 결과가 없습니다: ' + keyword);
         if (infoEl) infoEl.style.display = 'none';
-      });
+        return;
+      }
+
+      var result = response.v2;
+      if (!result.addresses || result.addresses.length === 0) {
+        alert('검색 결과가 없습니다: ' + keyword);
+        if (infoEl) infoEl.style.display = 'none';
+        return;
+      }
+
+      var addr = result.addresses[0];
+      var lat = parseFloat(addr.y);
+      var lng = parseFloat(addr.x);
+      var fullAddress = addr.roadAddress || addr.jibunAddress || keyword;
+      var region = resolveRegionFromNaver(addr.addressElements || []);
+
+      selectedLocation = { lat: lat, lng: lng, address: fullAddress, region: region };
+      updateLocationUI();
+      syncToMainForm();
+    });
   }
 
   function updateLocationUI() {
