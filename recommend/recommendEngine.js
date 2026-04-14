@@ -25,6 +25,49 @@
     });
     return excluded;
   }
+
+  // Output_2 역산 공식으로 각 에너지원의 적용용량 계산
+  // 설치비율(%) = Σ(적용용량 × 단위에너지생산량 × 원별보정계수) / 총에너지사용량 × 100
+  // → 역산: 적용용량_i = (총필요생산량 × allocation_pct_i/100) / (단위에너지생산량_i × 원별보정계수_i)
+  function backCalculateCapacities(result, input1, output1, 의무비율) {
+    var 총에너지 = output1.총예상에너지사용량 || 0;
+    var 총필요생산량 = 총에너지 * 의무비율 / 100;
+
+    (result.recommendations || []).forEach(function(rec) {
+      var sources = rec.sources || [];
+      // allocation_pct 합계 정규화
+      var totalAlloc = sources.reduce(function(sum, s) { return sum + (s.allocation_pct || 0); }, 0) || 100;
+
+      rec.systems = sources.map(function(src) {
+        var coeff = typeof get신재생에너지계수 === 'function'
+          ? get신재생에너지계수(src.에너지원, src.형식)
+          : null;
+        var 단위 = coeff ? coeff.단위에너지생산량 : 0;
+        var 보정 = coeff ? coeff.원별보정계수 : 0;
+        var weight = (src.allocation_pct || 0) / totalAlloc;
+        var 이소스필요생산량 = 총필요생산량 * weight;
+        var 적용용량 = (단위 * 보정 > 0)
+          ? Math.round(이소스필요생산량 / (단위 * 보정) * 10) / 10
+          : 0;
+        return {
+          에너지원: src.에너지원,
+          형식: src.형식,
+          단위에너지생산량: 단위,
+          원별보정계수: 보정,
+          적용용량: 적용용량
+        };
+      });
+
+      // Output_2 공식으로 실제 설치비율 계산 (검증용)
+      var 실제생산량 = rec.systems.reduce(function(sum, s) {
+        return sum + s.적용용량 * s.단위에너지생산량 * s.원별보정계수;
+      }, 0);
+      rec.estimated_ratio = 총에너지 > 0
+        ? Math.round(실제생산량 / 총에너지 * 1000) / 10
+        : 0;
+    });
+  }
+
   async function runRecommendation() {
     var input1 = collectInput1();
     if (!input1.용도별연면적목록.length) {
@@ -36,6 +79,17 @@
       alert("예상에너지사용량이 0입니다.");
       return;
     }
+
+    // 의무비율 사전 계산 (역산에 사용)
+    var 주거구분 = (input1.용도별연면적목록 || []).some(function(x) { return x.용도 !== '공동주택'; }) ? '비주거' : '주거';
+    var 의무비율 = typeof get의무비율 === 'function'
+      ? get의무비율(input1.사업형태, input1.대지위치, 주거구분, input1.카테고리, input1.사업연도)
+      : null;
+    if (!의무비율 || 의무비율 <= 0) {
+      alert("의무설치비율을 확인할 수 없습니다.\n사업형태, 대지위치, 사업연도를 확인해주세요.");
+      return;
+    }
+
     var constraints = collectConstraints();
     var userMessage = window.RecommendPrompt.buildUserMessage(input1, output1, constraints);
     var btn = document.getElementById("btn-run-recommend");
@@ -99,8 +153,12 @@
         var ctx = jsonStr.substring(Math.max(0, pos - 60), pos + 60);
         throw new Error('JSON 파싱 오류 (pos ' + pos + '): ...' + ctx + '...');
       }
+
+      // Output_2 역산 공식으로 용량 계산 (의무비율 기준)
+      backCalculateCapacities(result, input1, output1, 의무비율);
+
       window.LAST_RECOMMEND_RESULT = result;
-      renderRecommendations(result);
+      renderRecommendations(result, 의무비율);
     } catch(err) {
       resultArea.innerHTML = '<div class="recommend-error">오류: ' + escapeHtml(err.message) + '</div>';
     } finally {
@@ -109,7 +167,7 @@
     }
   }
 
-  function renderRecommendations(result) {
+  function renderRecommendations(result, 의무비율) {
     var container = document.getElementById("recommend-result");
     if (!result || !result.recommendations || !result.recommendations.length) {
       container.innerHTML = '<div class="recommend-error">추천 결과를 생성하지 못했습니다.</div>';
@@ -130,10 +188,17 @@
       if (rec.strategy) html += '<div class="recommend-strategy">' + escapeHtml(rec.strategy) + '</div>';
       html += '<div class="recommend-systems">';
       (rec.systems || []).forEach(function(sys) {
-        html += '<div class="recommend-sys-row"><span class="recommend-sys-source">' + escapeHtml(sys.에너지원) + '</span><span class="recommend-sys-type">' + escapeHtml(sys.형식) + '</span><span class="recommend-sys-cap">' + sys.적용용량 + ' kW</span></div>';
+        var src = (rec.sources || []).find(function(s) { return s.에너지원 === sys.에너지원 && s.형식 === sys.형식; });
+        var allocLabel = src ? ' (' + src.allocation_pct + '%)' : '';
+        html += '<div class="recommend-sys-row">'
+          + '<span class="recommend-sys-source">' + escapeHtml(sys.에너지원) + '</span>'
+          + '<span class="recommend-sys-type">' + escapeHtml(sys.형식) + '</span>'
+          + '<span class="recommend-sys-cap">' + sys.적용용량 + ' kW' + escapeHtml(allocLabel) + '</span>'
+          + '</div>';
       });
       html += '</div>';
-      html += '<div class="recommend-ratio"><span>예상 설치비율</span><span class="recommend-ratio-value">' + (rec.estimated_ratio || 0).toFixed(1) + '%</span></div>';
+      var ratioLabel = 의무비율 ? ' (의무비율 ' + 의무비율 + '%)' : '';
+      html += '<div class="recommend-ratio"><span>예상 설치비율' + escapeHtml(ratioLabel) + '</span><span class="recommend-ratio-value">' + (rec.estimated_ratio || 0).toFixed(1) + '%</span></div>';
       if (rec.pros && rec.pros.length) {
         html += '<div class="recommend-pros">';
         rec.pros.forEach(function(p) { html += '<div class="recommend-pro-item">&#10003; ' + escapeHtml(p) + '</div>'; });
