@@ -11,15 +11,8 @@ function showReportModal(data) {
   _currentReportHTML = html;
   _currentReportData = data;
 
-  // iframe에 srcdoc으로 주입 (CORS 없이 로컬 렌더링)
   var iframe = document.getElementById('report-iframe');
-  // reportStyle.css 경로를 절대 경로로 교정 (file:// 환경 대응)
-  var basePath = location.href.replace(/[^/\\]*$/, '');
-  var fixedHtml = html.replace(
-    'href="report/reportStyle.css"',
-    'href="' + basePath + 'report/reportStyle.css"'
-  );
-  iframe.srcdoc = fixedHtml;
+  iframe.srcdoc = html;
 
   var modal = document.getElementById('report-modal');
   modal.style.display = 'flex';

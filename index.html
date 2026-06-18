@@ -29,6 +29,8 @@
   <script src="data/지역계수라이브러리.js"></script>
   <script src="data/건축물종류별단위에너지사용량라이브러리.js"></script>
   <script src="data/의무비율라이브러리.js"></script>
+  <script src="data/설비최적화라이브러리.js"></script>
+  <script src="data/전력원단위라이브러리.js"></script>
 </head>
 <body>
 
@@ -231,6 +233,10 @@
         <span class="left-tab-dot" style="background:var(--accent-yellow)"></span>
         AI 추천
       </button>
+      <button class="left-tab" role="tab" aria-selected="false" aria-controls="panel-optimize" id="tab-optimize" data-panel="panel-optimize">
+        <span class="left-tab-dot" style="background:var(--dot-scenario,#10b981)"></span>
+        설비조합 최적화
+      </button>
     </nav>
 
     <!-- 탭 패널 1: 사업정보 -->
@@ -398,6 +404,57 @@
         </div>
       </div>
     </div>
+
+    <!-- 탭 패널: 설비조합 최적화 -->
+    <div class="left-tab-panel" id="panel-optimize" role="tabpanel" aria-labelledby="tab-optimize">
+      <div class="section-card">
+        <div class="section-title">설비조합 최적화 시뮬레이션</div>
+        <p class="opt-desc">목표값(의무비율·전력생산비율)을 충족하는 신재생 설비 최적 조합을 자동 탐색하여 순위화합니다.</p>
+
+        <div class="section-subtitle">법적규제 기준</div>
+        <div class="opt-grid2">
+          <label class="opt-field">연간 에너지소요량 (kWh/yr)
+            <input type="number" id="opt-energy-demand" placeholder="계산결과 자동" min="0" />
+          </label>
+          <label class="opt-field">의무설치비율 (%)
+            <input type="number" id="opt-req-ratio" placeholder="계산결과 자동" min="0" step="0.1" />
+          </label>
+        </div>
+
+        <div class="section-subtitle">전력생산비율 (선택)</div>
+        <div class="opt-grid2">
+          <label class="opt-field">건물유형
+            <select id="opt-building-type"></select>
+          </label>
+          <label class="opt-field">연면적 (㎡)
+            <input type="number" id="opt-building-area" placeholder="전력소비량 산정용" min="0" />
+          </label>
+          <label class="opt-field">전력생산비율 기준 (%)
+            <input type="number" id="opt-power-ratio" placeholder="미입력 시 제약 제외" min="0" step="0.1" />
+          </label>
+          <div class="opt-field opt-readonly">예상 전력소비량
+            <span id="opt-power-demand">—</span>
+          </div>
+        </div>
+
+        <div class="section-subtitle">가용 면적 (㎡, 미입력=무제한)</div>
+        <div class="opt-grid2">
+          <label class="opt-field">옥상 (수평PV)<input type="number" id="opt-area-roof" min="0" placeholder="무제한" /></label>
+          <label class="opt-field">외피 (수직PV·BIPV)<input type="number" id="opt-area-facade" min="0" placeholder="무제한" /></label>
+          <label class="opt-field">대지 (지열)<input type="number" id="opt-area-land" min="0" placeholder="무제한" /></label>
+          <label class="opt-field">기계실 (연료전지)<input type="number" id="opt-area-machine" min="0" placeholder="무제한" /></label>
+        </div>
+
+        <div class="section-subtitle">사용자 요구도 (가중치)</div>
+        <div id="opt-priority-rows" class="opt-priority"></div>
+
+        <button class="btn-primary btn-recommend-run" id="btn-run-optimize" type="button">최적화 실행</button>
+
+        <div id="optimize-result" class="opt-result">
+          <span class="empty-state" style="padding:24px 16px;">[최적화 실행]을 클릭하면 목표값을 충족하는 설비조합을 순위별로 제시합니다.</span>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- 중앙 패널 -->
@@ -507,7 +564,6 @@
 <script>
 /* ================================================================
    신재생에너지 의무설치비율 검토 도구 — 메인 스크립트
-   (file:// 호환: ES module 미사용, window 전역변수 방식)
 ================================================================ */
 
 // ── 대지위치 매핑 ──────────────────────────────────────────────
@@ -521,6 +577,7 @@ var 대지위치매핑 = {
 };
 
 function normalize대지위치(v) { return 대지위치매핑[v] || v; }
+window.normalize대지위치 = normalize대지위치;
 
 function get지역계수(대지위치) {
   var lib = window.LIB_지역계수;
@@ -677,16 +734,16 @@ function resetAllInputs() {
 
 // ── AI 추천 탭 초기화 ─────────────────────────────────────────
 function initRecommendTab() {
-  // 카카오맵은 탭 클릭 시 지연 초기화 (컨테이너가 보여야 정상 작동)
+  // 주소검색 모듈은 탭 클릭 시 지연 초기화 (컨테이너가 보여야 정상 작동)
   var mapInited = false;
   var recommendTab = document.getElementById('tab-recommend');
   if (recommendTab) {
     recommendTab.addEventListener('click', function() {
-      if (!mapInited && window.KakaoMapModule) {
-        setTimeout(function() { window.KakaoMapModule.init('kakao-map-container'); }, 150);
+      if (!mapInited && window.AddressSearchModule) {
+        setTimeout(function() { window.AddressSearchModule.init('kakao-map-container'); }, 150);
         mapInited = true;
-      } else if (window.KakaoMapModule) {
-        setTimeout(function() { window.KakaoMapModule.init('kakao-map-container'); }, 50);
+      } else if (window.AddressSearchModule) {
+        setTimeout(function() { window.AddressSearchModule.init('kakao-map-container'); }, 50);
       }
     });
   }
@@ -697,8 +754,8 @@ function initRecommendTab() {
   if (searchBtn && searchInput) {
     searchBtn.addEventListener('click', function() {
       var keyword = searchInput.value.trim();
-      if (keyword && window.KakaoMapModule) {
-        window.KakaoMapModule.search(keyword);
+      if (keyword && window.AddressSearchModule) {
+        window.AddressSearchModule.search(keyword);
       }
     });
     searchInput.addEventListener('keypress', function(e) {
@@ -863,6 +920,7 @@ function initApp() {
   initSection2();
   initSection4();
   initRecommendTab();
+  if (window.OptimizeUI) window.OptimizeUI.init();
   renderAll();
 }
 
@@ -1418,11 +1476,7 @@ function buildSysTableHtml(systems) {
 }
 
 // ── 프로젝트 다중 저장/불러오기 ────────────────────────────────
-var _autoSaveTimer = null;
-function autoSaveState() {
-  clearTimeout(_autoSaveTimer);
-  _autoSaveTimer = setTimeout(function() { /* 자동저장은 하지 않음 */ }, 300);
-}
+function autoSaveState() {}
 
 function getProjects() {
   try { var s = localStorage.getItem('projects_v2'); if (s) return JSON.parse(s); } catch(e) {}
@@ -1438,14 +1492,15 @@ function saveFormState() {
   }
   try {
     var input1 = collectInput1();
-    var reviewHTML = document.getElementById('review-output') ? document.getElementById('review-output').innerHTML : '';
+    var reviewEl = document.getElementById('review-output');
     var state = {
       name: projectName,
       savedAt: new Date().toLocaleString('ko-KR'),
       input1: input1,
       scenarios: JSON.parse(JSON.stringify(scenarios)),
       activeAltIdx: activeAltIdx,
-      reviewHTML: reviewHTML,
+      reviewHTML: reviewEl ? reviewEl.innerHTML : '',
+      reviewText: reviewEl ? reviewEl.innerText : '',
       coverImage: window.COVER_IMAGE_BASE64 || null,
       projectName: projectName
     };
@@ -1503,9 +1558,14 @@ function applyProjectState(state) {
     activeAltIdx = state.activeAltIdx || 0;
   }
 
-  // 검토결과 복원
-  if (state.reviewHTML && document.getElementById('review-output')) {
-    document.getElementById('review-output').innerHTML = state.reviewHTML;
+  // 검토결과 복원 (reviewText 우선 — XSS 방지, reviewHTML은 구버전 저장 호환)
+  if (document.getElementById('review-output')) {
+    var reviewRestoreEl = document.getElementById('review-output');
+    if (state.reviewText) {
+      reviewRestoreEl.innerHTML = escapeHtml(state.reviewText).replace(/\n/g, '<br>');
+    } else if (state.reviewHTML) {
+      reviewRestoreEl.innerHTML = state.reviewHTML;
+    }
   }
 
   // 표지 이미지 복원
@@ -1931,6 +1991,7 @@ function collectReportData() {
     output1:     window.LAST_OUTPUT1,
     output2:     window.LAST_OUTPUT2,
     reviewHTML:  document.getElementById('review-output') ? document.getElementById('review-output').innerHTML : '',
+    reviewText:  document.getElementById('review-output') ? document.getElementById('review-output').innerText : '',
     projectName: document.getElementById('input-project-name') ? document.getElementById('input-project-name').value : '',
     coverImage:  window.COVER_IMAGE_BASE64 || null,
     logoImage:   window.LOGO_IMAGE_BASE64  || null,
@@ -1938,9 +1999,17 @@ function collectReportData() {
 }
 </script>
 
-<script src="map/kakaoMap.js"></script>
+<script src="map/addressSearch.js"></script>
 <script src="recommend/recommendPrompt.js"></script>
 <script src="recommend/recommendEngine.js"></script>
+<!-- 설비조합 최적화 엔진 (P2~P4) -->
+<script src="vendor/javascript-lp-solver.js"></script>
+<script src="optimize/targetCalculator.js"></script>
+<script src="optimize/powerEstimator.js"></script>
+<script src="optimize/optimizer.js"></script>
+<script src="optimize/optimizeExplain.js"></script>
+<script src="optimize/optimizeReport.js"></script>
+<script src="optimize/optimizeUI.js"></script>
 <script src="report/reportBuilder.js"></script>
 <script src="report/reportViewer.js"></script>
 <script src="report/reportPdf.js"></script>

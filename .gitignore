@@ -1,2 +1,8 @@
 # API 키 등 민감 정보
 config.js
+
+# 테스트/도구 아티팩트
+.playwright-mcp/
+
+# 편집 임시파일
+*.tmp.*

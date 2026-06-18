@@ -1,9 +1,6 @@
 /**
  * review/reviewGenerator.js
- * Claude API SSE 스트리밍 검토결과 생성
- *
- * ※ file:// 직접 실행 환경에서는 index.html에 인라인으로 동일 로직이 내장되어 있습니다.
- *   이 파일은 로컬 서버(예: VS Code Live Server) 환경에서 ES 모듈로 import하여 사용합니다.
+ * Gemini API SSE 스트리밍 검토결과 생성
  *
  * 사용 예:
  *   import { generateReview, buildUserMessage } from './review/reviewGenerator.js';
@@ -17,7 +14,7 @@
 const MODEL   = 'gemini-2.5-pro';
 
 /**
- * 계산 데이터를 Claude에게 전달할 사용자 메시지로 변환합니다.
+ * 계산 데이터를 Gemini에게 전달할 사용자 메시지로 변환합니다.
  * @param {{ input1: object, output1: object, output2: Array }} calcData
  * @returns {string}
  */
@@ -75,7 +72,7 @@ export function buildUserMessage(calcData) {
 }
 
 /**
- * Claude API SSE 스트리밍으로 검토결과를 생성합니다.
+ * Gemini API SSE 스트리밍으로 검토결과를 생성합니다.
  *
  * @param {string} systemPrompt  - 시스템 프롬프트 (프롬프트 관리에서 선택)
  * @param {{ input1, output1, output2 }} calcData  - 계산 결과

@@ -1,5 +1,6 @@
 // api/recommend.js — Vercel Serverless Function for AI recommendation
-// Node.js runtime (60s timeout) + streaming
+// Node.js runtime 사용 이유: Gemini 대형 응답 스트리밍에 최대 60s가 필요하며
+// Edge Runtime의 30s 제한을 초과하므로 Node.js runtime을 명시적으로 선택함
 
 export const config = {
   maxDuration: 60,
