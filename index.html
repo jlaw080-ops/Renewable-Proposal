@@ -437,13 +437,34 @@
           </div>
         </div>
 
-        <div class="section-subtitle">가용 면적 (㎡, 미입력=무제한)</div>
-        <div class="opt-grid2">
-          <label class="opt-field">옥상 (수평PV)<input type="number" id="opt-area-roof" min="0" placeholder="무제한" /></label>
-          <label class="opt-field">외피 (수직PV·BIPV)<input type="number" id="opt-area-facade" min="0" placeholder="무제한" /></label>
-          <label class="opt-field">대지 (지열)<input type="number" id="opt-area-land" min="0" placeholder="무제한" /></label>
-          <label class="opt-field">기계실 (연료전지)<input type="number" id="opt-area-machine" min="0" placeholder="무제한" /></label>
+        <div class="section-subtitle">가용 면적 (기준면적 대비 비율 %, 미입력=무제한)</div>
+        <div class="opt-area-list">
+          <div class="opt-area-row">
+            <span class="opt-area-name">옥상 <small>수평PV</small></span>
+            <span class="opt-area-base" id="opt-base-roof">건축 —</span>
+            <input type="number" class="opt-pct" id="opt-area-roof-pct" min="0" max="100" step="1" placeholder="%" />
+            <span class="opt-area-eq" id="opt-area-roof-calc">= —</span>
+          </div>
+          <div class="opt-area-row">
+            <span class="opt-area-name">외피 <small>수직PV·BIPV</small></span>
+            <span class="opt-area-base" id="opt-base-facade">외피 —</span>
+            <input type="number" class="opt-pct" id="opt-area-facade-pct" min="0" max="100" step="1" placeholder="%" />
+            <span class="opt-area-eq" id="opt-area-facade-calc">= —</span>
+          </div>
+          <div class="opt-area-row">
+            <span class="opt-area-name">대지 <small>지열</small></span>
+            <span class="opt-area-base" id="opt-base-land">대지 —</span>
+            <input type="number" class="opt-pct" id="opt-area-land-pct" min="0" max="100" step="1" placeholder="%" />
+            <span class="opt-area-eq" id="opt-area-land-calc">= —</span>
+          </div>
+          <div class="opt-area-row">
+            <span class="opt-area-name">기계실 <small>연료전지</small></span>
+            <span class="opt-area-base" id="opt-base-machine">건축 —</span>
+            <input type="number" class="opt-pct" id="opt-area-machine-pct" min="0" max="100" step="1" placeholder="%" />
+            <span class="opt-area-eq" id="opt-area-machine-calc">= —</span>
+          </div>
         </div>
+        <div class="opt-area-note">외피 면적 = 4·√건축면적 × (연면적 ÷ 건축면적) × 3.5m (정사각형 평면·층고 3.5m 가정)</div>
 
         <div class="section-subtitle">사용자 요구도 (가중치)</div>
         <div id="opt-priority-rows" class="opt-priority"></div>
@@ -951,11 +972,38 @@ function initSection1() {
   addUsageRow();
   document.getElementById('btn-add-usage').addEventListener('click', addUsageRow);
 
-  document.querySelectorAll('#sel-사업형태, #sel-사업연도, #sel-대지위치, #inp-대지면적, #inp-건축면적, #inp-연면적, #inp-건폐율, #inp-용적률')
+  // 면적 외 필드: 변경 시 재계산
+  document.querySelectorAll('#sel-사업형태, #sel-사업연도, #sel-대지위치')
     .forEach(function(el) {
       el.addEventListener('change', renderAll);
       el.addEventListener('input', renderAll);
     });
+  setupAreaSync(); // 면적 5개: 동적 계산 + renderAll
+}
+
+// 면적 동적 계산 (양방향). 건폐율 = 건축면적/대지면적, 용적률 = 연면적/대지면적
+function _면적값(id) { return parseFloat(document.getElementById(id).value) || 0; }
+function _set면적(id, v) {
+  document.getElementById(id).value = (v > 0 && isFinite(v)) ? +v.toFixed(2) : '';
+}
+function setupAreaSync() {
+  function on(id, fn) {
+    document.getElementById(id).addEventListener('input', function() { fn(); renderAll(); });
+  }
+  // 건폐율/용적률 입력 → 면적 계산
+  on('inp-건폐율', function() { var d = _면적값('inp-대지면적'); if (d > 0) _set면적('inp-건축면적', d * _면적값('inp-건폐율') / 100); });
+  on('inp-용적률', function() { var d = _면적값('inp-대지면적'); if (d > 0) _set면적('inp-연면적', d * _면적값('inp-용적률') / 100); });
+  // 면적 입력 → 비율 계산
+  on('inp-건축면적', function() { var d = _면적값('inp-대지면적'); if (d > 0) _set면적('inp-건폐율', _면적값('inp-건축면적') / d * 100); });
+  on('inp-연면적', function() { var d = _면적값('inp-대지면적'); if (d > 0) _set면적('inp-용적률', _면적값('inp-연면적') / d * 100); });
+  // 대지면적 입력 → 비율 유지하고 면적 재계산
+  on('inp-대지면적', function() {
+    var d = _면적값('inp-대지면적');
+    if (d > 0) {
+      var bp = _면적값('inp-건폐율'); if (bp > 0) _set면적('inp-건축면적', d * bp / 100);
+      var fp = _면적값('inp-용적률'); if (fp > 0) _set면적('inp-연면적', d * fp / 100);
+    }
+  });
 }
 
 var 세대수옵션 = [
@@ -987,14 +1035,17 @@ function addUsageRow() {
   });
 
   var inp = document.createElement('input');
-  inp.type = 'number'; inp.className = 'usage-area';
-  inp.placeholder = '연면적'; inp.min = '0'; inp.step = '0.01';
+  inp.type = 'number'; inp.className = 'usage-pct';
+  inp.placeholder = '비율%'; inp.min = '0'; inp.max = '100'; inp.step = '0.01';
+
+  var calc = document.createElement('span');
+  calc.className = 'usage-calc-area'; calc.textContent = '— ㎡';
 
   var btn = document.createElement('button');
   btn.className = 'btn-delete-row'; btn.textContent = '×';
   btn.addEventListener('click', function() { wrap.remove(); renderAll(); });
 
-  div.appendChild(sel); div.appendChild(inp); div.appendChild(btn);
+  div.appendChild(sel); div.appendChild(inp); div.appendChild(calc); div.appendChild(btn);
 
   // 세대수 행 (공동주택 선택 시에만 표시)
   var 세대수행 = document.createElement('div');
@@ -1234,11 +1285,15 @@ function buildSystemRow(sc, scIdx, sysIdx) {
 // ── 재계산 및 렌더링 ───────────────────────────────────────────
 function collectInput1() {
   var 용도별 = [];
+  var 전체연면적 = parseFloat(document.getElementById('inp-연면적').value) || 0;
   document.querySelectorAll('#usage-list .usage-item').forEach(function(wrap) {
     var 용도  = wrap.querySelector('.usage-sel').value;
-    var 면적  = parseFloat(wrap.querySelector('.usage-area').value) || 0;
+    var 비율  = parseFloat(wrap.querySelector('.usage-pct').value) || 0;
+    var 면적  = 전체연면적 * 비율 / 100;
+    var calcEl = wrap.querySelector('.usage-calc-area');
+    if (calcEl) calcEl.textContent = 면적 > 0 ? fmt(면적) + ' ㎡' : '— ㎡';
     if (용도 && 면적 > 0) {
-      var entry = { 용도: 용도, 연면적: 면적 };
+      var entry = { 용도: 용도, 연면적: 면적, 비율: 비율 };
       if (용도 === '공동주택') {
         var 세대수셀 = wrap.querySelector('.usage-seda-sel');
         entry.세대수 = 세대수셀 ? 세대수셀.value : '';
@@ -1542,7 +1597,9 @@ function applyProjectState(state) {
     var wraps = list.querySelectorAll('.usage-item');
     var last  = wraps[wraps.length - 1];
     last.querySelector('.usage-sel').value = item.용도 || '';
-    last.querySelector('.usage-area').value = item.연면적 || '';
+    var 전체 = parseFloat(document.getElementById('inp-연면적').value) || 0;
+    var pct = (item.비율 != null) ? item.비율 : (전체 > 0 ? item.연면적 / 전체 * 100 : 0);
+    last.querySelector('.usage-pct').value = pct ? +pct.toFixed(2) : '';
     if (item.용도 === '공동주택') {
       var 세대수행 = last.querySelector('.usage-seda-row');
       var 세대수셀 = last.querySelector('.usage-seda-sel');

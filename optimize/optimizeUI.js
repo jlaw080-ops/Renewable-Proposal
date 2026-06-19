@@ -43,6 +43,11 @@
       var el = $(id);
       if (el) { el.addEventListener("change", updatePowerDemand); el.addEventListener("input", updatePowerDemand); }
     });
+    // 가용면적 비율 → 실시간 계산
+    ["roof", "facade", "land", "machine"].forEach(function (k) {
+      var el = $("opt-area-" + k + "-pct");
+      if (el) el.addEventListener("input", updateAreaCalc);
+    });
     // 탭 진입 시 기존 계산결과 연동
     var tab = $("tab-optimize");
     if (tab) tab.addEventListener("click", prefillFromCalc);
@@ -64,6 +69,7 @@
     if (rr && !rr.value && window.LAST_OUTPUT2 && window.LAST_OUTPUT2[0] && window.LAST_OUTPUT2[0].의무비율 != null) {
       rr.value = window.LAST_OUTPUT2[0].의무비율;
     }
+    updateAreaCalc(); // 사업정보 기준면적 반영
   }
 
   function updatePowerDemand() {
@@ -79,6 +85,59 @@
     }
   }
 
+  // ── 가용면적: 사업정보 기준면적 대비 비율 ───────────────────────
+  // 기준: 옥상·기계실=건축면적, 대지=대지면적, 외피=예상외피면적(계산)
+  function 사업면적(id) {
+    var el = document.getElementById(id);
+    return el ? (parseFloat(el.value) || 0) : 0;
+  }
+  // 예상 외피(입면) 면적 = 4·√건축면적 × (연면적/건축면적) × 층고(3.5m)
+  //   정사각형 평면 가정 → 둘레 = 4·√건축면적, 높이 = 층수(연면적/건축면적) × 3.5m
+  function 외피면적(건축, 연면적) {
+    if (!(건축 > 0) || !(연면적 > 0)) return 0;
+    return 4 * Math.sqrt(건축) * (연면적 / 건축) * 3.5;
+  }
+  function getBaseAreas() {
+    var 건축 = 사업면적("inp-건축면적");
+    var 연면적 = 사업면적("inp-연면적");
+    var 대지 = 사업면적("inp-대지면적");
+    return { 건축면적: 건축, 연면적: 연면적, 대지면적: 대지, 외피면적: 외피면적(건축, 연면적) };
+  }
+  // 각 행 = [key, 기준면적, 라벨]
+  function areaSpecs() {
+    var b = getBaseAreas();
+    return [
+      ["roof", b.건축면적, "건축"],
+      ["facade", b.외피면적, "외피"],
+      ["land", b.대지면적, "대지"],
+      ["machine", b.건축면적, "건축"]
+    ];
+  }
+  function 면적표시(v) { return v > 0 ? Math.round(v).toLocaleString() + "㎡" : "—"; }
+  // 기준면적·계산결과 실시간 갱신
+  function updateAreaCalc() {
+    areaSpecs().forEach(function (s) {
+      var key = s[0], base = s[1], label = s[2];
+      var baseEl = $("opt-base-" + key);
+      if (baseEl) baseEl.textContent = label + " " + 면적표시(base);
+      var p = num("opt-area-" + key + "-pct");
+      var calcEl = $("opt-area-" + key + "-calc");
+      if (calcEl) calcEl.textContent = (p != null && base > 0)
+        ? "= " + Math.round(base * p / 100).toLocaleString() + "㎡" : "= —";
+    });
+  }
+  // 비율 → 가용면적(㎡). 비율 미입력 또는 기준면적 0이면 null(무제한)
+  function collectAreas() {
+    var area = {};
+    var keymap = { roof: "옥상", facade: "외피", land: "대지", machine: "기계실" };
+    areaSpecs().forEach(function (s) {
+      var key = s[0], base = s[1];
+      var p = num("opt-area-" + key + "-pct");
+      area[keymap[key]] = (p != null && base > 0) ? base * p / 100 : null;
+    });
+    return area;
+  }
+
   function collectCtx() {
     var 요구도 = {};
     요구도항목.forEach(function (it) {
@@ -92,10 +151,7 @@
       의무설치비율기준: num("opt-req-ratio"),
       연간예상전력소비량: pd ? parseFloat(pd) : 0,
       전력생산비율기준: num("opt-power-ratio"),
-      면적: {
-        옥상: num("opt-area-roof"), 외피: num("opt-area-facade"),
-        대지: num("opt-area-land"), 기계실: num("opt-area-machine")
-      },
+      면적: collectAreas(),
       요구도: 요구도
     };
   }
