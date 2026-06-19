@@ -36,13 +36,16 @@
 
   // ── 조합 생성 (§6.2[1]) ─────────────────────────────────────────
   // 반환: [{ label, 연속설비:[설비...], 고정설비:[{설비, 기수, 용량}...] }]
-  function generateCombinations() {
+  // 전력목표=false(전력생산비율 기준·예상소비량 미설정)이면 발전용 연료전지를 제외한다.
+  // 발전용(PAFC·SOFC발전)은 전력 생산이 주 용도이므로 전력 목표가 없으면 불필요하며,
+  // 이를 제외해야 지열 등 비발전 설비가 공정하게 검토된다.
+  function generateCombinations(전력목표) {
     var lib = getLib();
     var PV옵션 = [null, "고정식(수평)PV", "고정식(수직)BAPV", "BIPV"];
     var 지열 = find설비("수직밀폐형");
     var PEMFC = find설비("PEMFC(건물용)");
     var SOFC건물 = find설비("SOFC(건물용)");
-    var 대용량연료전지 = ["PAFC(발전용)", "SOFC(발전용)"]; // 기수 전개·배타
+    var 대용량연료전지 = 전력목표 ? ["PAFC(발전용)", "SOFC(발전용)"] : []; // 기수 전개·배타
 
     // 대용량 연료전지 분기: 없음 + (각 종류 × 1~MAX기)
     var 연료전지분기 = [{ label: "연료전지無", 고정: [] }];
@@ -77,6 +80,19 @@
     return combos;
   }
 
+  // 연속 LP 결과를 단위용량(스냅단위)의 정수배수로 스냅한다.
+  // 의무 충족 유지를 위해 결과 이상의 최소 배수(올림)를, 단위 중 최소 초과가 되는 것으로 선택.
+  function snapToUnit(c, units) {
+    if (!units || !units.length) return { 용량: c, 단위: null, 기수: null };
+    var best = null;
+    units.forEach(function (u) {
+      var k = Math.max(1, Math.ceil(c / u - 1e-9));
+      var v = k * u;
+      if (!best || v < best.용량) best = { 용량: v, 단위: u, 기수: k };
+    });
+    return best;
+  }
+
   // ── 용량 LP (§6.2[2]) ───────────────────────────────────────────
   // 고정설비(연료전지 기수) 기여를 제약 우변에서 차감한 잔여 제약으로 연속설비 용량을 푼다.
   // ctx: { 연간단위에너지소요량, 의무설치비율기준, 연간예상전력소비량, 전력생산비율기준, 면적{} }
@@ -100,7 +116,15 @@
     var 잔여에너지 = Math.max(0, 의무에너지총량 - 고정에너지);
     var 잔여전력 = Math.max(0, 의무전력총량 - 고정전력);
 
-    // LP 모델 구성
+    // LP 모델 구성 (비용최소). 서울 지열 의무 적용 시 지열 최소 설치량 제약을 추가한다.
+    //   옵션1(면적):   지열 설치면적 ≥ 건축면적(지하개발면적 가정) × 비율%
+    //   옵션2(생산량): 지열 생산량 ≥ 신재생 의무생산량 × 비율%
+    var 지열제약 = ctx.지열제약 || null;
+    var 지열생산하한 = 0, 지열면적하한 = 0;
+    if (지열제약) {
+      if (지열제약.모드 === "생산량") 지열생산하한 = 의무에너지총량 * (지열제약.비율 || 0) / 100;
+      else if (지열제약.모드 === "면적") 지열면적하한 = (지열제약.건축면적 || 0) * (지열제약.비율 || 0) / 100;
+    }
     var variables = {};
     combo.연속설비.forEach(function (s, idx) {
       var v = {
@@ -109,11 +133,17 @@
         e_power: s.발전가능 ? s.f_연간발전량 : 0
       };
       v["a_" + s.설치공간] = s.m_설치면적;
+      if (s.형식 === "지열") {
+        if (지열생산하한 > 0) v.geo = s.c_연간단위에너지생산량;
+        if (지열면적하한 > 0) v.geoArea = s.m_설치면적;
+      }
       variables["v" + idx] = v;
     });
 
     var constraints = { e_energy: { min: 잔여에너지 } };
     if (의무전력총량 > 0) constraints.e_power = { min: 잔여전력 };
+    if (지열생산하한 > 0) constraints.geo = { min: 지열생산하한 };       // 지열 의무 옵션2(생산량)
+    if (지열면적하한 > 0) constraints.geoArea = { min: 지열면적하한 };   // 지열 의무 옵션1(면적)
     // 공간별 잔여 면적 제약
     ["옥상", "외피", "대지", "기계실"].forEach(function (sp) {
       var cap = (면적[sp] != null ? 면적[sp] : BIG면적) - (고정면적[sp] || 0);
@@ -132,7 +162,10 @@
     var items = [];
     combo.연속설비.forEach(function (s, idx) {
       var c = res["v" + idx] || 0;
-      if (c > 1e-6) items.push({ 설비: s, 용량: c, 고정: false });
+      if (c > 1e-6) {
+        var snap = snapToUnit(c, s.스냅단위);
+        items.push({ 설비: s, 용량: snap.용량, 단위: snap.단위, 단위기수: snap.기수, 고정: false });
+      }
     });
     combo.고정설비.forEach(function (f) {
       items.push({ 설비: f.설비, 용량: f.용량, 고정: true, 기수: f.기수 });
@@ -169,14 +202,38 @@
     });
   }
 
+  function _assign(base, extra) {
+    var o = {};
+    for (var k in base) if (base.hasOwnProperty(k)) o[k] = base[k];
+    for (var k2 in extra) if (extra.hasOwnProperty(k2)) o[k2] = extra[k2];
+    return o;
+  }
+
   // ── 메인 최적화 (§6.2 전체) ─────────────────────────────────────
-  // 반환: { ranked: [{label, items, targets, score, ...}], 평가건수, 실행가능건수 }
+  // 지열 의무(비율>0)가 있으면 옵션1(면적: 건축면적×비율)·옵션2(생산량: 의무×비율)를
+  // 각각 산출하고, 사용자 요구도 점수(rank1.score)가 높은 쪽을 추천한다 (서울 의무 "또는" 관계).
   function optimize(ctx) {
+    ctx = ctx || {};
+    if (ctx.지열의무 && ctx.지열의무.비율 > 0) {
+      var rA = optimizeCore(_assign(ctx, { 지열제약: { 모드: "면적", 비율: ctx.지열의무.비율, 건축면적: ctx.지열의무.건축면적 } }));
+      var rB = optimizeCore(_assign(ctx, { 지열제약: { 모드: "생산량", 비율: ctx.지열의무.비율 } }));
+      var a1 = rA.ranked[0], b1 = rB.ranked[0];
+      var 추천 = (!a1 && !b1) ? null : (!a1) ? "옵션2" : (!b1) ? "옵션1" : (a1.score >= b1.score ? "옵션1" : "옵션2");
+      var main = (추천 === "옵션2") ? rB : rA;
+      return _assign(main, { 지열옵션비교: { 추천: 추천, 옵션1: rA, 옵션2: rB } });
+    }
+    return optimizeCore(ctx);
+  }
+
+  // 반환: { ranked: [{label, items, targets, score, ...}], 평가건수, 실행가능건수 }
+  function optimizeCore(ctx) {
     var TC = getTC();
     if (!TC) throw new Error("TargetCalculator 미로드");
     ctx = ctx || {};
 
-    var combos = generateCombinations();
+    // 전력 목표(전력생산비율 기준 + 예상소비량)가 있을 때만 발전용 연료전지를 후보에 포함
+    var 전력목표 = (ctx.연간예상전력소비량 > 0 && ctx.전력생산비율기준 != null);
+    var combos = generateCombinations(전력목표);
     var feasible = [];
 
     combos.forEach(function (combo) {
@@ -191,6 +248,12 @@
       if (ctx.의무설치비율기준 != null && reg.의무설치비율 < ctx.의무설치비율기준 - eps) return;
       if (reg.전력생산비율 != null && ctx.전력생산비율기준 != null
         && reg.전력생산비율 < ctx.전력생산비율기준 - eps) return;
+      // 단위배수 스냅으로 면적이 늘어 제약을 초과할 수 있으므로 재검증
+      var 면적c = ctx.면적 || {};
+      var 면적ok = ["옥상", "외피", "대지", "기계실"].every(function (sp) {
+        return 면적c[sp] == null || targets.설치면적[sp] <= 면적c[sp] + 1e-6;
+      });
+      if (!면적ok) return;
       // label을 실제 채택 items 기준으로 재생성 (LP가 0으로 둔 설비는 제외됨)
       var label = cap.items.map(function (it) {
         return it.설비.세부형식 + (it.고정 ? "×" + it.기수 + "기" : " " + Math.round(it.용량) + "kW");
@@ -257,6 +320,7 @@
   window.Optimizer = {
     generateCombinations: generateCombinations,
     solveCapacity: solveCapacity,
+    snapToUnit: snapToUnit,
     deriveWeights: deriveWeights,
     normalize: normalize,
     optimize: optimize

@@ -180,6 +180,8 @@
       건물유형: $("opt-building-type").value || null,
       연간단위에너지소요량: num("opt-energy-demand"),
       의무설치비율기준: num("opt-req-ratio"),
+      지열의무: (num("opt-geo-ratio") > 0)
+        ? { 비율: num("opt-geo-ratio"), 건축면적: 사업면적("inp-건축면적") } : null,
       연간예상전력소비량: pd ? parseFloat(pd) : 0,
       전력생산비율기준: num("opt-power-ratio"),
       면적: collectAreas(),
@@ -221,15 +223,25 @@
       box.innerHTML = '<div class="opt-error">조건을 충족하는 조합이 없습니다. 면적·기준을 완화해 보세요. (평가 '
         + r.평가건수 + "건)</div>"; return;
     }
-    var html = '<div class="opt-summary"><span>실행가능 ' + r.실행가능건수 + "개 조합 / 평가 " + r.평가건수
+    var html = "";
+    if (r.지열옵션비교 && r.지열옵션비교.추천) {
+      var gc = r.지열옵션비교;
+      var s1 = gc.옵션1.ranked[0] ? (gc.옵션1.ranked[0].score * 100).toFixed(0) + "점" : "불가";
+      var s2 = gc.옵션2.ranked[0] ? (gc.옵션2.ranked[0].score * 100).toFixed(0) + "점" : "불가";
+      html += '<div class="opt-geo-banner">지열 의무 비교 — 옵션1(면적 50%): ' + s1
+        + ' / 옵션2(비율 50%): ' + s2 + ' → <b>' + gc.추천 + '</b> 추천</div>';
+    }
+    html += '<div class="opt-summary"><span>실행가능 ' + r.실행가능건수 + "개 조합 / 평가 " + r.평가건수
       + '건</span><button class="opt-report-btn" type="button">보고서 출력</button></div>';
     r.ranked.slice(0, 5).forEach(function (f) {
       var reg = f.targets.법적규제;
       var totC = f.items.reduce(function (s, x) { return s + x.용량; }, 0);
       var sysRows = f.items.map(function (it) {
         var pct = totC > 0 ? (it.용량 / totC * 100).toFixed(0) : 0;
+        var 단위 = it.고정 ? " (" + it.기수 + "기)"
+          : (it.단위 ? " (" + it.단위 + "kW×" + it.단위기수 + "기)" : "");
         return '<div class="opt-sys-row"><span class="opt-sys-name">' + it.설비.세부형식
-          + (it.고정 ? " (" + it.기수 + "기)" : "") + '</span>'
+          + 단위 + '</span>'
           + '<span class="opt-cap-bar"><span style="width:' + pct + '%"></span></span>'
           + '<span class="opt-sys-cap">' + Math.round(it.용량).toLocaleString() + " kW</span></div>";
       }).join("");

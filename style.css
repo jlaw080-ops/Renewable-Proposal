@@ -1838,6 +1838,12 @@ button, .alt-tab, .cover-image-drop, select,
 .btn-recommend-run#btn-run-optimize { margin-top: 18px; }
 
 .opt-result { margin-top: 16px; }
+.opt-geo-banner {
+  padding: 10px 12px; margin-bottom: 12px; border-radius: 8px;
+  background: rgba(16,185,129,.10); border: 1px solid var(--accent-primary, #10b981);
+  font-size: 12px; color: var(--text-primary); line-height: 1.5;
+}
+.opt-geo-banner b { color: var(--accent-primary, #10b981); }
 .opt-summary {
   display: flex; align-items: center; justify-content: space-between;
   font-size: 12px; color: var(--text-secondary); margin-bottom: 12px; font-weight: 600;
