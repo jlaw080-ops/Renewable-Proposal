@@ -48,6 +48,11 @@
       var el = $("opt-area-" + k + "-pct");
       if (el) el.addEventListener("input", updateAreaCalc);
     });
+    // 건물유형·사업형태 → 표준 요구도 자동 반영
+    var bt = $("opt-building-type");
+    if (bt) bt.addEventListener("change", autoLoadRequirements);
+    var sf = document.getElementById("sel-사업형태");
+    if (sf) sf.addEventListener("change", autoLoadRequirements);
     // 탭 진입 시 기존 계산결과 연동
     var tab = $("tab-optimize");
     if (tab) tab.addEventListener("click", prefillFromCalc);
@@ -136,6 +141,30 @@
       area[keymap[key]] = (p != null && base > 0) ? base * p / 100 : null;
     });
     return area;
+  }
+
+  // ── 건물유형별 표준 요구도 자동 반영 (LIB_요구도) ───────────────
+  // 키: 사업형태(sel-사업형태) + 건물유형(opt-building-type)
+  // 시공성 = 토지개발·기계실·공사기간·공사난이도 4개의 평균 등급으로 환산 (§4.5·H3)
+  function autoLoadRequirements() {
+    if (!window.LIB_요구도) return;
+    var sf = document.getElementById("sel-사업형태");
+    var 사업형태 = sf ? sf.value : "";
+    var bt = $("opt-building-type");
+    var 건물유형 = bt ? bt.value : "";
+    if (!사업형태 || !건물유형) return;
+    var row = window.LIB_요구도.filter(function (r) {
+      return r.사업형태 === 사업형태 && r.건물유형 === 건물유형;
+    })[0];
+    if (!row) return;
+    var 점수 = { "높음": 3, "보통": 2, "낮음": 1 }, 등급 = ["", "낮음", "보통", "높음"];
+    var avg = Math.round((점수[row.토지개발] + 점수[row.기계실] + 점수[row.공사기간] + 점수[row.공사난이도]) / 4);
+    var map = { 초기비용: row.초기비용, 운영비: row.운영비, 인센티브: row.인센티브, 디자인: row.디자인, 시공성: 등급[avg] };
+    요구도항목.forEach(function (it) {
+      var v = map[it.key];
+      var radio = document.querySelector('input[name=opt-pri-' + it.key + '][value="' + v + '"]');
+      if (radio) radio.checked = true;
+    });
   }
 
   function collectCtx() {
