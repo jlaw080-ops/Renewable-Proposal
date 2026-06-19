@@ -10,7 +10,8 @@
     { key: "운영비", label: "운영비 절감" },
     { key: "인센티브", label: "인센티브 확보" },
     { key: "디자인", label: "디자인 보존" },
-    { key: "시공성", label: "시공 용이성" }
+    { key: "시공성", label: "시공 용이성" },
+    { key: "의무근접", label: "의무비율 근접", default: "높음" }
   ];
 
   function $(id) { return document.getElementById(id); }
@@ -30,9 +31,10 @@
     var box = $("opt-priority-rows");
     if (box) {
       box.innerHTML = 요구도항목.map(function (it) {
+        var def = it.default || "보통";
         var radios = ["높음", "보통", "낮음"].map(function (lv) {
           return '<label><input type="radio" name="opt-pri-' + it.key + '" value="' + lv + '"'
-            + (lv === "보통" ? " checked" : "") + ">" + lv + "</label>";
+            + (lv === def ? " checked" : "") + ">" + lv + "</label>";
         }).join("");
         return '<div class="opt-priority-row"><span>' + it.label
           + '</span><span class="opt-radio-group">' + radios + "</span></div>";
