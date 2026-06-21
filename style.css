@@ -1916,3 +1916,97 @@ button, .alt-tab, .cover-image-drop, select,
   white-space: pre-wrap;
 }
 .opt-explain-text:empty { margin-top: 0; }
+
+/* ── 설정 페이지 ───────────────────────────────────────────────── */
+.set-host { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
+.set-group-title {
+  font-size: 12px; font-weight: 700; color: var(--text-secondary);
+  letter-spacing: 0.04em; text-transform: uppercase;
+  margin: 14px 0 2px; padding-bottom: 6px; border-bottom: 1px solid var(--border-default);
+}
+.set-card {
+  background: var(--bg-card-inner); border: 1px solid var(--border-default);
+  border-radius: 8px; overflow: hidden;
+}
+.set-summary {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 12px 14px; cursor: pointer; font-size: 13px; font-weight: 600;
+  color: var(--text-primary); list-style: none; user-select: none;
+}
+.set-summary::-webkit-details-marker { display: none; }
+.set-summary::before {
+  content: "▸"; color: var(--text-hint); font-size: 11px; margin-right: 4px;
+  transition: transform 0.15s;
+}
+.set-card[open] > .set-summary::before { transform: rotate(90deg); }
+.set-summary-title { flex: 1; }
+.set-badge {
+  font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 10px;
+  background: var(--bg-input); color: var(--text-hint); white-space: nowrap;
+}
+.set-badge.on { background: var(--accent-warm-dim); color: #0B1215; }
+.set-card-body { padding: 4px 14px 14px; }
+
+.set-filter {
+  width: 100%; box-sizing: border-box; margin: 0 0 10px;
+  padding: 7px 10px; font-size: 12px; border-radius: 6px;
+  background: var(--bg-input); border: 1px solid var(--border-default); color: var(--text-primary);
+}
+.set-table-wrap { max-height: 420px; overflow: auto; border: 1px solid var(--border-default); border-radius: 6px; }
+.set-table { border-collapse: collapse; font-size: 11.5px; min-width: 100%; }
+.set-table th, .set-table td {
+  border: 1px solid var(--border-default); padding: 4px 6px; text-align: left; white-space: nowrap;
+}
+.set-table thead th {
+  position: sticky; top: 0; z-index: 2; background: var(--bg-input);
+  color: var(--text-secondary); font-weight: 700;
+}
+.set-th-key, .set-td-key {
+  position: sticky; left: 0; z-index: 1; background: var(--bg-card-inner);
+  font-weight: 600; color: var(--text-secondary);
+}
+.set-table thead .set-th-key { z-index: 3; background: var(--bg-input); }
+.set-cell {
+  width: 100%; min-width: 64px; box-sizing: border-box;
+  padding: 3px 5px; font-size: 11.5px; border-radius: 4px;
+  background: var(--bg-input); border: 1px solid transparent; color: var(--text-primary);
+  font-family: inherit;
+}
+.set-cell:focus { outline: none; border-color: var(--border-focus); background: var(--bg-page); }
+textarea.set-cell { min-width: 220px; resize: vertical; line-height: 1.4; }
+
+.set-actions { display: flex; align-items: center; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.set-btn {
+  background: var(--bg-input); color: var(--text-primary);
+  border: 1px solid var(--border-default); border-radius: 6px;
+  padding: 7px 14px; font-size: 12px; font-weight: 600; cursor: pointer;
+  font-family: inherit; transition: background 0.15s, border-color 0.15s;
+}
+.set-btn:hover { border-color: var(--border-focus); }
+.set-btn-save { background: var(--accent-primary); color: #0B1215; border-color: transparent; }
+.set-btn-save:hover { background: #25ABAB; }
+.set-btn-reset { color: var(--text-secondary); }
+.set-msg { font-size: 11.5px; font-weight: 600; }
+.set-msg.ok { color: var(--color-pass); }
+.set-msg.err { color: var(--color-fail); }
+
+.set-cfg-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px; margin: 6px 0 4px;
+}
+.set-cfg-sub {
+  font-size: 11.5px; font-weight: 700; color: var(--text-secondary);
+  margin: 14px 0 2px;
+}
+.set-field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--text-secondary); }
+.set-field small { color: var(--text-hint); font-weight: 400; }
+.set-field input {
+  padding: 7px 9px; font-size: 13px; border-radius: 6px;
+  background: var(--bg-input); border: 1px solid var(--border-default); color: var(--text-primary);
+}
+.set-field input:focus { outline: none; border-color: var(--border-focus); }
+
+.set-global-tools {
+  display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px;
+  padding-top: 14px; border-top: 1px solid var(--border-default);
+}

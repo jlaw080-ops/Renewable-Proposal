@@ -16,8 +16,10 @@
 (function () {
   "use strict";
 
-  var MAX_연료전지기수 = 2;   // C1: 대용량 연료전지 최대 기수
   var BIG면적 = 1e12;         // 면적 제약 미입력 시 사실상 무제한
+  // 설정값(window.OPT_CONFIG, settings/settingsStore.js)을 호출 시점에 읽는다. 미로드 시 기본값.
+  function cfg() { return (typeof window !== "undefined" && window.OPT_CONFIG) || {}; }
+  function MAX_연료전지기수() { var v = cfg().연료전지최대기수; return (v > 0) ? v : 2; }
 
   function getSolver() {
     if (typeof window !== "undefined" && window.solver) return window.solver;
@@ -52,7 +54,8 @@
     대용량연료전지.forEach(function (name) {
       var s = find설비(name);
       if (!s) return;
-      for (var k = 1; k <= MAX_연료전지기수; k++) {
+      var maxK = MAX_연료전지기수();
+      for (var k = 1; k <= maxK; k++) {
         연료전지분기.push({
           label: name + "×" + k + "기",
           고정: [{ 설비: s, 기수: k, 용량: s.단위용량 * k }]
@@ -179,11 +182,12 @@
   // → 점수 3/2/1, 합=1 정규화
   function deriveWeights(요구도) {
     요구도 = 요구도 || {};
-    var map = { "높음": 3, "보통": 2, "낮음": 1 };
+    var map = cfg().요구도점수 || { "높음": 3, "보통": 2, "낮음": 1 };
     var keys = ["초기비용", "운영비", "인센티브", "디자인", "시공성", "의무근접"];
     var raw = {}, sum = 0;
     keys.forEach(function (k) {
-      var v = map[요구도[k]] != null ? map[요구도[k]] : 2; // 미지정은 보통
+      var 보통 = map["보통"] != null ? map["보통"] : 2;
+      var v = map[요구도[k]] != null ? map[요구도[k]] : 보통; // 미지정은 보통
       raw[k] = v; sum += v;
     });
     var w = {};
@@ -286,9 +290,13 @@
     // 비용·순익은 절대범위가 가변 → 조합집합 min-max 정규화
     var n초기 = normalize(초기비용, "min");
     var n운영 = normalize(운영순익, "max");
-    // 정성 지표(ⓝ~ⓡ 등급점수, 1~5 고정범위)는 고정척도 (점수−1)/4 로 정규화한다.
+    // 정성 지표(ⓝ~ⓡ 등급점수)는 등급척도 범위로 고정척도 정규화한다(기본 1~5 → (v−1)/4).
     // min-max를 쓰면 미미한 raw 차이(예: 3.06 vs 5.00)가 0↔1로 양극화되어 의미가 왜곡됨.
-    var 고정척도 = function (v) { return (v - 1) / 4; };
+    // 척도 최솟·최댓값은 설정값(OPT_CONFIG.등급점수)에서 유도해 척도 변경 시에도 정합 유지.
+    var 등급표 = cfg().등급점수 || { "매우높음": 5, "높음": 4, "보통": 3, "낮음": 2, "매우낮음": 1 };
+    var 등급값 = Object.keys(등급표).map(function (k) { return 등급표[k]; });
+    var gmin = Math.min.apply(null, 등급값), gspan = (Math.max.apply(null, 등급값) - gmin) || 1;
+    var 고정척도 = function (v) { return (v - gmin) / gspan; };
     var n인센 = 인센티브.map(고정척도);
     var n디자 = 디자인.map(고정척도);
     var n시공 = 시공성.map(고정척도);

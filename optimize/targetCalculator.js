@@ -10,14 +10,20 @@
   "use strict";
 
   // ── 정성 등급 → 수치 매핑 (§6.4) ────────────────────────────────
-  var 등급점수표 = { "매우높음": 5, "높음": 4, "보통": 3, "낮음": 2, "매우낮음": 1 };
+  // 설정값(window.OPT_CONFIG.등급점수, settings/settingsStore.js)을 호출 시점에 읽는다.
+  var 기본등급점수표 = { "매우높음": 5, "높음": 4, "보통": 3, "낮음": 2, "매우낮음": 1 };
 
   function 등급점수(등급) {
-    return 등급점수표.hasOwnProperty(등급) ? 등급점수표[등급] : 3; // 미상 등급은 보통(3)
+    var 표 = (typeof window !== "undefined" && window.OPT_CONFIG && window.OPT_CONFIG.등급점수) || 기본등급점수표;
+    return 표.hasOwnProperty(등급) ? 표[등급] : 3; // 미상 등급은 보통(3)
   }
   // 역방향 지표(디자인훼손·외부공간차지·공사기간·난이도): 낮을수록 좋음 → "좋음점수"로 반전
+  // 반전 기준은 등급점수 척도의 (최댓값+최솟값) — 기본 5+1=6. 척도 변경 시에도 정합 유지.
   function 좋음점수_역방향(등급) {
-    return 6 - 등급점수(등급);
+    var 표 = (typeof window !== "undefined" && window.OPT_CONFIG && window.OPT_CONFIG.등급점수) || 기본등급점수표;
+    var vals = Object.keys(표).map(function (k) { return 표[k]; });
+    var base = Math.max.apply(null, vals) + Math.min.apply(null, vals);
+    return base - 등급점수(등급);
   }
 
   // ── 비용 (§5.1) ─────────────────────────────────────────────────

@@ -16,6 +16,8 @@
 
   function $(id) { return document.getElementById(id); }
   function num(id) { var v = parseFloat($(id).value); return isNaN(v) ? null : v; }
+  // 설정값(window.OPT_CONFIG, settings/settingsStore.js)을 호출 시점에 읽는다.
+  function cfg() { return (typeof window !== "undefined" && window.OPT_CONFIG) || {}; }
 
   function init() {
     // 건물유형 select
@@ -98,11 +100,12 @@
     var el = document.getElementById(id);
     return el ? (parseFloat(el.value) || 0) : 0;
   }
-  // 예상 외피(입면) 면적 = 4·√건축면적 × (연면적/건축면적) × 층고(3.5m)
-  //   정사각형 평면 가정 → 둘레 = 4·√건축면적, 높이 = 층수(연면적/건축면적) × 3.5m
+  // 예상 외피(입면) 면적 = 4·√건축면적 × (연면적/건축면적) × 층고(기본 3.5m, 설정값)
+  //   정사각형 평면 가정 → 둘레 = 4·√건축면적, 높이 = 층수(연면적/건축면적) × 층고
   function 외피면적(건축, 연면적) {
     if (!(건축 > 0) || !(연면적 > 0)) return 0;
-    return 4 * Math.sqrt(건축) * (연면적 / 건축) * 3.5;
+    var 층고 = cfg().외피층고 > 0 ? cfg().외피층고 : 3.5;
+    return 4 * Math.sqrt(건축) * (연면적 / 건축) * 층고;
   }
   function getBaseAreas() {
     var 건축 = 사업면적("inp-건축면적");
@@ -159,6 +162,7 @@
       return r.사업형태 === 사업형태 && r.건물유형 === 건물유형;
     })[0];
     if (!row) return;
+    // 표준 요구도(4개 시공성 하위등급)를 3단계 라디오로 역매핑하는 고정 척도(1~3). 가중치 설정과 무관.
     var 점수 = { "높음": 3, "보통": 2, "낮음": 1 }, 등급 = ["", "낮음", "보통", "높음"];
     var avg = Math.round((점수[row.토지개발] + 점수[row.기계실] + 점수[row.공사기간] + 점수[row.공사난이도]) / 4);
     var map = { 초기비용: row.초기비용, 운영비: row.운영비, 인센티브: row.인센티브, 디자인: row.디자인, 시공성: 등급[avg] };
