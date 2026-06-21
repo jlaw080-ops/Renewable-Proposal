@@ -11,17 +11,30 @@
   var LONG_COLS = { "장점": 1, "단점": 1, "비고": 1 };  // textarea 로 렌더할 컬럼
   var GRADE5 = ["매우높음", "높음", "보통", "낮음", "매우낮음"];  // 5등급 드롭다운 옵션
 
-  // 라이브러리별 컬럼 드롭다운 옵션 (없으면 입력칸). 요구도 = 등급 컬럼은 5등급, 식별자는 기존 값 목록.
+  var BOOL_OPTS = ["true", "false"];  // 불리언 컬럼 드롭다운(코어ce 시 boolean 으로 환원)
+
+  // 라이브러리별 컬럼 드롭다운 옵션 (없으면 입력칸). 범주형(등급·구분·불리언)만 드롭다운, 수치·식별자·텍스트는 입력칸.
   function colSelectOptions(regKey, data) {
-    if (regKey !== "요구도" || !Array.isArray(data)) return {};
+    if (!Array.isArray(data)) return {};
     function distinct(col) {
       var s = [];
       data.forEach(function (r) { if (r[col] != null && r[col] !== "" && s.indexOf(r[col]) < 0) s.push(r[col]); });
       return s;
     }
-    var opt = { "사업형태": distinct("사업형태"), "건물유형": distinct("건물유형") };
-    ["초기비용", "운영비", "디자인", "인센티브", "토지개발", "기계실", "공사기간", "공사난이도"]
-      .forEach(function (c) { opt[c] = GRADE5; });
+    var opt = {};
+    if (regKey === "요구도") {
+      opt["사업형태"] = distinct("사업형태");
+      opt["건물유형"] = distinct("건물유형");
+      ["초기비용", "운영비", "디자인", "인센티브", "토지개발", "기계실", "공사기간", "공사난이도"]
+        .forEach(function (c) { opt[c] = GRADE5; });
+    } else if (regKey === "설비최적화") {
+      opt["형식"] = distinct("형식");
+      opt["설치공간"] = distinct("설치공간");
+      ["n_ZEB기여도", "o_디자인훼손도", "p_외부공간차지도", "q_공사기간", "r_공사난이도"]
+        .forEach(function (c) { opt[c] = GRADE5; });
+      opt["발전가능"] = BOOL_OPTS;
+      opt["차용플래그"] = BOOL_OPTS;
+    }
     return opt;
   }
 
