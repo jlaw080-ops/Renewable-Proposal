@@ -1995,6 +1995,8 @@ button, .alt-tab, .cover-image-drop, select,
 }
 .set-cell:focus { outline: none; border-color: var(--border-focus); background: var(--bg-page); }
 textarea.set-cell { min-width: 220px; resize: vertical; line-height: 1.4; }
+select.set-select { min-width: 80px; padding: 3px 4px; cursor: pointer; }
+select.set-select option { background: var(--bg-card-inner); color: var(--text-primary); }
 
 .set-actions { display: flex; align-items: center; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
 .set-btn {

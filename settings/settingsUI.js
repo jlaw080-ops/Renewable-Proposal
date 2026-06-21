@@ -9,6 +9,21 @@
   "use strict";
 
   var LONG_COLS = { "장점": 1, "단점": 1, "비고": 1 };  // textarea 로 렌더할 컬럼
+  var GRADE5 = ["매우높음", "높음", "보통", "낮음", "매우낮음"];  // 5등급 드롭다운 옵션
+
+  // 라이브러리별 컬럼 드롭다운 옵션 (없으면 입력칸). 요구도 = 등급 컬럼은 5등급, 식별자는 기존 값 목록.
+  function colSelectOptions(regKey, data) {
+    if (regKey !== "요구도" || !Array.isArray(data)) return {};
+    function distinct(col) {
+      var s = [];
+      data.forEach(function (r) { if (r[col] != null && r[col] !== "" && s.indexOf(r[col]) < 0) s.push(r[col]); });
+      return s;
+    }
+    var opt = { "사업형태": distinct("사업형태"), "건물유형": distinct("건물유형") };
+    ["초기비용", "운영비", "디자인", "인센티브", "토지개발", "기계실", "공사기간", "공사난이도"]
+      .forEach(function (c) { opt[c] = GRADE5; });
+    return opt;
+  }
 
   function el(tag, cls, html) {
     var e = document.createElement(tag);
@@ -70,23 +85,33 @@
     return w;
   }
 
-  // 단일 셀 input/textarea 생성 — 내용 길이에 맞춰 잘리지 않도록 min-width 자동 지정
-  function cellInput(col, value, refAttr) {
+  // 단일 셀 입력 위젯 생성 — options 가 있으면 드롭다운, 아니면 내용폭 자동 input/textarea
+  function cellInput(col, value, refAttr, options) {
     var raw = cellValueStr(value);
-    var isLong = LONG_COLS[col] || (typeof value === "string" && raw.length > 40);
-    var common = ' class="set-cell" data-col="' + esc(col) + '" ' + refAttr;
+    var attrs = ' data-col="' + esc(col) + '" ' + refAttr;  // class 는 위젯별로 부여
     var val = esc(raw);
-    if (isLong) return '<textarea' + common + ' rows="2">' + val + "</textarea>";
+    if (options && options.length) {
+      var opts = options.slice();
+      if (raw !== "" && opts.indexOf(raw) < 0) opts.unshift(raw); // 목록에 없는 기존값 보존
+      var body = opts.map(function (o) {
+        return '<option value="' + esc(o) + '"' + (o === raw ? " selected" : "") + ">" + esc(o) + "</option>";
+      }).join("");
+      var blank = (raw === "") ? '<option value="" selected></option>' : "";
+      return '<select class="set-cell set-select"' + attrs + ">" + blank + body + "</select>";
+    }
+    var isLong = LONG_COLS[col] || (typeof value === "string" && raw.length > 40);
+    if (isLong) return '<textarea class="set-cell"' + attrs + ' rows="2">' + val + "</textarea>";
     var numeric = typeof value === "number";
     // 숫자칸은 스피너 화살표(약 2ch) 여유를 더 둔다
     var ch = Math.max(6, dispCols(raw) + (numeric ? 4 : 3));
     var style = ' style="min-width:' + ch + 'ch"';
-    return '<input type="' + (numeric ? "number" : "text") + '" step="any"' + style + common + ' value="' + val + '" />';
+    return '<input class="set-cell" type="' + (numeric ? "number" : "text") + '" step="any"' + style + attrs + ' value="' + val + '" />';
   }
 
   // ── 라이브러리 테이블 렌더 ──────────────────────────────────────────────
   function renderLibTable(reg) {
     var data = window.SettingsStore.getLib(reg.key);
+    var selOpts = colSelectOptions(reg.key, data);
     var box = el("div", "set-table-wrap");
 
     var tbl = el("table", "set-table");
@@ -113,7 +138,7 @@
         tr.appendChild(el("td", "set-td-key", esc(rk)));
         cols.forEach(function (c) {
           var td = el("td");
-          td.innerHTML = cellInput(c, data[rk][c], 'data-rowkey="' + esc(rk) + '"');
+          td.innerHTML = cellInput(c, data[rk][c], 'data-rowkey="' + esc(rk) + '"', selOpts[c]);
           tr.appendChild(td);
         });
         tbody.appendChild(tr);
@@ -124,7 +149,7 @@
         tr.setAttribute("data-rowidx", i);
         cols.forEach(function (c) {
           var td = el("td");
-          td.innerHTML = cellInput(c, row[c], 'data-rowidx="' + i + '"');
+          td.innerHTML = cellInput(c, row[c], 'data-rowidx="' + i + '"', selOpts[c]);
           tr.appendChild(td);
         });
         tbody.appendChild(tr);
