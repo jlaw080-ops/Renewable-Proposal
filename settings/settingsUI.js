@@ -63,14 +63,25 @@
     return String(v);
   }
 
-  // 단일 셀 input/textarea 생성
+  // 표시 폭(ch): 한글·CJK·전각은 2, 나머지는 1로 계산
+  function dispCols(s) {
+    var w = 0;
+    for (var i = 0; i < s.length; i++) w += (s.charCodeAt(i) > 0x2dff ? 2 : 1);
+    return w;
+  }
+
+  // 단일 셀 input/textarea 생성 — 내용 길이에 맞춰 잘리지 않도록 min-width 자동 지정
   function cellInput(col, value, refAttr) {
-    var isLong = LONG_COLS[col] || (typeof value === "string" && value.length > 40);
+    var raw = cellValueStr(value);
+    var isLong = LONG_COLS[col] || (typeof value === "string" && raw.length > 40);
     var common = ' class="set-cell" data-col="' + esc(col) + '" ' + refAttr;
-    var val = esc(cellValueStr(value));
+    var val = esc(raw);
     if (isLong) return '<textarea' + common + ' rows="2">' + val + "</textarea>";
     var numeric = typeof value === "number";
-    return '<input type="' + (numeric ? "number" : "text") + '" step="any"' + common + ' value="' + val + '" />';
+    // 숫자칸은 스피너 화살표(약 2ch) 여유를 더 둔다
+    var ch = Math.max(6, dispCols(raw) + (numeric ? 4 : 3));
+    var style = ' style="min-width:' + ch + 'ch"';
+    return '<input type="' + (numeric ? "number" : "text") + '" step="any"' + style + common + ' value="' + val + '" />';
   }
 
   // ── 라이브러리 테이블 렌더 ──────────────────────────────────────────────
@@ -238,10 +249,12 @@
       + field("연료전지 최대 기수", "cfg-fc-max", cfg.연료전지최대기수, "대용량 연료전지 조합 전개 한도")
       + field("외피면적 산정 층고 (m)", "cfg-eave-h", cfg.외피층고, "외피면적 = 4·√건축 × 층수 × 층고")
       + "</div>"
-      + '<div class="set-cfg-sub">요구도 점수 (가중치 환산)</div><div class="set-cfg-grid">'
+      + '<div class="set-cfg-sub">요구도 점수 (5등급 가중치 환산 — 건물유형별 요구도와 동일 척도)</div><div class="set-cfg-grid">'
+      + field("매우높음", "cfg-req-vh", cfg.요구도점수["매우높음"])
       + field("높음", "cfg-req-hi", cfg.요구도점수["높음"])
       + field("보통", "cfg-req-mid", cfg.요구도점수["보통"])
       + field("낮음", "cfg-req-lo", cfg.요구도점수["낮음"])
+      + field("매우낮음", "cfg-req-vl", cfg.요구도점수["매우낮음"])
       + "</div>"
       + '<div class="set-cfg-sub">정성 등급 점수 (디자인·시공성·ZEB)</div><div class="set-cfg-grid">'
       + field("매우높음", "cfg-g-vh", cfg.등급점수["매우높음"])
@@ -267,7 +280,10 @@
     saveBtn.addEventListener("click", function () {
       var c = {
         연료전지최대기수: num("cfg-fc-max"), 외피층고: num("cfg-eave-h"),
-        요구도점수: { "높음": num("cfg-req-hi"), "보통": num("cfg-req-mid"), "낮음": num("cfg-req-lo") },
+        요구도점수: {
+          "매우높음": num("cfg-req-vh"), "높음": num("cfg-req-hi"), "보통": num("cfg-req-mid"),
+          "낮음": num("cfg-req-lo"), "매우낮음": num("cfg-req-vl")
+        },
         등급점수: {
           "매우높음": num("cfg-g-vh"), "높음": num("cfg-g-h"), "보통": num("cfg-g-m"),
           "낮음": num("cfg-g-l"), "매우낮음": num("cfg-g-vl")

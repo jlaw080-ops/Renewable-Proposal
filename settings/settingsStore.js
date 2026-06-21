@@ -19,11 +19,12 @@
   //   연료전지최대기수  optimizer.generateCombinations — 대용량 연료전지 최대 기수
   //   외피층고          optimizeUI.외피면적 — 예상 외피면적 산정 층고(m)
   //   요구도점수        optimizer.deriveWeights / optimizeUI.autoLoadRequirements 가중치 점수
+  //                     (건물유형별 사용자 요구도와 동일한 5등급 척도)
   //   등급점수          targetCalculator.등급점수 — 정성 5단계 등급 → 점수
   var DEFAULT_OPT_CONFIG = {
     연료전지최대기수: 2,
     외피층고: 3.5,
-    요구도점수: { "높음": 3, "보통": 2, "낮음": 1 },
+    요구도점수: { "매우높음": 5, "높음": 4, "보통": 3, "낮음": 2, "매우낮음": 1 },
     등급점수: { "매우높음": 5, "높음": 4, "보통": 3, "낮음": 2, "매우낮음": 1 }
   };
 

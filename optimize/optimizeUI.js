@@ -5,6 +5,9 @@
 (function () {
   "use strict";
 
+  // 사용자 요구도 5등급 — 건물유형별 요구도·요구도점수/가중치 환산과 동일 척도
+  var LEVELS = ["매우높음", "높음", "보통", "낮음", "매우낮음"];
+
   var 요구도항목 = [
     { key: "초기비용", label: "초기비용 절감" },
     { key: "운영비", label: "운영비 절감" },
@@ -34,11 +37,11 @@
     if (box) {
       box.innerHTML = 요구도항목.map(function (it) {
         var def = it.default || "보통";
-        var radios = ["높음", "보통", "낮음"].map(function (lv) {
+        var radios = LEVELS.map(function (lv) {
           return '<label><input type="radio" name="opt-pri-' + it.key + '" value="' + lv + '"'
             + (lv === def ? " checked" : "") + ">" + lv + "</label>";
         }).join("");
-        return '<div class="opt-priority-row"><span>' + it.label
+        return '<div class="opt-priority-row"><span class="opt-priority-name">' + it.label
           + '</span><span class="opt-radio-group">' + radios + "</span></div>";
       }).join("");
     }
@@ -162,10 +165,23 @@
       return r.사업형태 === 사업형태 && r.건물유형 === 건물유형;
     })[0];
     if (!row) return;
-    // 표준 요구도(4개 시공성 하위등급)를 3단계 라디오로 역매핑하는 고정 척도(1~3). 가중치 설정과 무관.
-    var 점수 = { "높음": 3, "보통": 2, "낮음": 1 }, 등급 = ["", "낮음", "보통", "높음"];
-    var avg = Math.round((점수[row.토지개발] + 점수[row.기계실] + 점수[row.공사기간] + 점수[row.공사난이도]) / 4);
-    var map = { 초기비용: row.초기비용, 운영비: row.운영비, 인센티브: row.인센티브, 디자인: row.디자인, 시공성: 등급[avg] };
+    // 시공성 = 4개 하위등급(토지개발·기계실·공사기간·공사난이도)의 평균 점수를 다시 등급으로 환산.
+    // 요구도점수(5등급) 척도를 사용하고, 평균 점수에 가장 가까운 등급으로 역매핑(척도 변경에도 안전).
+    var 점수 = cfg().요구도점수 || { "매우높음": 5, "높음": 4, "보통": 3, "낮음": 2, "매우낮음": 1 };
+    function 가까운등급(s) {
+      var best = "보통", bd = Infinity;
+      Object.keys(점수).forEach(function (lv) {
+        var d = Math.abs(점수[lv] - s);
+        if (d < bd) { bd = d; best = lv; }
+      });
+      return best;
+    }
+    var 하위 = [row.토지개발, row.기계실, row.공사기간, row.공사난이도]
+      .map(function (g) { return 점수[g]; })
+      .filter(function (v) { return v != null; });
+    var 시공성등급 = 하위.length
+      ? 가까운등급(하위.reduce(function (a, b) { return a + b; }, 0) / 하위.length) : "보통";
+    var map = { 초기비용: row.초기비용, 운영비: row.운영비, 인센티브: row.인센티브, 디자인: row.디자인, 시공성: 시공성등급 };
     요구도항목.forEach(function (it) {
       var v = map[it.key];
       var radio = document.querySelector('input[name=opt-pri-' + it.key + '][value="' + v + '"]');
