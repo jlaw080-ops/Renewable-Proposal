@@ -283,7 +283,10 @@
       return '<label class="set-field"><span>' + esc(label) + (hint ? ' <small>' + esc(hint) + '</small>' : "")
         + '</span><input type="number" step="any" id="' + id + '" value="' + esc(String(val)) + '"/></label>';
     }
-    var html = '<div class="set-cfg-grid">'
+    var html = '<label class="set-toggle"><input type="checkbox" id="cfg-landscape"'
+      + (cfg.경관보정사용 !== false ? " checked" : "") + "/> "
+      + '경관 보정 사용 <small>지자체·에너지원별 디자인 패널티(경관 민감도·영향 표)</small></label>'
+      + '<div class="set-cfg-grid">'
       + field("연료전지 최대 기수", "cfg-fc-max", cfg.연료전지최대기수, "대용량 연료전지 조합 전개 한도")
       + field("외피면적 산정 층고 (m)", "cfg-eave-h", cfg.외피층고, "외피면적 = 4·√건축 × 층수 × 층고")
       + "</div>"
@@ -318,6 +321,7 @@
     saveBtn.addEventListener("click", function () {
       var c = {
         연료전지최대기수: num("cfg-fc-max"), 외피층고: num("cfg-eave-h"),
+        경관보정사용: document.getElementById("cfg-landscape").checked,
         요구도점수: {
           "매우높음": num("cfg-req-vh"), "높음": num("cfg-req-hi"), "보통": num("cfg-req-mid"),
           "낮음": num("cfg-req-lo"), "매우낮음": num("cfg-req-vl")

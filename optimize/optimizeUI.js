@@ -196,8 +196,13 @@
       요구도[it.key] = sel ? sel.value : "보통";
     });
     var pd = $("opt-power-demand").dataset.value;
+    // 경관계수용 지자체 — 사업정보 대지위치를 지역키로 정규화 (지역계수/경관민감도 키와 동일)
+    var 대지 = document.getElementById("sel-대지위치");
+    var 지자체 = (대지 && typeof window.normalize대지위치 === "function")
+      ? window.normalize대지위치(대지.value) : (대지 ? 대지.value : "");
     return {
       건물유형: $("opt-building-type").value || null,
+      지자체: 지자체 || null,
       연간단위에너지소요량: num("opt-energy-demand"),
       의무설치비율기준: num("opt-req-ratio"),
       지열의무: (num("opt-geo-ratio") > 0)
@@ -223,7 +228,7 @@
     setTimeout(function () {
       try {
         var r = window.Optimizer.optimize(ctx);
-        render(r, box);
+        render(r, box, ctx);
         window.LAST_OPTIMIZE = r;   // P5 AI 설명용
         window._optCtx = ctx;       // 설명 생성 맥락
         window._optExplains = {};   // 생성된 AI 설명(보고서용)
@@ -238,12 +243,21 @@
     return '<span class="opt-grade-bar"><span style="width:' + pct + '%"></span></span>';
   }
 
-  function render(r, box) {
+  function render(r, box, ctx) {
     if (!r.ranked.length) {
       box.innerHTML = '<div class="opt-error">조건을 충족하는 조합이 없습니다. 면적·기준을 완화해 보세요. (평가 '
         + r.평가건수 + "건)</div>"; return;
     }
     var html = "";
+    // 경관 보정 적용 안내 (지자체 설정 + 경관보정 활성 시)
+    var optcfg = (typeof window !== "undefined" && window.OPT_CONFIG) || {};
+    if (ctx && ctx.지자체 && optcfg.경관보정사용 !== false
+        && window.LIB_경관민감도 && window.LIB_경관민감도[ctx.지자체]) {
+      var ms = window.LIB_경관민감도[ctx.지자체];
+      html += '<div class="opt-geo-banner">경관 보정 적용 — <b>' + ctx.지자체 + '</b> 경관민감도 '
+        + ms.민감도 + (ms.등급 ? ' (' + ms.등급 + ')' : "")
+        + ' · 노출형 PV·BAPV 디자인 패널티↑ (지열·연료전지 불변)</div>';
+    }
     if (r.지열옵션비교 && r.지열옵션비교.추천) {
       var gc = r.지열옵션비교;
       var s1 = gc.옵션1.ranked[0] ? (gc.옵션1.ranked[0].score * 100).toFixed(0) + "점" : "불가";

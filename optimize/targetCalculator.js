@@ -86,18 +86,43 @@
     };
   }
 
+  // ── 경관계수 (지자체별 경관민감도 × 에너지원별 경관영향) ─────────
+  // 근거: 0619_지자체_건축심사기준_신재생_조사.md §2.1·§3. window.LIB_경관민감도/영향 + OPT_CONFIG.경관보정사용.
+  //   계수 = 1 + 민감도(지자체) × 영향(세부형식). 보정 비활성/지자체 미상/영향0 이면 1(불변).
+  function 경관계수(ctx, 세부형식) {
+    var cfg = (typeof window !== "undefined" && window.OPT_CONFIG) || {};
+    if (cfg.경관보정사용 === false) return 1;
+    var 지자체 = ctx && ctx.지자체;
+    var 민감맵 = (typeof window !== "undefined" && window.LIB_경관민감도) || {};
+    var 영향맵 = (typeof window !== "undefined" && window.LIB_경관영향) || {};
+    var 민감 = (지자체 && 민감맵[지자체] && 민감맵[지자체].민감도 != null) ? 민감맵[지자체].민감도 : 0;
+    var 영향 = (영향맵[세부형식] && 영향맵[세부형식].영향 != null) ? 영향맵[세부형식].영향 : 0;
+    return 1 + 민감 * 영향;
+  }
+  function 등급범위() {
+    var 표 = (typeof window !== "undefined" && window.OPT_CONFIG && window.OPT_CONFIG.등급점수) || 기본등급점수표;
+    var v = Object.keys(표).map(function (k) { return 표[k]; });
+    return { min: Math.min.apply(null, v), max: Math.max.apply(null, v) };
+  }
+
   // ── 정성 목표값 (§5 #3·#4·#5, §6.4) ─────────────────────────────
   // 용량가중 "좋음점수"(1~5) 평균. 디자인·시공성은 최소화(훼손) 지표라 역방향 반전.
   // 인센티브(§5 #3)는 현재 ⓝ(ZEB기여도) 기반 proxy — 정밀 용적률% 매핑은 ECO2 연계(P6).
-  function 계산정성(items) {
+  // 디자인은 경관계수로 보정: 보정 = gmax − (gmax − 기본) × 계수 (강한 지자체일수록 BAPV 패널티↑), [gmin,gmax] 클램프.
+  function 계산정성(items, ctx) {
     var totC = items.reduce(function (s, it) { return s + it.용량; }, 0);
     if (totC <= 0) return { ZEB: 0, 디자인: 0, 시공성: 0, 인센티브: 0 };
 
+    var rng = 등급범위();
     var ZEB = 0, 디자인 = 0, 시공성 = 0;
     items.forEach(function (it) {
       var s = it.설비, C = it.용량;
       ZEB += 등급점수(s.n_ZEB기여도) * C;
-      디자인 += (좋음점수_역방향(s.o_디자인훼손도) + 좋음점수_역방향(s.p_외부공간차지도)) / 2 * C;
+      var baseD = (좋음점수_역방향(s.o_디자인훼손도) + 좋음점수_역방향(s.p_외부공간차지도)) / 2;
+      var adjD = rng.max - (rng.max - baseD) * 경관계수(ctx, s.세부형식);
+      if (adjD < rng.min) adjD = rng.min;
+      if (adjD > rng.max) adjD = rng.max;
+      디자인 += adjD * C;
       시공성 += (좋음점수_역방향(s.q_공사기간) + 좋음점수_역방향(s.r_공사난이도)) / 2 * C;
     });
     var zebAvg = ZEB / totC;
@@ -112,7 +137,7 @@
       운영순익: 비용.운영순익,
       설치면적: 계산설치면적(items),
       법적규제: 계산법적규제(items, ctx),
-      정성: 계산정성(items)
+      정성: 계산정성(items, ctx)
     };
   }
 
@@ -123,6 +148,7 @@
     계산설치면적: 계산설치면적,
     계산법적규제: 계산법적규제,
     계산정성: 계산정성,
+    경관계수: 경관계수,
     평가조합: 평가조합
   };
 })();

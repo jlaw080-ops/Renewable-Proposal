@@ -24,6 +24,7 @@
   var DEFAULT_OPT_CONFIG = {
     연료전지최대기수: 2,
     외피층고: 3.5,
+    경관보정사용: true,   // 지자체·에너지원별 경관계수를 디자인 목적함수에 적용할지(targetCalculator)
     요구도점수: { "매우높음": 5, "높음": 4, "보통": 3, "낮음": 2, "매우낮음": 1 },
     등급점수: { "매우높음": 5, "높음": 4, "보통": 3, "낮음": 2, "매우낮음": 1 }
   };
@@ -35,6 +36,8 @@
     { key: "설비최적화",   global: "LIB_설비최적화",          label: "설비 최적화 데이터셋 (8설비 × ⓐ~ⓡ)", shape: "array", group: "optimize" },
     { key: "요구도",       global: "LIB_요구도",              label: "건물유형별 사용자 요구도",            shape: "array", group: "optimize" },
     { key: "전력원단위",   global: "LIB_전력원단위",          label: "건물유형별 전력 원단위 ⚠잠정값",      shape: "array", group: "optimize" },
+    { key: "경관민감도",   global: "LIB_경관민감도",          label: "경관 민감도 (지자체별)",              shape: "map",   group: "optimize" },
+    { key: "경관영향",     global: "LIB_경관영향",            label: "경관 영향 (에너지원별)",              shape: "map",   group: "optimize" },
     { key: "신재생계수",   global: "LIB_신재생에너지계수",    label: "신재생에너지 계수 (단위생산량·보정계수)", shape: "array", group: "calc" },
     { key: "지역계수",     global: "LIB_지역계수",            label: "지역계수 (17개 시도)",                shape: "map",   group: "calc" },
     { key: "단위에너지",   global: "LIB_단위에너지사용량",    label: "건축물 종류별 단위에너지사용량",      shape: "array", group: "calc" },
