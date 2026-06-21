@@ -200,6 +200,20 @@
   </div>
 </div>
 
+<!-- 설정 모달: 입력값·가중치·라이브러리 편집 (최적화 화면의 설정 버튼으로 진입) -->
+<div id="settings-modal" class="modal-overlay hidden">
+  <div class="modal-box settings-modal-box">
+    <div class="modal-header">
+      <span class="modal-title">설정 — 입력값 · 가중치 · 라이브러리</span>
+      <button class="modal-close" id="btn-settings-modal-close">×</button>
+    </div>
+    <p class="opt-desc" style="margin-top:0;">설비조합 최적화와 계산에 쓰이는 모든 가중치·상수·라이브러리 값을 직접 편집합니다. 저장하면 브라우저(localStorage)에 보관되어 다음 계산·최적화부터 적용되며, [기본값 복원]으로 언제든 되돌릴 수 있습니다.</p>
+    <div class="settings-modal-body">
+      <div id="settings-content" class="set-host"></div>
+    </div>
+  </div>
+</div>
+
 <!-- 앱 셸 -->
 <div class="app-shell">
 
@@ -239,10 +253,6 @@
       <button class="left-tab" role="tab" aria-selected="false" aria-controls="panel-optimize" id="tab-optimize" data-panel="panel-optimize">
         <span class="left-tab-dot" style="background:var(--dot-scenario,#10b981)"></span>
         설비조합 최적화
-      </button>
-      <button class="left-tab" role="tab" aria-selected="false" aria-controls="panel-settings" id="tab-settings" data-panel="panel-settings">
-        <span class="left-tab-dot" style="background:var(--text-hint)"></span>
-        설정
       </button>
     </nav>
 
@@ -415,8 +425,11 @@
     <!-- 탭 패널: 설비조합 최적화 -->
     <div class="left-tab-panel" id="panel-optimize" role="tabpanel" aria-labelledby="tab-optimize">
       <div class="section-card">
-        <div class="section-title">설비조합 최적화 시뮬레이션</div>
-        <p class="opt-desc">목표값(의무비율·전력생산비율)을 충족하는 신재생 설비 최적 조합을 자동 탐색하여 순위화합니다.</p>
+        <div class="opt-title-row">
+          <div class="section-title">설비조합 최적화 시뮬레이션</div>
+          <button class="opt-settings-btn" id="btn-open-settings" type="button" title="입력값·가중치·라이브러리 설정">⚙ 설정</button>
+        </div>
+        <p class="opt-desc">목표값(의무비율·전력생산비율)을 충족하는 신재생 설비 최적 조합을 자동 탐색하여 순위화합니다. 가중치·라이브러리 값은 우측 상단 <b>⚙ 설정</b>에서 편집할 수 있습니다.</p>
 
         <div class="section-subtitle">법적규제 기준</div>
         <div class="opt-grid2">
@@ -486,15 +499,6 @@
         <div id="optimize-result" class="opt-result">
           <span class="empty-state" style="padding:24px 16px;">[최적화 실행]을 클릭하면 목표값을 충족하는 설비조합을 순위별로 제시합니다.</span>
         </div>
-      </div>
-    </div>
-
-    <!-- 탭 패널: 설정 -->
-    <div class="left-tab-panel" id="panel-settings" role="tabpanel" aria-labelledby="tab-settings">
-      <div class="section-card">
-        <div class="section-title">설정 — 입력값 · 가중치 · 라이브러리</div>
-        <p class="opt-desc">설비조합 최적화와 계산에 쓰이는 모든 가중치·상수·라이브러리 값을 직접 편집합니다. 저장하면 브라우저(localStorage)에 보관되어 다음 계산·최적화부터 적용되며, [기본값 복원]으로 언제든 되돌릴 수 있습니다.</p>
-        <div id="settings-content" class="set-host"></div>
       </div>
     </div>
   </div>
@@ -963,7 +967,27 @@ function initApp() {
   initSection4();
   initRecommendTab();
   if (window.OptimizeUI) window.OptimizeUI.init();
+  initSettingsModal();
   renderAll();
+}
+
+// ── 설정 모달 (최적화 화면의 ⚙ 설정 버튼으로 진입) ──────────────────
+function initSettingsModal() {
+  var modal = document.getElementById('settings-modal');
+  var openBtn = document.getElementById('btn-open-settings');
+  var closeBtn = document.getElementById('btn-settings-modal-close');
+  if (!modal || !openBtn) return;
+  function open() {
+    if (window.SettingsUI) window.SettingsUI.init(); // 최초 진입 시 지연 렌더
+    modal.classList.remove('hidden');
+  }
+  function close() { modal.classList.add('hidden'); }
+  openBtn.addEventListener('click', open);
+  if (closeBtn) closeBtn.addEventListener('click', close);
+  modal.addEventListener('click', function(e) { if (e.target === modal) close(); });
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && !modal.classList.contains('hidden')) close();
+  });
 }
 
 // ── 좌측 패널 탭 전환 ─────────────────────────────────────────
@@ -984,9 +1008,6 @@ function initLeftPanelTabs() {
       panels.forEach(function(p) { p.classList.remove('active'); });
       var targetId = tab.getAttribute('data-panel');
       document.getElementById(targetId).classList.add('active');
-
-      // 설정 패널 최초 진입 시 지연 초기화 (대용량 테이블 사전 생성 방지)
-      if (targetId === 'panel-settings' && window.SettingsUI) window.SettingsUI.init();
     });
   });
 }

@@ -1917,7 +1917,26 @@ button, .alt-tab, .cover-image-drop, select,
 }
 .opt-explain-text:empty { margin-top: 0; }
 
-/* ── 설정 페이지 ───────────────────────────────────────────────── */
+/* ── 설정 모달 진입 버튼 (최적화 화면) ──────────────────────────── */
+.opt-title-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+}
+.opt-settings-btn {
+  flex: none; background: var(--bg-input); color: var(--text-primary);
+  border: 1px solid var(--border-default); border-radius: 6px;
+  padding: 6px 12px; font-size: 12px; font-weight: 600; cursor: pointer;
+  font-family: inherit; transition: background 0.15s, border-color 0.15s;
+}
+.opt-settings-btn:hover { border-color: var(--border-focus); background: var(--bg-card-inner); }
+
+/* ── 설정 모달 (넓은 테이블 표시용) ─────────────────────────────── */
+.settings-modal-box {
+  width: 1120px; max-width: 95vw; max-height: 90vh;
+  display: flex; flex-direction: column; padding: 24px 24px 20px;
+}
+.settings-modal-body { overflow-y: auto; flex: 1; margin-top: 4px; padding-right: 2px; }
+
+/* ── 설정 콘텐츠 ───────────────────────────────────────────────── */
 .set-host { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
 .set-group-title {
   font-size: 12px; font-weight: 700; color: var(--text-secondary);
