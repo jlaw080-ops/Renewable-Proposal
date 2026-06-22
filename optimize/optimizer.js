@@ -63,24 +63,45 @@
       }
     });
 
+    // 건물용 연속설비(지열·PEMFC·SOFC건물)의 부분집합을 열거해 구조적으로 다양한 조합을 생성한다.
+    // (LP가 최소비용으로 단일 설비에 수렴해 조합이 2~4개로 붕괴하는 것을 방지 → 요구도 다양성 확보)
+    // 예: 지열-only(디자인 우수), PV-only(저비용), PV+지열, PEMFC-only … 가 각각 별도 후보가 된다.
+    var 건물설비 = [];
+    if (지열) 건물설비.push(지열);
+    if (PEMFC) 건물설비.push(PEMFC);
+    if (SOFC건물) 건물설비.push(SOFC건물);
+    var 부분집합 = subsets(건물설비);   // 공집합 포함 (PV·고정 연료전지만으로 충족하는 조합 허용)
+
     var combos = [];
     PV옵션.forEach(function (pvName) {
       var pv = pvName ? find설비(pvName) : null;
       연료전지분기.forEach(function (fc) {
-        // 연속설비: 선택된 PV + 지열 + PEMFC + SOFC건물용 (항상 LP 후보, LP가 0이면 미채택)
-        var 연속 = [];
-        if (pv) 연속.push(pv);
-        if (지열) 연속.push(지열);
-        if (PEMFC) 연속.push(PEMFC);
-        if (SOFC건물) 연속.push(SOFC건물);
-        combos.push({
-          label: (pvName || "PV無") + " + " + fc.label,
-          연속설비: 연속,
-          고정설비: fc.고정
+        부분집합.forEach(function (sub) {
+          var 연속 = [];
+          if (pv) 연속.push(pv);
+          sub.forEach(function (s) { 연속.push(s); });
+          // 소스가 전혀 없으면(연속·고정 모두 비어있음) 무효
+          if (연속.length === 0 && fc.고정.length === 0) return;
+          var subLabel = sub.length ? sub.map(function (s) { return s.세부형식; }).join("+") : "건물설비無";
+          combos.push({
+            label: (pvName || "PV無") + " + " + subLabel + " + " + fc.label,
+            연속설비: 연속,
+            고정설비: fc.고정
+          });
         });
       });
     });
     return combos;
+  }
+
+  // 배열의 모든 부분집합(공집합 포함)
+  function subsets(arr) {
+    var out = [[]];
+    arr.forEach(function (x) {
+      var add = out.map(function (s) { return s.concat([x]); });
+      out = out.concat(add);
+    });
+    return out;
   }
 
   // 연속 LP 결과를 단위용량(스냅단위)의 정수배수로 스냅한다.
@@ -96,12 +117,26 @@
     return best;
   }
 
+  // 목적함수별 변수 계수 — 최소비용(cost) 또는 최대화(benefit·incentive·design)
+  // 차원별로 다른 용량배분을 유도해 "각 요구도를 우선 만족시키는" 다양한 조합을 생성한다.
+  var OVER설치 = 1.2;  // 최대화 목적: 의무 대비 과설치 허용 상한(20%) — 무한 설치 방지
+  function objCoeff(s, obj) {
+    var TC = getTC();
+    if (obj === "benefit") return s.l_순익;                                    // 운영순익 최대
+    if (obj === "incentive") return TC ? TC.등급점수(s.n_ZEB기여도) : 3;        // ZEB(인센티브) 최대
+    if (obj === "design") return TC                                           // 디자인 보존 최대
+      ? (TC.좋음점수_역방향(s.o_디자인훼손도) + TC.좋음점수_역방향(s.p_외부공간차지도)) / 2 : 3;
+    return s.d_장비비;                                                         // 초기비용 최소(기본)
+  }
+
   // ── 용량 LP (§6.2[2]) ───────────────────────────────────────────
   // 고정설비(연료전지 기수) 기여를 제약 우변에서 차감한 잔여 제약으로 연속설비 용량을 푼다.
+  // obj: 'cost'(최소비용·기본) | 'benefit' | 'incentive' | 'design' (최대화)
   // ctx: { 연간단위에너지소요량, 의무설치비율기준, 연간예상전력소비량, 전력생산비율기준, 면적{} }
-  function solveCapacity(combo, ctx) {
+  function solveCapacity(combo, ctx, obj) {
     var solver = getSolver();
     if (!solver) throw new Error("LP 솔버(window.solver) 미로드");
+    var isMax = (obj && obj !== "cost");
 
     var 면적 = ctx.면적 || {};
     var 의무에너지총량 = (ctx.연간단위에너지소요량 || 0) * (ctx.의무설치비율기준 || 0) / 100;
@@ -131,7 +166,7 @@
     var variables = {};
     combo.연속설비.forEach(function (s, idx) {
       var v = {
-        cost: s.d_장비비,
+        목적: objCoeff(s, obj),
         e_energy: s.c_연간단위에너지생산량,
         e_power: s.발전가능 ? s.f_연간발전량 : 0
       };
@@ -143,7 +178,8 @@
       variables["v" + idx] = v;
     });
 
-    var constraints = { e_energy: { min: 잔여에너지 } };
+    // 최대화 목적은 의무를 만족하되 과설치 상한(OVER설치)을 둬 무한 설치를 막는다.
+    var constraints = { e_energy: isMax ? { min: 잔여에너지, max: 잔여에너지 * OVER설치 + 1e-6 } : { min: 잔여에너지 } };
     if (의무전력총량 > 0) constraints.e_power = { min: 잔여전력 };
     if (지열생산하한 > 0) constraints.geo = { min: 지열생산하한 };       // 지열 의무 옵션2(생산량)
     if (지열면적하한 > 0) constraints.geoArea = { min: 지열면적하한 };   // 지열 의무 옵션1(면적)
@@ -154,7 +190,7 @@
     });
 
     var model = {
-      optimize: "cost", opType: "min",
+      optimize: "목적", opType: isMax ? "max" : "min",
       constraints: constraints, variables: variables
     };
 
@@ -240,29 +276,35 @@
     var combos = generateCombinations(전력목표);
     var feasible = [];
 
+    // 각 구조 조합을 4개 목적함수(최소비용·최대순익·최대인센티브·최대디자인)로 풀어
+    // 가중치 낮은 요구도까지 우선 만족시키는 다양한 후보를 생성한다(중복은 이후 제거).
+    var 목적들 = ["cost", "benefit", "incentive", "design"];
+    var 평가수 = 0;
     combos.forEach(function (combo) {
-      var cap = solveCapacity(combo, ctx);          // [2] 용량 LP
-      if (!cap) return;                              // [3] 필터링(infeasible 제거)
-      var targets = TC.평가조합(cap.items, ctx);     // §5 목표값
-      // 법적규제 재검증(LP는 잔여 기준이므로 전체 재확인)
-      // 법적규제 재검증. LP는 잔여기준으로 충족시키지만 부동소수 오차로 경계해(예 9.9999%)가
-      // 탈락하지 않도록 허용오차(eps)를 둔다 — LP 제약을 만족한 해는 정당하다.
-      var reg = targets.법적규제;
-      var eps = 1e-6;
-      if (ctx.의무설치비율기준 != null && reg.의무설치비율 < ctx.의무설치비율기준 - eps) return;
-      if (reg.전력생산비율 != null && ctx.전력생산비율기준 != null
-        && reg.전력생산비율 < ctx.전력생산비율기준 - eps) return;
-      // 단위배수 스냅으로 면적이 늘어 제약을 초과할 수 있으므로 재검증
-      var 면적c = ctx.면적 || {};
-      var 면적ok = ["옥상", "외피", "대지", "기계실"].every(function (sp) {
-        return 면적c[sp] == null || targets.설치면적[sp] <= 면적c[sp] + 1e-6;
+      목적들.forEach(function (obj) {
+        평가수++;
+        var cap = solveCapacity(combo, ctx, obj);     // [2] 용량 LP (목적별)
+        if (!cap) return;                              // [3] 필터링(infeasible 제거)
+        var targets = TC.평가조합(cap.items, ctx);     // §5 목표값
+        // 법적규제 재검증. LP는 잔여기준으로 충족시키지만 부동소수 오차로 경계해(예 9.9999%)가
+        // 탈락하지 않도록 허용오차(eps)를 둔다 — LP 제약을 만족한 해는 정당하다.
+        var reg = targets.법적규제;
+        var eps = 1e-6;
+        if (ctx.의무설치비율기준 != null && reg.의무설치비율 < ctx.의무설치비율기준 - eps) return;
+        if (reg.전력생산비율 != null && ctx.전력생산비율기준 != null
+          && reg.전력생산비율 < ctx.전력생산비율기준 - eps) return;
+        // 단위배수 스냅으로 면적이 늘어 제약을 초과할 수 있으므로 재검증
+        var 면적c = ctx.면적 || {};
+        var 면적ok = ["옥상", "외피", "대지", "기계실"].every(function (sp) {
+          return 면적c[sp] == null || targets.설치면적[sp] <= 면적c[sp] + 1e-6;
+        });
+        if (!면적ok) return;
+        // label을 실제 채택 items 기준으로 재생성 (LP가 0으로 둔 설비는 제외됨)
+        var label = cap.items.map(function (it) {
+          return it.설비.세부형식 + (it.고정 ? "×" + it.기수 + "기" : " " + Math.round(it.용량) + "kW");
+        }).join(" + ");
+        feasible.push({ label: label, items: cap.items, targets: targets });
       });
-      if (!면적ok) return;
-      // label을 실제 채택 items 기준으로 재생성 (LP가 0으로 둔 설비는 제외됨)
-      var label = cap.items.map(function (it) {
-        return it.설비.세부형식 + (it.고정 ? "×" + it.기수 + "기" : " " + Math.round(it.용량) + "kW");
-      }).join(" + ");
-      feasible.push({ label: label, items: cap.items, targets: targets });
     });
 
     // 중복 해 제거: LP가 연속변수를 0으로 만들어 실질적으로 동일해진 조합 통합
@@ -276,7 +318,7 @@
     feasible = deduped;
 
     if (feasible.length === 0) {
-      return { ranked: [], 평가건수: combos.length, 실행가능건수: 0 };
+      return { ranked: [], 평가건수: 평가수, 실행가능건수: 0 };
     }
 
     // [4] 목적함수 정규화 + 가중합 (§6.2[4])
@@ -311,7 +353,13 @@
       f.정규화 = { 초기비용: n초기[i], 운영순익: n운영[i], 인센티브: n인센[i], 디자인: n디자[i], 시공성: n시공[i], 의무근접: n근접[i] };
       f.score = w.초기비용 * n초기[i] + w.운영비 * n운영[i] + w.인센티브 * n인센[i]
         + w.디자인 * n디자[i] + w.시공성 * n시공[i] + w.의무근접 * n근접[i];
+      f.태그 = []; f.챔피언 = [];
     });
+
+    // 차원별 강점 태그 — 가중치와 무관하게 "어떤 요구도를 높게 만족하는지" 표시.
+    // 각 요구도 차원에서 (정규화값-min)/(max-min) ≥ 0.85 인 조합에 태그, 최댓값 조합은 챔피언.
+    // 차별성이 없는(span<0.05) 차원은 생략. → 가중치 낮은 항목의 대표 조합도 챔피언으로 노출됨.
+    tagDimensions(feasible);
 
     // [5] 순위화
     var ranked = feasible.slice().sort(function (a, b) { return b.score - a.score; });
@@ -319,10 +367,31 @@
 
     return {
       ranked: ranked,
-      평가건수: combos.length,
+      평가건수: 평가수,
       실행가능건수: feasible.length,
       가중치: w
     };
+  }
+
+  // 요구도 차원별 강점 태그·챔피언 부여 (정규화값 기준, 척도 무관 상대평가)
+  var TAG차원 = [
+    ["초기비용", "초기비용"], ["운영순익", "운영비"], ["인센티브", "인센티브"],
+    ["디자인", "디자인"], ["시공성", "시공성"], ["의무근접", "의무근접"]
+  ];
+  function tagDimensions(feasible) {
+    TAG차원.forEach(function (d) {
+      var key = d[0], label = d[1];
+      var vals = feasible.map(function (f) { return f.정규화[key]; });
+      var max = Math.max.apply(null, vals), min = Math.min.apply(null, vals);
+      if (max - min < 0.05) return;                  // 차별성 없음 → 태그 생략
+      feasible.forEach(function (f) {
+        var rel = (f.정규화[key] - min) / (max - min);
+        if (rel >= 0.85) {
+          f.태그.push(label);
+          if (f.정규화[key] >= max - 1e-9) f.챔피언.push(label);
+        }
+      });
+    });
   }
 
   window.Optimizer = {

@@ -243,6 +243,27 @@
     return '<span class="opt-grade-bar"><span style="width:' + pct + '%"></span></span>';
   }
 
+  // 강점 요구도 태그 칩 (챔피언=★ 강조)
+  function tagChips(f) {
+    if (!f.태그 || !f.태그.length) return '<div class="opt-tags"><span class="opt-tag muted">균형형</span></div>';
+    var chips = f.태그.map(function (t) {
+      var champ = f.챔피언 && f.챔피언.indexOf(t) >= 0;
+      return '<span class="opt-tag' + (champ ? " champ" : "") + '">' + (champ ? "★ " : "") + t + "</span>";
+    }).join("");
+    return '<div class="opt-tags">' + chips + "</div>";
+  }
+
+  // 표시 조합 선정: 가중치 상위 10개 + 차원별 챔피언(가중치 낮은 요구도 대표) 주입
+  function pickShow(ranked) {
+    var MIN_SHOW = 10;
+    var show = ranked.slice(0, Math.min(MIN_SHOW, ranked.length));
+    ranked.forEach(function (f) {
+      if (f.챔피언 && f.챔피언.length && show.indexOf(f) < 0) show.push(f);
+    });
+    show.sort(function (a, b) { return a.rank - b.rank; });
+    return show;
+  }
+
   function render(r, box, ctx) {
     if (!r.ranked.length) {
       box.innerHTML = '<div class="opt-error">조건을 충족하는 조합이 없습니다. 면적·기준을 완화해 보세요. (평가 '
@@ -265,9 +286,11 @@
       html += '<div class="opt-geo-banner">지열 의무 비교 — 옵션1(면적 50%): ' + s1
         + ' / 옵션2(비율 50%): ' + s2 + ' → <b>' + gc.추천 + '</b> 추천</div>';
     }
-    html += '<div class="opt-summary"><span>실행가능 ' + r.실행가능건수 + "개 조합 / 평가 " + r.평가건수
+    var show = pickShow(r.ranked);
+    html += '<div class="opt-summary"><span>실행가능 ' + r.실행가능건수 + "개 중 " + show.length
+      + "개 표시 <small>(가중치 상위 + 요구도별 강점 조합)</small> / 평가 " + r.평가건수
       + '건</span><button class="opt-report-btn" type="button">보고서 출력</button></div>';
-    r.ranked.slice(0, 5).forEach(function (f) {
+    show.forEach(function (f) {
       var reg = f.targets.법적규제;
       var totC = f.items.reduce(function (s, x) { return s + x.용량; }, 0);
       var sysRows = f.items.map(function (it) {
@@ -285,6 +308,7 @@
         + '<div class="opt-card-head"><span class="opt-rank">#' + f.rank + '</span>'
         + '<span class="opt-score">' + (f.score * 100).toFixed(0) + '점</span>'
         + (f.rank === 1 ? '<span class="opt-badge">최적</span>' : "") + "</div>"
+        + tagChips(f)
         + '<div class="opt-sys">' + sysRows + "</div>"
         + '<div class="opt-targets">'
         + '<div><span>초기비용</span><b>' + (f.targets.초기비용 / 1e8).toFixed(2) + "억</b></div>"

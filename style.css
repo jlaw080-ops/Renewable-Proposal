@@ -1919,6 +1919,16 @@ button, .alt-tab, .cover-image-drop, select,
 }
 .opt-explain-text:empty { margin-top: 0; }
 
+/* 요구도 강점 태그 칩 */
+.opt-tags { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0 2px; }
+.opt-tag {
+  font-size: 10.5px; font-weight: 600; padding: 2px 7px; border-radius: 10px;
+  background: var(--bg-input); color: var(--text-secondary);
+  border: 1px solid var(--border-default); white-space: nowrap;
+}
+.opt-tag.champ { background: var(--accent-primary); color: #0B1215; border-color: transparent; }
+.opt-tag.muted { color: var(--text-hint); font-weight: 400; background: transparent; }
+
 /* ── 설정 모달 진입 버튼 (최적화 화면) ──────────────────────────── */
 .opt-title-row {
   display: flex; align-items: center; justify-content: space-between; gap: 10px;
