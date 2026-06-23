@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>신재생에너지 설비조합 최적화 시뮬레이션 — 기능 가이드</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@1.3.9/dist/web/static/pretendard.css"/>
+<style>
+:root{
+  --pd-ink:#1a1a1a; --pd-ink-soft:#4a4a4a; --pd-line:#1a1a1a; --pd-line-soft:#c8c4bd;
+  --pd-paper:#fafaf7; --pd-accent:#1e40af; --pd-accent-soft:#dbe3f7; --pd-highlight:#fff3a8;
+  --pd-font:'Pretendard',-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+  --pd-mono:'JetBrains Mono',ui-monospace,monospace;
+}
+@page{ size:A4 portrait; margin:20mm 18mm 22mm 18mm;
+  @bottom-center{ content:counter(page) " / " counter(pages); font-size:9pt; color:#6b7280; } }
+*{ box-sizing:border-box; }
+body{ font-family:var(--pd-font); font-size:10.5pt; color:#1f2937; line-height:1.7;
+  background:#e5e7eb; margin:0; padding:10mm 0; }
+.page{ width:210mm; min-height:297mm; padding:20mm 18mm 22mm 18mm; margin:0 auto 10mm auto;
+  background:#fff; box-shadow:0 2px 8px rgba(0,0,0,0.15); position:relative;
+  page-break-after:always; overflow:hidden; }
+.page:last-child{ page-break-after:auto; }
+h1{ font-size:24pt; font-weight:700; color:#1e40af; margin:0 0 14px; line-height:1.25;
+  page-break-before:always; break-before:page; }
+h1.no-break, h1.cover-h{ page-break-before:avoid; break-before:avoid; }
+h2{ font-size:17pt; font-weight:600; color:#1e40af; border-left:4px solid #1e40af;
+  padding-left:10px; margin:20px 0 10px; }
+h3{ font-size:13pt; font-weight:600; color:#374151; margin:16px 0 8px; }
+p{ margin:8px 0; }
+a{ color:#1e40af; text-decoration:none; }
+strong{ font-weight:600; color:#111827; }
+code{ font-family:var(--pd-mono); font-size:9.2pt; background:#f3f4f6; color:#b91c1c;
+  padding:1px 5px; border-radius:3px; }
+pre{ background:#f8fafc; border:1px solid #e5e7eb; border-radius:6px; padding:10px 14px;
+  overflow:auto; break-inside:avoid; page-break-inside:avoid; }
+pre code{ background:none; color:#1f2937; padding:0; font-size:9pt; line-height:1.55; white-space:pre; }
+ul,ol{ margin:8px 0; padding-left:22px; }
+li{ margin:4px 0; }
+blockquote{ margin:10px 0; padding:6px 14px; border-left:4px solid #93c5fd;
+  background:#f0f7ff; color:#374151; border-radius:0 4px 4px 0; }
+blockquote p{ margin:4px 0; font-size:10pt; }
+table{ width:100%; border-collapse:collapse; margin:12px 0; font-size:9.3pt;
+  break-inside:avoid; page-break-inside:avoid; }
+th,td{ border:1px solid #d1d5db; padding:5px 8px; text-align:left; vertical-align:top; }
+table th{ background:#1e40af; color:#fff; font-size:10pt; font-weight:600; }
+tbody tr:nth-child(even){ background:#f8fafc; }
+hr{ border:none; border-top:1px solid #e5e7eb; margin:14px 0; }
+img,.pipeline-diagram,figure{ break-inside:avoid; page-break-inside:avoid; }
+img{ max-width:100%; display:block; margin:8mm auto; }
+.pipeline-diagram{ margin:14px 0; }
+.pipeline-diagram svg{ width:100%; height:auto; display:block; }
+.pipeline-diagram svg text{ font-family:var(--pd-font); fill:var(--pd-ink); }
+.pipeline-diagram svg text.mono{ font-family:var(--pd-mono); }
+/* cover */
+.cover .cover-h{ font-size:26pt; text-align:center; margin-top:40mm; }
+.cover-sub{ text-align:center; color:#6b7280; font-size:11pt; margin:6px 0 2px; }
+.cover-meta{ text-align:center; color:#9ca3af; font-size:9.5pt; margin-bottom:24px; }
+/* TOC */
+.toc h2{ color:#1e40af; border-left:none; padding-left:0; font-size:18pt; text-align:center; margin:18px 0 16px; }
+.toc-list{ list-style:none; padding:0; margin:0; }
+.toc-list li{ display:flex; justify-content:space-between; margin-bottom:10px; font-size:11pt; }
+.toc-list a{ display:flex; width:100%; justify-content:space-between; color:#1e40af; }
+.dots{ flex:1; border-bottom:1px dotted #999; margin:0 8px 4px 8px; }
+.page-footer{ position:absolute; bottom:10mm; left:0; right:0; text-align:center; font-size:9pt; color:#6b7280; }
+/* ===================================
+   components.css — v2 Semantic Block Catalog
+   markdown-to-print-html skill
+   =================================== */
+
+/* KPI Card Grid */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(50mm, 1fr));
+  gap: 6mm;
+  margin: 8mm 0;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+.kpi-card {
+  border-left: 4px solid #1e40af;
+  padding: 5mm 6mm;
+  background: #f8fafc;
+}
+.kpi-label { font-size: 9pt; color: #6b7280; margin-bottom: 2mm; }
+.kpi-value { font-size: 24pt; font-weight: 700; color: #1e40af; font-feature-settings: "tnum"; }
+.kpi-unit  { font-size: 12pt; font-weight: 500; color: #374151; margin-left: 2mm; }
+
+/* Callout Boxes */
+.callout {
+  border-left: 4px solid;
+  padding: 4mm 6mm;
+  margin: 6mm 0;
+  border-radius: 0 2mm 2mm 0;
+  break-inside: avoid;
+  page-break-inside: avoid;
+  font-size: 10pt;
+}
+.callout-title { font-weight: 600; margin-bottom: 2mm; }
+.callout-body  { line-height: 1.6; }
+
+.callout-warning { border-color: #dc2626; background: #fef2f2; }
+.callout-warning .callout-title { color: #dc2626; }
+.callout-note    { border-color: #1e40af; background: #eff6ff; }
+.callout-note    .callout-title { color: #1e40af; }
+.callout-tip     { border-color: #059669; background: #f0fdf4; }
+.callout-tip     .callout-title { color: #059669; }
+
+/* 2-Column Comparison Card */
+.compare-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5mm;
+  margin: 8mm 0;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+.compare-card { padding: 5mm 6mm; }
+.compare-asis { border: 1px solid #d1d5db; background: #f9fafb; }
+.compare-tobe { border: 2px solid #1e40af; background: #eff6ff; }
+.compare-label {
+  font-size: 10pt; font-weight: 600;
+  margin-bottom: 3mm; padding-bottom: 2mm;
+  border-bottom: 1px solid currentColor;
+}
+.compare-asis .compare-label { color: #6b7280; }
+.compare-tobe .compare-label { color: #1e40af; }
+
+/* Conclusion Box */
+.conclusion {
+  border-top: 3px solid #1e40af;
+  border-bottom: 3px solid #1e40af;
+  background: linear-gradient(180deg, #eff6ff 0%, #ffffff 100%);
+  padding: 6mm 8mm;
+  margin: 10mm 0;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+.conclusion-title {
+  font-size: 13pt; font-weight: 700; color: #1e40af;
+  margin-bottom: 3mm;
+}
+.conclusion-body { font-size: 10.5pt; line-height: 1.7; color: #1f2937; }
+
+</style>
+</head>
+<body>
+<section class="page cover">
+<h1 class="cover-h">설비조합 최적화 시뮬레이션 가이드</h1>
+<blockquote><p>건축물의 <strong>신재생에너지 의무설치비율(및 전력생산비율)을 충족하는 설비 조합</strong>을 자동 탐색하고, 사용자 요구도(비용·디자인·법적심의 등)에 따라 <strong>순위화</strong>하는 기능. 본 문서는 입력·기준조건·가중치·점수계산 전 과정을 설명한다.</p></blockquote>
+<hr/>
+<div class="toc">
+<h2>목 차</h2>
+<ol class="toc-list"><li><a href="#c0">0. 한눈에 보기 — 처리 흐름 <span class="dots"></span> 2</a></li><li><a href="#c1">1. 입력 (Input) <span class="dots"></span> 3</a></li><li><a href="#c2">2. 라이브러리·데이터 <span class="dots"></span> 4</a></li><li><a href="#c3">3. 최적화 기준 조건 (제약) <span class="dots"></span> 5</a></li><li><a href="#c4">4. 알고리즘 흐름 (`optimizer.js`) <span class="dots"></span> 6</a></li><li><a href="#c5">5. 가중치 적용 &amp; 점수 계산 (핵심) <span class="dots"></span> 7</a></li><li><a href="#c6">6. 결과 표시 (`optimizeUI.render`) <span class="dots"></span> 8</a></li><li><a href="#c7">7. 설정 편집 (⚙ 설정 모달, `settingsUI.js`) <span class="dots"></span> 9</a></li><li><a href="#c8">8. 한계·주의 (도메인 검토 필요) <span class="dots"></span> 10</a></li><li><a href="#c9">9. 빠른 사용 절차 <span class="dots"></span> 11</a></li></ol>
+</div>
+<div class="page-footer"><span class="page-num"></span></div>
+</section>
+<section class="page"><h1 id="c0" class="no-break">0. 한눈에 보기 — 처리 흐름</h1>
+<figure class="pipeline-diagram">
+<svg viewBox="0 0 770 200" role="img" aria-label="입력 → 라이브러리 → 엔진 → 출력 처리 흐름">
+  <defs>
+    <marker id="pd-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="var(--pd-ink)"/>
+    </marker>
+  </defs>
+  <g transform="translate(10, 30)"><rect width="150" height="140" rx="6" fill="#fff" stroke="var(--pd-ink)" stroke-width="1.5"/><text x="75" y="24" text-anchor="middle" font-size="13" font-weight="600" fill="var(--pd-accent)">입력</text><text x="14" y="46" font-size="9.5" fill="var(--pd-ink-soft)">· 법적규제 기준</text><text x="14" y="63" font-size="9.5" fill="var(--pd-ink-soft)">· 전력생산비율(선택)</text><text x="14" y="80" font-size="9.5" fill="var(--pd-ink-soft)">· 가용 면적</text><text x="14" y="97" font-size="9.5" fill="var(--pd-ink-soft)">· 사용자 요구도 7차원</text><text x="14" y="114" font-size="9.5" fill="var(--pd-ink-soft)">· 지자체(경관)</text></g><g transform="translate(210, 30)"><rect width="150" height="140" rx="6" fill="#fff" stroke="var(--pd-ink)" stroke-width="1.5"/><text x="75" y="24" text-anchor="middle" font-size="13" font-weight="600" fill="var(--pd-accent)">라이브러리</text><text x="14" y="46" font-size="9.5" fill="var(--pd-ink-soft)">· 설비 8종 ⓐ~ⓡ</text><text x="14" y="63" font-size="9.5" fill="var(--pd-ink-soft)">· 경관계수</text><text x="14" y="80" font-size="9.5" fill="var(--pd-ink-soft)">· 제약 매트릭스 9요인</text><text x="14" y="97" font-size="9.5" fill="var(--pd-ink-soft)">· 전력 원단위</text><text x="14" y="114" font-size="9.5" fill="var(--pd-ink-soft)">· OPT_CONFIG 상수</text></g><g transform="translate(410, 30)"><rect width="150" height="140" rx="6" fill="#fff" stroke="var(--pd-ink)" stroke-width="1.5"/><text x="75" y="24" text-anchor="middle" font-size="13" font-weight="600" fill="var(--pd-accent)">엔진</text><text x="14" y="46" font-size="9.5" fill="var(--pd-ink-soft)">① 조합 생성</text><text x="14" y="63" font-size="9.5" fill="var(--pd-ink-soft)">② 용량 LP(5목적)</text><text x="14" y="80" font-size="9.5" fill="var(--pd-ink-soft)">③ 필터·중복제거</text><text x="14" y="97" font-size="9.5" fill="var(--pd-ink-soft)">④ 정규화·가중합</text><text x="14" y="114" font-size="9.5" fill="var(--pd-ink-soft)">⑤ 강점 태그</text></g><g transform="translate(610, 30)"><rect width="150" height="140" rx="6" fill="#fff" stroke="var(--pd-ink)" stroke-width="1.5"/><text x="75" y="24" text-anchor="middle" font-size="13" font-weight="600" fill="var(--pd-accent)">출력</text><text x="14" y="46" font-size="9.5" fill="var(--pd-ink-soft)">· 순위카드(10+챔피언)</text><text x="14" y="63" font-size="9.5" fill="var(--pd-ink-soft)">· 종합점수·강점태그</text><text x="14" y="80" font-size="9.5" fill="var(--pd-ink-soft)">· 6목표값·정성막대</text><text x="14" y="97" font-size="9.5" fill="var(--pd-ink-soft)">· 9요인 제약 프로파일</text><text x="14" y="114" font-size="9.5" fill="var(--pd-ink-soft)">· AI설명·보고서</text></g>
+  <path d="M 160 100 L 210 100" fill="none" stroke="var(--pd-ink)" stroke-width="1.6" marker-end="url(#pd-arrow)"/>
+  <path d="M 360 100 L 410 100" fill="none" stroke="var(--pd-ink)" stroke-width="1.6" marker-end="url(#pd-arrow)"/>
+  <path d="M 560 100 L 610 100" fill="none" stroke="var(--pd-ink)" stroke-width="1.6" marker-end="url(#pd-arrow)"/>
+</svg>
+</figure>
+<ul><li><strong>하드 제약(반드시 충족)</strong>: 의무설치비율, 전력생산비율, 공간별 가용면적, 지열 최소의무</li><li><strong>소프트 목적(점수화)</strong>: 초기비용·운영비·인센티브·디자인·시공성·의무근접·법규제약 (7개 요구도 차원)</li><li>두 축은 섞지 않는다 — 제약은 후보 통과 여부, 목적은 통과 후보의 순위를 정한다.</li></ul>
+<hr/>
+<div class="page-footer"><span class="page-num"></span></div></section>
+<section class="page"><h1 id="c1" class="no-break">1. 입력 (Input)</h1>
+<p>UI: 좌측 패널 <strong>「설비조합 최적화 시뮬레이션」</strong> 탭. 코드: <code>optimize/optimizeUI.js</code>의 <code>collectCtx()</code>.</p>
+<h2>1.1 법적규제 기준 (필수)</h2>
+<table><thead><tr><th>입력</th><th>필드</th><th>설명</th></tr></thead><tbody><tr><td>연간 에너지소요량 (kWh/yr)</td><td><code>opt-energy-demand</code></td><td>의무비율 분모. <strong>사업정보 계산결과(Output1) 자동 연동</strong></td></tr><tr><td>의무설치비율 (%)</td><td><code>opt-req-ratio</code></td><td>충족해야 할 의무비율. Output2 자동 연동</td></tr><tr><td>지열 최소 의무비율 (%)</td><td><code>opt-geo-ratio</code></td><td>(선택) 서울시 등 지열·수열 의무. 미입력 시 미적용</td></tr></tbody></table>
+<blockquote><p>지열 의무 입력 시 건축면적(<code>inp-건축면적</code>)을 함께 사용해 <strong>옵션1(면적 기준)·옵션2(생산량 기준)</strong>을 각각 풀어 유리한 쪽을 추천한다(§4.4).</p></blockquote>
+<h2>1.2 전력생산비율 (선택)</h2>
+<table><thead><tr><th>입력</th><th>필드</th><th>설명</th></tr></thead><tbody><tr><td>건물유형</td><td><code>opt-building-type</code></td><td>전력 원단위 조회 키</td></tr><tr><td>연면적 (㎡)</td><td><code>opt-building-area</code></td><td>전력소비량 산정용</td></tr><tr><td>전력생산비율 기준 (%)</td><td><code>opt-power-ratio</code></td><td>미입력 시 <strong>전력 제약 자체를 제외</strong></td></tr><tr><td>예상 전력소비량</td><td>(자동계산)</td><td><code>연간예상전력소비량 = Σ(전력원단위 × 연면적)</code> (<code>powerEstimator.js</code>)</td></tr></tbody></table>
+<blockquote><p>전력생산비율 기준 + 예상소비량이 <strong>모두 있을 때만</strong> 발전용 연료전지(PAFC·SOFC발전)가 후보에 포함된다(전력 목표가 없으면 비발전 설비가 공정히 검토되도록 제외).</p></blockquote>
+<h2>1.3 가용 면적 (기준면적 대비 비율 %, 미입력 = 무제한)</h2>
+<table><thead><tr><th>공간</th><th>기준면적</th><th>대상 설비</th></tr></thead><tbody><tr><td>옥상</td><td>건축면적</td><td>수평 PV</td></tr><tr><td>외피</td><td>예상 외피면적 = <code>4·√건축면적 × (연면적/건축면적) × 층고</code> (기본 3.5m)</td><td>BAPV·BIPV</td></tr><tr><td>대지</td><td>대지면적</td><td>지열</td></tr><tr><td>기계실</td><td>건축면적</td><td>연료전지</td></tr></tbody></table>
+<ul><li>비율(%)을 입력하면 <code>기준면적 × 비율%</code>가 해당 공간의 상한이 된다. 빈칸이면 무제한.</li></ul>
+<h2>1.4 사용자 요구도 (7차원, 5등급)</h2>
+<p>라디오 5등급 = <strong>매우높음 · 높음 · 보통 · 낮음 · 매우낮음</strong>. 각 차원이 점수 가중치로 환산된다(§5).</p>
+<table><thead><tr><th>차원</th><th>키</th><th>의미</th><th>기본값</th></tr></thead><tbody><tr><td>초기비용 절감</td><td><code>초기비용</code></td><td>장비비(ⓓ) 최소 선호</td><td>보통</td></tr><tr><td>운영비 절감</td><td><code>운영비</code></td><td>연간 운영순익(ⓛ) 최대 선호</td><td>보통</td></tr><tr><td>인센티브 확보</td><td><code>인센티브</code></td><td>ZEB 기여도(ⓝ) 선호</td><td>보통</td></tr><tr><td>디자인 보존</td><td><code>디자인</code></td><td>외관훼손·외부공간 최소 (경관계수 보정)</td><td>보통</td></tr><tr><td>시공 용이성</td><td><code>시공성</code></td><td>공사기간·난이도 최소</td><td>보통</td></tr><tr><td>의무비율 근접</td><td><code>의무근접</code></td><td>과충족 회피(딱 맞게)</td><td><strong>높음</strong></td></tr><tr><td>법적심의 적합성</td><td><code>법규제약</code></td><td>건축심의·환경영향평가 제약 회피</td><td>보통</td></tr></tbody></table>
+<blockquote><p><strong>건물유형 + 사업형태 선택 시</strong> <code>LIB_요구도</code>에서 표준 요구도를 자동 반영한다(<code>autoLoadRequirements</code>). 시공성은 토지개발·기계실·공사기간·공사난이도 4개 하위등급의 평균으로 환산한다. 법규제약은 표준값이 없어 기본 보통으로 둔다.</p></blockquote>
+<h2>1.5 지자체 (경관 보정용)</h2>
+<p>사업정보의 대지위치(<code>sel-대지위치</code>)를 <code>normalize대지위치()</code>로 정규화해 <strong>경관민감도</strong> 조회 키로 사용한다(§5.2).</p>
+<hr/>
+<div class="page-footer"><span class="page-num"></span></div></section>
+<section class="page"><h1 id="c2" class="no-break">2. 라이브러리·데이터</h1>
+<p>모두 <code>window.LIB_*</code> / <code>window.OPT_CONFIG</code> 전역으로 로드되며, <strong>설정 모달에서 편집</strong> 가능하다(localStorage 오버라이드, §7).</p>
+<h2>2.1 설비 데이터셋 (<code>LIB_설비최적화</code>) — 8설비 × ⓐ~ⓡ 18변수</h2>
+<p>출처: <code>26.06.18_...입력및조건값.xlsx</code> (2026-06-18 확정).</p>
+<table><thead><tr><th>변수</th><th>기호</th><th>단위</th><th>용도</th></tr></thead><tbody><tr><td>단위에너지생산량</td><td>ⓐ</td><td>kWh/㎡·yr</td><td>의무비율 분자 산정</td></tr><tr><td>원별보정계수</td><td>ⓑ</td><td>–</td><td>별표10 가중치</td></tr><tr><td>연간단위에너지생산량</td><td>ⓒ=ⓐ×ⓑ</td><td>kWh/yr</td><td><strong>의무비율 분자</strong></td></tr><tr><td>장비비</td><td>ⓓ</td><td>원/kW</td><td><strong>초기비용</strong></td></tr><tr><td>생산량단가</td><td>ⓔ=ⓓ/ⓒ</td><td>원/(kWh/yr)</td><td>참고</td></tr><tr><td>연간발전량</td><td>ⓕ</td><td>kWh/yr</td><td><strong>전력생산비율 분자</strong>(발전가능 설비)</td></tr><tr><td>전기/열절약·연료비·유지비</td><td>ⓗⓘⓙⓚ</td><td>원/kW·yr</td><td>순익 산정</td></tr><tr><td>순익</td><td>ⓛ=ⓗ+ⓘ−ⓙ−ⓚ</td><td>원/kW·yr</td><td><strong>운영순익</strong></td></tr><tr><td>설치면적</td><td>ⓜ</td><td>㎡/kW</td><td><strong>면적 제약</strong></td></tr><tr><td>ZEB기여도·디자인훼손도·외부공간차지도·공사기간·공사난이도</td><td>ⓝⓞⓟⓠⓡ</td><td>5등급</td><td><strong>정성 목표값</strong></td></tr><tr><td>단위용량 / 스냅단위</td><td>–</td><td>kW</td><td>연료전지 정수용량·용량 스냅</td></tr><tr><td>설치공간 / 발전가능</td><td>–</td><td>–</td><td>면적분류 / 전력기여 여부</td></tr></tbody></table>
+<p><strong>핵심 수치 요약</strong></p>
+<table><thead><tr><th>세부형식</th><th>형식</th><th>ⓑ보정</th><th>ⓒ생산량</th><th>ⓓ장비비(원/kW)</th><th>ⓛ순익</th><th>ⓜ면적</th><th>설치공간</th><th>발전</th></tr></thead><tbody><tr><td>고정식(수평)PV</td><td>태양광</td><td>0.95</td><td>1,290</td><td>2,600,000</td><td>126,496</td><td>5</td><td>옥상</td><td>O</td></tr><tr><td>고정식(수직)BAPV</td><td>태양광</td><td>0.95</td><td>1,290</td><td>2,600,000</td><td>126,496</td><td>5</td><td>외피</td><td>O</td></tr><tr><td>BIPV</td><td>태양광</td><td><strong>6.12</strong></td><td>5,649</td><td>5,000,000</td><td>78,496</td><td>5</td><td>외피</td><td>O</td></tr><tr><td>수직밀폐형(지열)</td><td>지열</td><td>1.26</td><td>1,089</td><td>2,000,000</td><td>133,420</td><td>0.44</td><td>대지</td><td>X</td></tr><tr><td>PEMFC(건물용)</td><td>연료전지</td><td>2.20</td><td>16,313</td><td>25,000,000</td><td>604,045</td><td>0.6</td><td>기계실</td><td>O</td></tr><tr><td>SOFC(건물용)</td><td>연료전지</td><td><strong>8.71</strong></td><td>80,115</td><td>100,000,000</td><td>181,136</td><td>1</td><td>기계실</td><td>O</td></tr><tr><td>PAFC(발전용)</td><td>연료전지</td><td>0.93</td><td>8,170</td><td>11,360,000</td><td>373,590</td><td>0.2</td><td>기계실</td><td>O</td></tr><tr><td>SOFC(발전용)</td><td>연료전지</td><td>8.71</td><td>80,115</td><td>16,666,667</td><td>235,362</td><td>0.14</td><td>기계실</td><td>O</td></tr></tbody></table>
+<blockquote><p>ⓑ보정계수가 클수록 <strong>소용량으로 의무비율을 충족</strong>한다(BIPV 6.12·SOFC 8.71이 특히 유리). 반대로 ⓒ가 큰 연료전지는 정수용량(PAFC 440·SOFC발전 300 kW/기)이라 소규모 설계가 어렵다.</p></blockquote>
+<h2>2.2 경관계수 (<code>LIB_경관민감도</code> · <code>LIB_경관영향</code>)</h2>
+<ul><li><strong>경관민감도</strong>(지자체별): 강 1.0(서울·인천·세종·대구·광주) / 중 0.5(경기·부산·대전·미조사) / 약 0.0(울산)</li><li><strong>경관영향</strong>(세부형식별): BAPV 1.0 &gt; 수평PV 0.7 &gt; BIPV 0.2 &gt; 지열·연료전지 0.0</li><li>적용: 디자인 목적함수만 보정 (§5.2).</li></ul>
+<h2>2.3 법적심의 제약 매트릭스 (<code>LIB_제약가중치</code>) — 8설비 × 9요인</h2>
+<p>건축심의 + 환경영향평가 기준의 설비별 제약 정성등급(문서 <code>0622_..._제약가중치_매트릭스.md</code> §2).</p>
+<table><thead><tr><th>제약요인</th><th>PV-R</th><th>BAPV</th><th>BIPV</th><th>지열</th><th>연료전지</th></tr></thead><tbody><tr><td>경관·디자인</td><td>높음</td><td>매우높음</td><td>낮음</td><td>매우낮음</td><td>낮음</td></tr><tr><td>빛반사·빛공해</td><td>보통</td><td>높음</td><td>보통</td><td>매우낮음</td><td>매우낮음</td></tr><tr><td>일조장해</td><td>낮음</td><td>보통</td><td>낮음</td><td>매우낮음</td><td>매우낮음</td></tr><tr><td>소음·진동</td><td>매우낮음</td><td>매우낮음</td><td>매우낮음</td><td>보통</td><td>높음</td></tr><tr><td>생태면적률</td><td>높음</td><td>낮음</td><td>매우낮음</td><td>보통</td><td>낮음</td></tr><tr><td>지형·지질</td><td>매우낮음</td><td>매우낮음</td><td>매우낮음</td><td>매우높음</td><td>매우낮음</td></tr><tr><td>수환경</td><td>매우낮음</td><td>매우낮음</td><td>매우낮음</td><td>높음</td><td>매우낮음</td></tr><tr><td>동식물상</td><td>낮음</td><td>보통</td><td>보통</td><td>매우낮음</td><td>매우낮음</td></tr><tr><td>구조·안전</td><td>보통</td><td>보통</td><td>보통</td><td>낮음</td><td>낮음</td></tr></tbody></table>
+<blockquote><p><strong>9요인을 1개 숫자로 평균하지 않고</strong> 요인별로 보존한다. 별도 계수표 없이 기존 등급점수 척도(5~1)를 재사용하고, 요인별 가중치를 줄 수 있다(§5.3).</p></blockquote>
+<h2>2.4 전력 원단위 (<code>LIB_전력원단위</code>) ⚠ 잠정값</h2>
+<p>건물유형별 전력 원단위(kWh/㎡·yr). 전력소비량(전력생산비율 분모) 산정용. <strong>실측 확정 전 잠정 추정값</strong>(데이터센터 등 변동폭 큼).</p>
+<h2>2.5 최적화 상수 (<code>OPT_CONFIG</code>, <code>settingsStore.js</code>)</h2>
+<table><thead><tr><th>키</th><th>기본값</th><th>용도</th></tr></thead><tbody><tr><td>연료전지최대기수</td><td>2</td><td>대용량 연료전지 조합 전개 한도</td></tr><tr><td>외피층고</td><td>3.5 m</td><td>외피면적 산정</td></tr><tr><td>경관보정사용</td><td>true</td><td>경관계수 디자인 보정 on/off</td></tr><tr><td>법규제약사용</td><td>true</td><td>법규제약 차원 on/off</td></tr><tr><td>요구도점수</td><td>매우높음5…매우낮음1</td><td>요구도→가중치 환산</td></tr><tr><td>등급점수</td><td>매우높음5…매우낮음1</td><td>정성·제약 등급→점수</td></tr><tr><td>제약요인가중치</td><td>9요인 균등 1</td><td>제약 요인별 상대 가중</td></tr></tbody></table>
+<hr/>
+<div class="page-footer"><span class="page-num"></span></div></section>
+<section class="page"><h1 id="c3" class="no-break">3. 최적화 기준 조건 (제약)</h1>
+<h2>3.1 하드 제약 (반드시 충족 — 미충족 후보는 탈락)</h2>
+<ol><li><strong>의무설치비율</strong>: <code>Σ(ⓒ·용량) / 연간에너지소요량 × 100 ≥ 의무설치비율기준</code></li><li><strong>전력생산비율</strong>(선택): <code>Σ(ⓕ·용량, 발전가능) / 연간예상전력소비량 × 100 ≥ 전력생산비율기준</code></li><li><strong>공간별 면적</strong>: 공간별 <code>Σ(ⓜ·용량) ≤ 가용면적</code> (옥상/외피/대지/기계실 각각)</li><li><strong>지열 최소의무</strong>(선택): 옵션1 <code>지열면적 ≥ 건축면적×비율%</code> 또는 옵션2 <code>지열생산량 ≥ 의무총량×비율%</code></li></ol>
+<blockquote><p>경계해 부동소수 오차 허용(<code>eps=1e-6</code>) — 예: 9.99999%를 10% 충족으로 인정.</p></blockquote>
+<h2>3.2 소프트 목적 (점수화 — §5)</h2>
+<p>7개 요구도 차원. 하드 제약을 통과한 후보들 사이의 <strong>상대 순위</strong>만 결정한다.</p>
+<hr/>
+<div class="page-footer"><span class="page-num"></span></div></section>
+<section class="page"><h1 id="c4" class="no-break">4. 알고리즘 흐름 (<code>optimizer.js</code>)</h1>
+<h2>4.1 조합 생성 — 구조 다양화 (<code>generateCombinations</code>)</h2>
+<p>조합 = <strong>PV옵션 × 연료전지분기 × 건물설비 부분집합</strong></p>
+<ul><li><strong>PV</strong>: <code>[없음, 수평PV, BAPV, BIPV]</code> 중 택1</li><li><strong>대용량 연료전지</strong>(PAFC·SOFC발전): <code>없음 + (종류 × 1~최대기수)</code>, 1종 배타 — *전력 목표 있을 때만*</li><li><strong>건물설비</strong>(지열·PEMFC·SOFC건물): <strong>부분집합 전수 열거</strong>(공집합 포함)</li></ul>
+<blockquote><p>부분집합 열거 이유: LP가 최소비용 단일설비로 수렴해 조합이 붕괴하는 것을 막고, "지열-only/PV+지열/PEMFC-only" 등 구조적으로 다른 후보를 확보해 다양한 요구도를 대표하게 한다.</p></blockquote>
+<h2>4.2 용량 LP — 5개 목적함수 (<code>solveCapacity</code>)</h2>
+<p>각 조합을 <strong>5개 목적함수로 각각 풀어</strong> 서로 다른 용량 배분을 유도한다(<code>objCoeff</code>).</p>
+<table><thead><tr><th>목적</th><th>방향</th><th>목적계수(설비당)</th></tr></thead><tbody><tr><td>cost</td><td>최소</td><td>장비비 ⓓ</td></tr><tr><td>benefit</td><td>최대</td><td>순익 ⓛ</td></tr><tr><td>incentive</td><td>최대</td><td>등급점수(ⓝ ZEB)</td></tr><tr><td>design</td><td>최대</td><td>(역방향 디자인훼손ⓞ + 외부공간ⓟ)/2</td></tr><tr><td>constraint</td><td>최대</td><td>9요인 평균 제약 적합도(1−강도)</td></tr></tbody></table>
+<ul><li><strong>고정설비(연료전지 기수)</strong> 기여를 제약 우변에서 차감 → 잔여 제약으로 연속설비 용량을 푼다.</li><li><strong>최대화 목적</strong>은 의무 충족 + <strong>과설치 상한 20%</strong>(<code>OVER설치=1.2</code>)를 둬 무한 설치를 막는다.</li><li>연속 LP 해는 <strong>스냅단위 정수배로 올림</strong>(<code>snapToUnit</code>) — 의무 충족 유지.</li></ul>
+<h2>4.3 필터링·중복 제거</h2>
+<ul><li>LP infeasible 제거 → 법적규제 재검증(eps) → 스냅으로 늘어난 면적 재검증</li><li>동일 <code>설비:용량</code> 조합 통합(dedup)</li></ul>
+<h2>4.4 지열 의무 옵션 비교 (해당 시)</h2>
+<p>지열 의무비율 &gt; 0이면 옵션1(면적)·옵션2(생산량)을 각각 최적화하고, <strong>1위 종합점수가 높은 쪽을 추천</strong>한다(서울 "면적 또는 생산량" 관계).</p>
+<hr/>
+<div class="page-footer"><span class="page-num"></span></div></section>
+<section class="page"><h1 id="c5" class="no-break">5. 가중치 적용 &amp; 점수 계산 (핵심)</h1>
+<h2>5.1 요구도 → 가중치 환산 (<code>deriveWeights</code>)</h2>
+<p>각 요구도 등급을 <strong>요구도점수</strong>(매우높음5·높음4·보통3·낮음2·매우낮음1)로 바꾸고, <strong>합이 1이 되도록 정규화</strong>한다.</p>
+<pre><code>raw_k = 요구도점수[요구도_k]          (k = 7개 차원)
+w_k   = raw_k / Σ raw                 (Σ w = 1)</code></pre>
+<blockquote><p>예: 의무근접=높음(4), 나머지 6개=보통(3) → raw=[3,3,3,3,3,4,3]=22 → w(의무근접)=4/22≈0.18, 나머지 각 ≈0.136.</p></blockquote>
+<h2>5.2 6개 목표값 산출 (<code>targetCalculator.js</code>)</h2>
+<p>조합의 채택 설비(items = [{설비, 용량}])로부터:</p>
+<table><thead><tr><th>목표값</th><th>산식</th></tr></thead><tbody><tr><td>초기비용</td><td><code>Σ ⓓ·용량</code></td></tr><tr><td>운영순익</td><td><code>Σ ⓛ·용량</code></td></tr><tr><td>설치면적</td><td>공간별 <code>Σ ⓜ·용량</code></td></tr><tr><td>법적규제</td><td>의무비율·전력생산비율 + 충족 여부</td></tr><tr><td>정성(ZEB·디자인·시공성·인센티브)</td><td>용량가중 "좋음점수" 평균 (아래)</td></tr><tr><td>제약</td><td>9요인 프로파일 + 요인가중 적합도 (§5.3)</td></tr></tbody></table>
+<p><strong>정성 점수 규칙</strong></p>
+<ul><li>등급점수: 매우높음5 … 매우낮음1</li><li><strong>역방향 지표</strong>(디자인훼손ⓞ·외부공간ⓟ·공사기간ⓠ·난이도ⓡ): 낮을수록 좋음 → <code>좋음점수 = (최대+최소) − 등급점수</code> = <code>6 − 등급점수</code></li><li>ZEB = <code>용량가중평균( 등급점수(ⓝ) )</code></li><li>디자인 = <code>용량가중평균( (좋음ⓞ + 좋음ⓟ)/2 )</code> → <strong>경관계수 보정</strong></li><li>시공성 = <code>용량가중평균( (좋음ⓠ + 좋음ⓡ)/2 )</code></li><li>인센티브 = ZEB (proxy — 정밀 용적률% 매핑은 ECO2 연계 시 예정)</li></ul>
+<p><strong>경관계수 보정 (디자인 전용)</strong></p>
+<pre><code>계수      = 1 + 경관민감도(지자체) × 경관영향(세부형식)
+보정디자인 = gmax − (gmax − 기본디자인) × 계수      (gmax=등급점수 최댓값, [gmin,gmax] 클램프)</code></pre>
+<p>→ 경관영향=0(지열·연료전지)은 어느 지자체에서도 계수=1(불변). 강한 지자체일수록 노출형 PV·BAPV의 디자인 패널티↑.</p>
+<h2>5.3 법규제약 — 9요인 프로파일 &amp; 적합도</h2>
+<p>매트릭스를 평균 1개로 붕괴시키지 않고 <strong>요인별로 산출</strong>한다.</p>
+<pre><code>요인별 점수(f)   = 용량가중평균( 등급점수(매트릭스[설비][f]) )   (1~5, 높을수록 제약↑)
+요인별 적합도(f) = (gmax − 점수(f)) / (gmax − gmin)               (0~1, 제약 낮을수록 1)
+종합 적합도      = Σ_f [ 제약요인가중치(f) × 적합도(f) ] / Σ_f 제약요인가중치(f)</code></pre>
+<ul><li>기본은 9요인 균등 가중. 입지·건물유형에 따라 특정 요인(예: 도심=경관, 데이터센터=소음)을 가중할 수 있다.</li><li><code>법규제약사용=false</code>이면 적합도=1(중립)로 순위에 영향 없음. 프로파일은 표시용으로 항상 산출.</li></ul>
+<h2>5.4 정규화 (7차원 → 0~1)</h2>
+<table><thead><tr><th>차원</th><th>정규화 방식</th><th>방향</th></tr></thead><tbody><tr><td>초기비용</td><td>조합집합 <strong>min-max</strong></td><td>낮을수록 1</td></tr><tr><td>운영순익</td><td>조합집합 <strong>min-max</strong></td><td>높을수록 1</td></tr><tr><td>인센티브</td><td><strong>고정척도</strong> <code>(v−gmin)/gspan</code></td><td>높을수록 1</td></tr><tr><td>디자인</td><td>고정척도</td><td>높을수록 1</td></tr><tr><td>시공성</td><td>고정척도</td><td>높을수록 1</td></tr><tr><td>의무근접</td><td><code>min(1, 의무기준/실제비율)</code></td><td>딱 맞을수록 1(과충족 0↓)</td></tr><tr><td>법규제약</td><td>종합 적합도(0~1)</td><td>제약 낮을수록 1</td></tr></tbody></table>
+<blockquote><p>비용·순익은 절대범위가 가변이라 <strong>min-max</strong>, 정성·제약은 척도가 고정(등급점수)이라 <strong>고정척도</strong>를 쓴다. 고정척도는 미미한 raw 차이가 0↔1로 과장되는 것을 막는다. (min-max는 전 조합 동일값이면 중립 1.0 처리)</p></blockquote>
+<h2>5.5 종합 점수 &amp; 순위</h2>
+<pre><code>종합점수 = Σ_k  w_k × n_k        (k = 7개 차원, 0~1)</code></pre>
+<ul><li>점수 내림차순 정렬 → rank 부여. 화면 점수는 <code>×100</code>.</li></ul>
+<h2>5.6 강점 태그 · 챔피언 (<code>tagDimensions</code>)</h2>
+<p>가중치와 무관하게 "이 조합이 어떤 요구도를 잘 만족하는가"를 표시.</p>
+<pre><code>rel = (정규화값 − min) / (max − min)        (차원별)
+rel ≥ 0.85  → 해당 차원 태그 부여
+최댓값 조합  → 챔피언(★)
+차별성 없음(span &lt; 0.05) → 태그 생략</code></pre>
+<hr/>
+<div class="page-footer"><span class="page-num"></span></div></section>
+<section class="page"><h1 id="c6" class="no-break">6. 결과 표시 (<code>optimizeUI.render</code>)</h1>
+<ul><li><strong>표시 대상</strong>: 종합점수 상위 10개 + <strong>차원별 챔피언</strong>(가중치 낮은 요구도의 대표 조합도 노출)</li><li><strong>카드 구성</strong>: 순위/점수/최적 배지 · 강점 태그칩(★챔피언) · 설비별 용량 막대 · 목표값(초기비용·연간순익·의무비율·전력생산) · 정성 막대(디자인·시공성·ZEB·<strong>심의적합</strong>) · <strong>9요인 제약 프로파일(확장)</strong> · AI 설명 버튼</li><li><strong>배너</strong>: 경관 보정 적용 안내(지자체 민감도), 지열 의무 옵션1/옵션2 비교 추천</li><li><strong>AI 설명</strong>: 조합별 추천 근거를 Gemini로 생성(설비 장단점·목표값 기반)</li><li><strong>보고서 출력</strong>: 조건표 + 순위표 + AI설명을 A4 보고서로 출력</li></ul>
+<hr/>
+<div class="page-footer"><span class="page-num"></span></div></section>
+<section class="page"><h1 id="c7" class="no-break">7. 설정 편집 (⚙ 설정 모달, <code>settingsUI.js</code>)</h1>
+<p>좌측 상단 <strong>⚙ 설정</strong>에서 모든 값을 편집(localStorage 오버라이드, 저장 즉시 다음 계산 반영, 기본값 복원·JSON 내보내기/가져오기 지원).</p>
+<ul><li><strong>최적화 가중치·상수</strong>: 경관/법규제약 on·off, 연료전지 기수, 외피층고, 요구도점수·등급점수, <strong>제약 요인별 가중치(9칸)</strong></li><li><strong>라이브러리 테이블</strong>: 설비최적화(ⓐ~ⓡ), 요구도, 전력원단위, 경관민감도·영향, <strong>법적심의 제약 매트릭스(9요인 5등급 드롭다운)</strong>, 계산 공용(신재생계수·지역계수·단위에너지·의무비율)</li></ul>
+<hr/>
+<div class="page-footer"><span class="page-num"></span></div></section>
+<section class="page"><h1 id="c8" class="no-break">8. 한계·주의 (도메인 검토 필요)</h1>
+<ol><li><strong>전력 원단위 잠정값</strong> — <code>LIB_전력원단위</code>는 실측·공인통계 확정 전(특히 데이터센터). 전력생산비율 신뢰도에 직접 영향.</li><li><strong>제약 매트릭스 정성판정</strong> — 경관·일조 등급은 공식문서 명문 임계치가 적어 도메인 추론 비중이 큼. 등급·요인가중치는 검토·조정 대상.</li><li><strong>경관민감도 미조사 지자체</strong> — 비수도권 도(道)는 잠정 0.5(중). 추가 조사 시 갱신.</li><li><strong>인센티브 proxy</strong> — 현재 ZEB기여도 기반. 정밀 용적률% 매핑은 ECO2 연계(P6) 시.</li><li><strong>단순 가중합 순위</strong> — 완전한 Pareto front는 미구현(차원별 챔피언으로 부분 보완).</li><li><strong>PAFC 별표10</strong> — 미등재 가정(ⓑ=0.93). 정식 등재 확인 시 값 갱신.</li></ol>
+<hr/>
+<div class="page-footer"><span class="page-num"></span></div></section>
+<section class="page"><h1 id="c9" class="no-break">9. 빠른 사용 절차</h1>
+<ol><li>사업정보(대지위치·연면적 등) 입력 → Output1/2 계산 (의무비율·에너지소요량 자동 연동)</li><li>「설비조합 최적화」 탭 진입 → 법적규제 기준 확인, (선택) 전력생산비율·가용면적 입력</li><li>건물유형·사업형태 선택 → <strong>표준 요구도 자동 반영</strong> → 필요 시 7차원 요구도 조정</li><li><strong>최적 조합 탐색</strong> 실행 → 순위 카드·태그·9요인 프로파일 확인</li><li>관심 조합 <strong>AI 설명 생성</strong> → <strong>보고서 출력</strong>(PDF/Word/HTML)</li><li>값 조정이 필요하면 <strong>⚙ 설정</strong>에서 라이브러리·가중치 편집 후 재실행</li></ol>
+<hr/>
+<blockquote><p>관련 문서: <code>신재생에너지_설비조합_최적화_시뮬레이션_개발기획서.md</code>(원본 명세), <code>HANDOFF_설비최적화.md</code>(개발 인수인계), <code>0622_신재생에너지별_제약가중치_매트릭스.md</code>(제약 매트릭스 근거).</p></blockquote>
+<div class="page-footer"><span class="page-num"></span></div></section>
+<script>
+document.querySelectorAll('.page').forEach(function(pg,i,all){
+  var el=pg.querySelector('.page-num');
+  if(el) el.textContent=(i+1)+' / '+all.length;
+});
+</script>
+</body>
+</html>
