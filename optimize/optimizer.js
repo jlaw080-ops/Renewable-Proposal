@@ -126,6 +126,10 @@
     if (obj === "incentive") return TC ? TC.등급점수(s.n_ZEB기여도) : 3;        // ZEB(인센티브) 최대
     if (obj === "design") return TC                                           // 디자인 보존 최대
       ? (TC.좋음점수_역방향(s.o_디자인훼손도) + TC.좋음점수_역방향(s.p_외부공간차지도)) / 2 : 3;
+    if (obj === "constraint") {                                                // 법적심의 제약 최소(=적합도 최대)
+      var adeq = (TC && TC.제약적합_설비) ? TC.제약적합_설비(s.세부형식) : null;
+      return (adeq == null) ? 0.5 : Math.max(1e-4, adeq);                      // 9요인 평균 적합도 최대화
+    }
     return s.d_장비비;                                                         // 초기비용 최소(기본)
   }
 
@@ -219,7 +223,7 @@
   function deriveWeights(요구도) {
     요구도 = 요구도 || {};
     var map = cfg().요구도점수 || { "높음": 3, "보통": 2, "낮음": 1 };
-    var keys = ["초기비용", "운영비", "인센티브", "디자인", "시공성", "의무근접"];
+    var keys = ["초기비용", "운영비", "인센티브", "디자인", "시공성", "의무근접", "법규제약"];
     var raw = {}, sum = 0;
     keys.forEach(function (k) {
       var 보통 = map["보통"] != null ? map["보통"] : 2;
@@ -276,9 +280,9 @@
     var combos = generateCombinations(전력목표);
     var feasible = [];
 
-    // 각 구조 조합을 4개 목적함수(최소비용·최대순익·최대인센티브·최대디자인)로 풀어
+    // 각 구조 조합을 5개 목적함수(최소비용·최대순익·최대인센티브·최대디자인·최소법규제약)로 풀어
     // 가중치 낮은 요구도까지 우선 만족시키는 다양한 후보를 생성한다(중복은 이후 제거).
-    var 목적들 = ["cost", "benefit", "incentive", "design"];
+    var 목적들 = ["cost", "benefit", "incentive", "design", "constraint"];
     var 평가수 = 0;
     combos.forEach(function (combo) {
       목적들.forEach(function (obj) {
@@ -348,11 +352,16 @@
       if (ctx.의무설치비율기준 == null || !(실제 > 0)) return 1;
       return Math.min(1, ctx.의무설치비율기준 / 실제);
     });
+    // 법적심의 적합도 = 9요인 제약 프로파일의 요인가중 적합도(0~1, targetCalculator.계산제약에서 산출).
+    // 평균 1개 숫자로 붕괴시키지 않고 요인별 점수를 합산한 값 → 미미한 차이의 과장 없이 고정척도(0~1).
+    var n법규 = feasible.map(function (f) {
+      return (f.targets.제약 && f.targets.제약.적합도 != null) ? f.targets.제약.적합도 : 1;
+    });
 
     feasible.forEach(function (f, i) {
-      f.정규화 = { 초기비용: n초기[i], 운영순익: n운영[i], 인센티브: n인센[i], 디자인: n디자[i], 시공성: n시공[i], 의무근접: n근접[i] };
+      f.정규화 = { 초기비용: n초기[i], 운영순익: n운영[i], 인센티브: n인센[i], 디자인: n디자[i], 시공성: n시공[i], 의무근접: n근접[i], 법규제약: n법규[i] };
       f.score = w.초기비용 * n초기[i] + w.운영비 * n운영[i] + w.인센티브 * n인센[i]
-        + w.디자인 * n디자[i] + w.시공성 * n시공[i] + w.의무근접 * n근접[i];
+        + w.디자인 * n디자[i] + w.시공성 * n시공[i] + w.의무근접 * n근접[i] + w.법규제약 * n법규[i];
       f.태그 = []; f.챔피언 = [];
     });
 
@@ -376,7 +385,7 @@
   // 요구도 차원별 강점 태그·챔피언 부여 (정규화값 기준, 척도 무관 상대평가)
   var TAG차원 = [
     ["초기비용", "초기비용"], ["운영순익", "운영비"], ["인센티브", "인센티브"],
-    ["디자인", "디자인"], ["시공성", "시공성"], ["의무근접", "의무근접"]
+    ["디자인", "디자인"], ["시공성", "시공성"], ["의무근접", "의무근접"], ["법규제약", "법규제약"]
   ];
   function tagDimensions(feasible) {
     TAG차원.forEach(function (d) {

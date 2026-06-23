@@ -13,6 +13,13 @@
 
   var BOOL_OPTS = ["true", "false"];  // 불리언 컬럼 드롭다운(코어ce 시 boolean 으로 환원)
 
+  // 법적심의 제약 9요인 [내부키, 표시명] — 제약요인가중치 폼·저장에 사용
+  var 제약요인 = [
+    ["경관디자인", "경관·디자인"], ["빛반사빛공해", "빛반사·빛공해"], ["일조장해", "일조장해"],
+    ["소음진동", "소음·진동"], ["생태면적률", "생태면적률"], ["지형지질", "지형·지질"],
+    ["수환경", "수환경"], ["동식물상", "동식물상"], ["구조안전", "구조·안전"]
+  ];
+
   // 라이브러리별 컬럼 드롭다운 옵션 (없으면 입력칸). 범주형(등급·구분·불리언)만 드롭다운, 수치·식별자·텍스트는 입력칸.
   function colSelectOptions(regKey, data) {
     if (!Array.isArray(data)) return {};
@@ -286,6 +293,9 @@
     var html = '<label class="set-toggle"><input type="checkbox" id="cfg-landscape"'
       + (cfg.경관보정사용 !== false ? " checked" : "") + "/> "
       + '경관 보정 사용 <small>지자체·에너지원별 디자인 패널티(경관 민감도·영향 표)</small></label>'
+      + '<label class="set-toggle"><input type="checkbox" id="cfg-legalreg"'
+      + (cfg.법규제약사용 !== false ? " checked" : "") + "/> "
+      + '법적심의 제약 사용 <small>건축심의·환경영향평가 제약 매트릭스(9요인)를 「법규제약」 차원에 반영</small></label>'
       + '<div class="set-cfg-grid">'
       + field("연료전지 최대 기수", "cfg-fc-max", cfg.연료전지최대기수, "대용량 연료전지 조합 전개 한도")
       + field("외피면적 산정 층고 (m)", "cfg-eave-h", cfg.외피층고, "외피면적 = 4·√건축 × 층수 × 층고")
@@ -303,6 +313,11 @@
       + field("보통", "cfg-g-m", cfg.등급점수["보통"])
       + field("낮음", "cfg-g-l", cfg.등급점수["낮음"])
       + field("매우낮음", "cfg-g-vl", cfg.등급점수["매우낮음"])
+      + "</div>"
+      + '<div class="set-cfg-sub">제약 요인별 가중치 (법적심의 제약 9요인 — 입지·건물유형에 따라 중요 요인 강조, 기본 균등 1)</div><div class="set-cfg-grid">'
+      + 제약요인.map(function (fk, i) {
+          return field(fk[1], "cfg-cw" + i, (cfg.제약요인가중치 || {})[fk[0]] != null ? cfg.제약요인가중치[fk[0]] : 1);
+        }).join("")
       + "</div>";
     body.innerHTML = html;
 
@@ -322,6 +337,7 @@
       var c = {
         연료전지최대기수: num("cfg-fc-max"), 외피층고: num("cfg-eave-h"),
         경관보정사용: document.getElementById("cfg-landscape").checked,
+        법규제약사용: document.getElementById("cfg-legalreg").checked,
         요구도점수: {
           "매우높음": num("cfg-req-vh"), "높음": num("cfg-req-hi"), "보통": num("cfg-req-mid"),
           "낮음": num("cfg-req-lo"), "매우낮음": num("cfg-req-vl")
@@ -329,7 +345,12 @@
         등급점수: {
           "매우높음": num("cfg-g-vh"), "높음": num("cfg-g-h"), "보통": num("cfg-g-m"),
           "낮음": num("cfg-g-l"), "매우낮음": num("cfg-g-vl")
-        }
+        },
+        제약요인가중치: (function () {
+          var o = {};
+          제약요인.forEach(function (fk, i) { o[fk[0]] = num("cfg-cw" + i); });
+          return o;
+        })()
       };
       var ok = window.SettingsStore.saveConfig(c);
       msg.textContent = ok ? "저장됨 — 다음 최적화부터 적용" : "저장 실패";

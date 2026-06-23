@@ -105,6 +105,83 @@
     return { min: Math.min.apply(null, v), max: Math.max.apply(null, v) };
   }
 
+  // ── 법적심의 제약 (건축심의 + 환경영향평가) — 문서 0622 §2(매트릭스) ────
+  // 9개 제약요인 정성등급을 「그대로」 유지한다(1개 숫자로 붕괴시키지 않음). 별도 계수표 없이
+  // 기존 등급점수 척도(매우높음=5…매우낮음=1)를 재사용하되, 제약은 높을수록 불리하므로 적합도=척도 반전.
+  // 계산제약 → 조합별 9요인 제약 프로파일 + 요인가중 적합도(0~1). data/제약가중치라이브러리.js(LIB_제약가중치) 참조.
+
+  // 점수(등급점수 척도) → 가장 가까운 등급명 (프로파일 표시용)
+  function 가까운등급(s) {
+    var 표 = (typeof window !== "undefined" && window.OPT_CONFIG && window.OPT_CONFIG.등급점수) || 기본등급점수표;
+    var best = null, bd = Infinity;
+    Object.keys(표).forEach(function (lv) {
+      var d = Math.abs(표[lv] - s);
+      if (d < bd) { bd = d; best = lv; }
+    });
+    return best || "보통";
+  }
+
+  // 설비(세부형식)의 9요인 평균 제약강도(등급점수 척도, 높을수록 제약↑). 매트릭스 미등재 시 null.
+  function 제약강도_설비(세부형식) {
+    var 매트릭스 = (typeof window !== "undefined" && window.LIB_제약가중치) || {};
+    var row = 매트릭스[세부형식];
+    if (!row) return null;
+    var s = 0, n = 0;
+    Object.keys(row).forEach(function (k) { s += 등급점수(row[k]); n++; });
+    return n > 0 ? s / n : null;
+  }
+  // 설비별 제약 적합도(0~1, 제약 낮을수록 1) — LP 목적함수(constraint)용
+  function 제약적합_설비(세부형식) {
+    var st = 제약강도_설비(세부형식);
+    if (st == null) return null;
+    var rng = 등급범위();
+    var span = (rng.max - rng.min) || 1;
+    return (rng.max - st) / span;
+  }
+
+  // 조합의 9요인 제약 프로파일 — 요인별 용량가중 등급점수 + 표시용 등급명. 매트릭스를 요인 단위로 보존.
+  function 제약프로파일(items) {
+    var 매트릭스 = (typeof window !== "undefined" && window.LIB_제약가중치) || {};
+    var factors = [];
+    items.forEach(function (it) {
+      var row = 매트릭스[it.설비.세부형식];
+      if (row) Object.keys(row).forEach(function (k) { if (factors.indexOf(k) < 0) factors.push(k); });
+    });
+    var prof = {};
+    factors.forEach(function (f) {
+      var s = 0, w = 0;
+      items.forEach(function (it) {
+        var row = 매트릭스[it.설비.세부형식];
+        var g = row ? row[f] : null;
+        if (g != null) { s += 등급점수(g) * it.용량; w += it.용량; }
+      });
+      var score = w > 0 ? s / w : 등급점수("보통");
+      prof[f] = { 점수: score, 등급: 가까운등급(score) };
+    });
+    return prof;
+  }
+
+  // 조합 종합 — 9요인 프로파일 + 요인가중 적합도(OPT_CONFIG.제약요인가중치, 기본 균등).
+  // OPT_CONFIG.법규제약사용=false 면 적합도=1(중립, 순위 영향 없음). 프로파일은 표시용으로 항상 산출.
+  function 계산제약(items) {
+    var cfg = (typeof window !== "undefined" && window.OPT_CONFIG) || {};
+    var prof = 제약프로파일(items);
+    var factors = Object.keys(prof);
+    if (cfg.법규제약사용 === false || factors.length === 0) {
+      return { 사용: false, 프로파일: prof, 적합도: 1 };
+    }
+    var rng = 등급범위();
+    var span = (rng.max - rng.min) || 1;
+    var fw = cfg.제약요인가중치 || {};
+    var acc = 0, sumW = 0;
+    factors.forEach(function (f) {
+      var w = (fw[f] != null) ? fw[f] : 1;
+      var adeq = (rng.max - prof[f].점수) / span;
+      acc += w * adeq; sumW += w;
+    });
+    return { 사용: true, 프로파일: prof, 적합도: sumW > 0 ? acc / sumW : 1 };
+  }
+
   // ── 정성 목표값 (§5 #3·#4·#5, §6.4) ─────────────────────────────
   // 용량가중 "좋음점수"(1~5) 평균. 디자인·시공성은 최소화(훼손) 지표라 역방향 반전.
   // 인센티브(§5 #3)는 현재 ⓝ(ZEB기여도) 기반 proxy — 정밀 용적률% 매핑은 ECO2 연계(P6).
@@ -137,7 +214,8 @@
       운영순익: 비용.운영순익,
       설치면적: 계산설치면적(items),
       법적규제: 계산법적규제(items, ctx),
-      정성: 계산정성(items, ctx)
+      정성: 계산정성(items, ctx),
+      제약: 계산제약(items)
     };
   }
 
@@ -149,6 +227,10 @@
     계산법적규제: 계산법적규제,
     계산정성: 계산정성,
     경관계수: 경관계수,
+    제약강도_설비: 제약강도_설비,
+    제약적합_설비: 제약적합_설비,
+    제약프로파일: 제약프로파일,
+    계산제약: 계산제약,
     평가조합: 평가조합
   };
 })();

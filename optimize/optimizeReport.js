@@ -36,7 +36,7 @@
     var 면적 = ctx.면적 || {};
     function v(x, u) { return x == null ? "—" : x.toLocaleString() + (u || ""); }
     var 요구 = ctx.요구도 || {};
-    var 요구문 = ["초기비용", "운영비", "인센티브", "디자인", "시공성", "의무근접"]
+    var 요구문 = ["초기비용", "운영비", "인센티브", "디자인", "시공성", "의무근접", "법규제약"]
       .map(function (k) { return k + ":" + (요구[k] || "보통"); }).join(", ");
     return "<table><tbody>" +
       "<tr><th>건물유형</th><td class='l'>" + escapeHtml(ctx.건물유형 || "—") + "</td>" +

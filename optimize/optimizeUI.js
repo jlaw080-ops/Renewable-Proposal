@@ -14,7 +14,8 @@
     { key: "인센티브", label: "인센티브 확보" },
     { key: "디자인", label: "디자인 보존" },
     { key: "시공성", label: "시공 용이성" },
-    { key: "의무근접", label: "의무비율 근접", default: "높음" }
+    { key: "의무근접", label: "의무비율 근접", default: "높음" },
+    { key: "법규제약", label: "법적심의 적합성" }
   ];
 
   function $(id) { return document.getElementById(id); }
@@ -243,6 +244,29 @@
     return '<span class="opt-grade-bar"><span style="width:' + pct + '%"></span></span>';
   }
 
+  // 법적심의 제약 9요인 프로파일 (확장형) — 9요인 등급을 평균 없이 그대로 표시
+  var 제약요인표시 = [
+    ["경관디자인", "경관·디자인"], ["빛반사빛공해", "빛반사·빛공해"], ["일조장해", "일조장해"],
+    ["소음진동", "소음·진동"], ["생태면적률", "생태면적률"], ["지형지질", "지형·지질"],
+    ["수환경", "수환경"], ["동식물상", "동식물상"], ["구조안전", "구조·안전"]
+  ];
+  function constraintProfileHTML(f) {
+    var p = f.targets && f.targets.제약 && f.targets.제약.프로파일;
+    if (!p) return "";
+    var rows = 제약요인표시.filter(function (d) { return p[d[0]]; }).map(function (d) {
+      var it = p[d[0]];
+      var pct = Math.max(0, Math.min(100, (it.점수 - 1) / 4 * 100)).toFixed(0);  // 등급점수 1~5 → 0~100%(높을수록 제약↑)
+      return '<div style="display:flex;align-items:center;gap:6px;margin:2px 0;font-size:11px">'
+        + '<span style="flex:0 0 78px;color:#555">' + d[1] + '</span>'
+        + '<span style="flex:0 0 52px;color:#333">' + it.등급 + '</span>'
+        + '<span style="flex:1;height:6px;background:#eee;border-radius:3px;overflow:hidden;display:inline-block">'
+        + '<span style="display:block;height:100%;width:' + pct + '%;background:#d9534f"></span></span></div>';
+    }).join("");
+    return '<details class="opt-cprof" style="margin-top:6px;font-size:11px">'
+      + '<summary style="cursor:pointer;color:#666">법적심의 제약 프로파일 (9요인)</summary>'
+      + '<div style="margin-top:4px">' + rows + '</div></details>';
+  }
+
   // 강점 요구도 태그 칩 (챔피언=★ 강조)
   function tagChips(f) {
     if (!f.태그 || !f.태그.length) return '<div class="opt-tags"><span class="opt-tag muted">균형형</span></div>';
@@ -317,7 +341,9 @@
         + reg.의무설치비율.toFixed(1) + "%</b></div>" + pwr + "</div>"
         + '<div class="opt-quali"><span>디자인</span>' + gradeBar(f.targets.정성.디자인)
         + "<span>시공성</span>" + gradeBar(f.targets.정성.시공성)
-        + "<span>ZEB</span>" + gradeBar(f.targets.정성.ZEB) + "</div>"
+        + "<span>ZEB</span>" + gradeBar(f.targets.정성.ZEB)
+        + "<span>심의적합</span>" + gradeBar(1 + 4 * ((f.targets.제약 && f.targets.제약.적합도 != null) ? f.targets.제약.적합도 : 1)) + "</div>"
+        + constraintProfileHTML(f)
         + '<button class="opt-explain-btn" data-rank="' + f.rank + '" type="button">AI 설명 생성</button>'
         + '<div class="opt-explain-text" id="opt-explain-' + f.rank + '"></div>'
         + "</div>";
