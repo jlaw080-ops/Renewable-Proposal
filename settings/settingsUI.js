@@ -22,6 +22,12 @@
 
   // 라이브러리별 컬럼 드롭다운 옵션 (없으면 입력칸). 범주형(등급·구분·불리언)만 드롭다운, 수치·식별자·텍스트는 입력칸.
   function colSelectOptions(regKey, data) {
+    // 맵 형태: 법적심의 제약 매트릭스 9요인 셀은 5등급 드롭다운
+    if (regKey === "제약가중치") {
+      var mopt = {};
+      mapInnerCols(data).forEach(function (c) { mopt[c] = GRADE5; });
+      return mopt;
+    }
     if (!Array.isArray(data)) return {};
     function distinct(col) {
       var s = [];
