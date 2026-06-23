@@ -15,7 +15,8 @@
     { key: "디자인", label: "디자인 보존" },
     { key: "시공성", label: "시공 용이성" },
     { key: "의무근접", label: "의무비율 근접", default: "높음" },
-    { key: "법규제약", label: "법적심의 적합성" }
+    { key: "법규제약", label: "법적심의 적합성" },
+    { key: "건물적합", label: "건물유형 적합성" }
   ];
 
   function $(id) { return document.getElementById(id); }
@@ -342,7 +343,8 @@
         + '<div class="opt-quali"><span>디자인</span>' + gradeBar(f.targets.정성.디자인)
         + "<span>시공성</span>" + gradeBar(f.targets.정성.시공성)
         + "<span>ZEB</span>" + gradeBar(f.targets.정성.ZEB)
-        + "<span>심의적합</span>" + gradeBar(1 + 4 * ((f.targets.제약 && f.targets.제약.적합도 != null) ? f.targets.제약.적합도 : 1)) + "</div>"
+        + "<span>심의적합</span>" + gradeBar(1 + 4 * ((f.targets.제약 && f.targets.제약.적합도 != null) ? f.targets.제약.적합도 : 1))
+        + "<span>건물적합</span>" + gradeBar(1 + 4 * ((f.targets.건물적합 && f.targets.건물적합.적합도 != null) ? f.targets.건물적합.적합도 : 0.5)) + "</div>"
         + constraintProfileHTML(f)
         + '<button class="opt-explain-btn" data-rank="' + f.rank + '" type="button">AI 설명 생성</button>'
         + '<div class="opt-explain-text" id="opt-explain-' + f.rank + '"></div>'

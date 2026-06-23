@@ -206,6 +206,49 @@
     return { ZEB: zebAvg, 디자인: 디자인 / totC, 시공성: 시공성 / totC, 인센티브: zebAvg };
   }
 
+  // ── 건물유형별 신재생에너지원 적합도 (LIB_건물적합도) ───────────
+  // 건물유형 × 세부형식 적합 등급(매우높음=가장 적합 … 매우낮음). 등급점수 척도를 그대로 재사용.
+  // 조합 적합도 = 용량가중 평균을 고정척도(0~1)로 — 높을수록 그 건물유형에 적합한 에너지원 구성.
+  function 건물적합행(건물유형) {
+    var lib = (typeof window !== "undefined" && window.LIB_건물적합도) || [];
+    for (var i = 0; i < lib.length; i++) if (lib[i].건물유형 === 건물유형) return lib[i];
+    return null;
+  }
+  function 건물적합점수_설비(건물유형, 세부형식) {
+    var row = 건물적합행(건물유형);
+    if (!row) return null;
+    var g = row[세부형식];
+    return (g != null) ? 등급점수(g) : null;
+  }
+  // 설비별 적합도(0~1, 높을수록 적합) — LP 목적함수(suitability)용
+  function 건물적합_설비(건물유형, 세부형식) {
+    var sc = 건물적합점수_설비(건물유형, 세부형식);
+    if (sc == null) return null;
+    var rng = 등급범위();
+    var span = (rng.max - rng.min) || 1;
+    return (sc - rng.min) / span;
+  }
+  // 조합 종합 적합도. 사용 안 함/건물유형 미선택/미등재 시 중립(보통 등급 → 0.5).
+  function 계산건물적합(items, ctx) {
+    ctx = ctx || {};
+    var cfg = (typeof window !== "undefined" && window.OPT_CONFIG) || {};
+    var rng = 등급범위();
+    var span = (rng.max - rng.min) || 1;
+    var 중립점수 = 등급점수("보통");
+    var 중립 = (중립점수 - rng.min) / span;
+    if (cfg.건물적합도사용 === false || !ctx.건물유형 || !건물적합행(ctx.건물유형)) {
+      return { 점수: 중립점수, 적합도: 중립 };
+    }
+    var s = 0, w = 0;
+    items.forEach(function (it) {
+      var sc = 건물적합점수_설비(ctx.건물유형, it.설비.세부형식);
+      if (sc == null) sc = 중립점수;
+      s += sc * it.용량; w += it.용량;
+    });
+    var avg = w > 0 ? s / w : 중립점수;
+    return { 점수: avg, 적합도: (avg - rng.min) / span };
+  }
+
   // ── 통합 평가 ───────────────────────────────────────────────────
   function 평가조합(items, ctx) {
     var 비용 = 계산비용(items);
@@ -215,7 +258,8 @@
       설치면적: 계산설치면적(items),
       법적규제: 계산법적규제(items, ctx),
       정성: 계산정성(items, ctx),
-      제약: 계산제약(items)
+      제약: 계산제약(items),
+      건물적합: 계산건물적합(items, ctx)
     };
   }
 
@@ -231,6 +275,9 @@
     제약적합_설비: 제약적합_설비,
     제약프로파일: 제약프로파일,
     계산제약: 계산제약,
+    건물적합점수_설비: 건물적합점수_설비,
+    건물적합_설비: 건물적합_설비,
+    계산건물적합: 계산건물적합,
     평가조합: 평가조합
   };
 })();

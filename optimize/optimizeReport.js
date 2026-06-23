@@ -73,7 +73,7 @@
     var 면적 = ctx.면적 || {};
     function v(x, u) { return x == null ? "—" : x.toLocaleString() + (u || ""); }
     var 요구 = ctx.요구도 || {};
-    var 요구문 = ["초기비용", "운영비", "인센티브", "디자인", "시공성", "의무근접", "법규제약"]
+    var 요구문 = ["초기비용", "운영비", "인센티브", "디자인", "시공성", "의무근접", "법규제약", "건물적합"]
       .map(function (k) { return k + ":" + (요구[k] || "보통"); }).join(", ");
     return "<table><tbody>" +
       "<tr><th>건물유형</th><td class='l'>" + escapeHtml(ctx.건물유형 || "—") + "</td>" +
@@ -137,10 +137,11 @@
   function 정성막대(f) {
     var t = f.targets.정성;
     var adeq = (f.targets.제약 && f.targets.제약.적합도 != null) ? f.targets.제약.적합도 : 1;
+    var fit = (f.targets.건물적합 && f.targets.건물적합.적합도 != null) ? f.targets.건물적합.적합도 : 0.5;
     function qg(label, pct) { return "<span class='qg'><span>" + label + "</span>" + gbar(pct) + "</span>"; }
     return "<div class='quali'>" +
       qg("디자인", (t.디자인 - 1) / 4 * 100) + qg("시공성", (t.시공성 - 1) / 4 * 100) +
-      qg("ZEB", (t.ZEB - 1) / 4 * 100) + qg("심의적합", adeq * 100) + "</div>";
+      qg("ZEB", (t.ZEB - 1) / 4 * 100) + qg("심의적합", adeq * 100) + qg("건물적합", fit * 100) + "</div>";
   }
   // 법적심의 제약 9요인 프로파일 (접힘, 인쇄 시 자동 펼침)
   function 제약프로파일(f) {

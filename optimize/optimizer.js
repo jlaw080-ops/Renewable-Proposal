@@ -120,7 +120,7 @@
   // 목적함수별 변수 계수 — 최소비용(cost) 또는 최대화(benefit·incentive·design)
   // 차원별로 다른 용량배분을 유도해 "각 요구도를 우선 만족시키는" 다양한 조합을 생성한다.
   var OVER설치 = 1.2;  // 최대화 목적: 의무 대비 과설치 허용 상한(20%) — 무한 설치 방지
-  function objCoeff(s, obj) {
+  function objCoeff(s, obj, ctx) {
     var TC = getTC();
     if (obj === "benefit") return s.l_순익;                                    // 운영순익 최대
     if (obj === "incentive") return TC ? TC.등급점수(s.n_ZEB기여도) : 3;        // ZEB(인센티브) 최대
@@ -129,6 +129,10 @@
     if (obj === "constraint") {                                                // 법적심의 제약 최소(=적합도 최대)
       var adeq = (TC && TC.제약적합_설비) ? TC.제약적합_설비(s.세부형식) : null;
       return (adeq == null) ? 0.5 : Math.max(1e-4, adeq);                      // 9요인 평균 적합도 최대화
+    }
+    if (obj === "suitability") {                                               // 건물유형별 에너지원 적합도 최대
+      var su = (TC && TC.건물적합_설비 && ctx && ctx.건물유형) ? TC.건물적합_설비(ctx.건물유형, s.세부형식) : null;
+      return (su == null) ? 0.5 : Math.max(1e-4, su);
     }
     return s.d_장비비;                                                         // 초기비용 최소(기본)
   }
@@ -170,7 +174,7 @@
     var variables = {};
     combo.연속설비.forEach(function (s, idx) {
       var v = {
-        목적: objCoeff(s, obj),
+        목적: objCoeff(s, obj, ctx),
         e_energy: s.c_연간단위에너지생산량,
         e_power: s.발전가능 ? s.f_연간발전량 : 0
       };
@@ -223,7 +227,7 @@
   function deriveWeights(요구도) {
     요구도 = 요구도 || {};
     var map = cfg().요구도점수 || { "높음": 3, "보통": 2, "낮음": 1 };
-    var keys = ["초기비용", "운영비", "인센티브", "디자인", "시공성", "의무근접", "법규제약"];
+    var keys = ["초기비용", "운영비", "인센티브", "디자인", "시공성", "의무근접", "법규제약", "건물적합"];
     var raw = {}, sum = 0;
     keys.forEach(function (k) {
       var 보통 = map["보통"] != null ? map["보통"] : 2;
@@ -282,7 +286,7 @@
 
     // 각 구조 조합을 5개 목적함수(최소비용·최대순익·최대인센티브·최대디자인·최소법규제약)로 풀어
     // 가중치 낮은 요구도까지 우선 만족시키는 다양한 후보를 생성한다(중복은 이후 제거).
-    var 목적들 = ["cost", "benefit", "incentive", "design", "constraint"];
+    var 목적들 = ["cost", "benefit", "incentive", "design", "constraint", "suitability"];
     var 평가수 = 0;
     combos.forEach(function (combo) {
       목적들.forEach(function (obj) {
@@ -357,11 +361,15 @@
     var n법규 = feasible.map(function (f) {
       return (f.targets.제약 && f.targets.제약.적합도 != null) ? f.targets.제약.적합도 : 1;
     });
+    // 건물유형별 에너지원 적합도 — 고정척도(0~1, targetCalculator.계산건물적합). 미선택/미사용 시 전 조합 0.5(중립).
+    var n건물 = feasible.map(function (f) {
+      return (f.targets.건물적합 && f.targets.건물적합.적합도 != null) ? f.targets.건물적합.적합도 : 0.5;
+    });
 
     feasible.forEach(function (f, i) {
-      f.정규화 = { 초기비용: n초기[i], 운영순익: n운영[i], 인센티브: n인센[i], 디자인: n디자[i], 시공성: n시공[i], 의무근접: n근접[i], 법규제약: n법규[i] };
+      f.정규화 = { 초기비용: n초기[i], 운영순익: n운영[i], 인센티브: n인센[i], 디자인: n디자[i], 시공성: n시공[i], 의무근접: n근접[i], 법규제약: n법규[i], 건물적합: n건물[i] };
       f.score = w.초기비용 * n초기[i] + w.운영비 * n운영[i] + w.인센티브 * n인센[i]
-        + w.디자인 * n디자[i] + w.시공성 * n시공[i] + w.의무근접 * n근접[i] + w.법규제약 * n법규[i];
+        + w.디자인 * n디자[i] + w.시공성 * n시공[i] + w.의무근접 * n근접[i] + w.법규제약 * n법규[i] + w.건물적합 * n건물[i];
       f.태그 = []; f.챔피언 = [];
     });
 
@@ -385,7 +393,7 @@
   // 요구도 차원별 강점 태그·챔피언 부여 (정규화값 기준, 척도 무관 상대평가)
   var TAG차원 = [
     ["초기비용", "초기비용"], ["운영순익", "운영비"], ["인센티브", "인센티브"],
-    ["디자인", "디자인"], ["시공성", "시공성"], ["의무근접", "의무근접"], ["법규제약", "법규제약"]
+    ["디자인", "디자인"], ["시공성", "시공성"], ["의무근접", "의무근접"], ["법규제약", "법규제약"], ["건물적합", "건물적합"]
   ];
   function tagDimensions(feasible) {
     TAG차원.forEach(function (d) {

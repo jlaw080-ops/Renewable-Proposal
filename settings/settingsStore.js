@@ -26,6 +26,7 @@
     외피층고: 3.5,
     경관보정사용: true,   // 지자체·에너지원별 경관계수를 디자인 목적함수에 적용할지(targetCalculator)
     법규제약사용: true,   // 법적심의 제약(건축심의+환경영향평가) 매트릭스를 「법규제약」 차원에 적용할지(targetCalculator)
+    건물적합도사용: true, // 건물유형별 신재생에너지원 적합도를 「건물적합」 차원에 적용할지(targetCalculator)
     요구도점수: { "매우높음": 5, "높음": 4, "보통": 3, "낮음": 2, "매우낮음": 1 },
     등급점수: { "매우높음": 5, "높음": 4, "보통": 3, "낮음": 2, "매우낮음": 1 },
     // 제약요인가중치: 법적심의 제약 9요인의 상대 가중(입지·건물유형에 따라 중요 요인 강조). 기본 균등(1).
@@ -42,6 +43,7 @@
   var LIBS = [
     { key: "설비최적화",   global: "LIB_설비최적화",          label: "설비 최적화 데이터셋 (8설비 × ⓐ~ⓡ)", shape: "array", group: "optimize" },
     { key: "요구도",       global: "LIB_요구도",              label: "건물유형별 사용자 요구도",            shape: "array", group: "optimize" },
+    { key: "건물적합도",   global: "LIB_건물적합도",          label: "건물유형별 신재생에너지원 적합도 (5등급)", shape: "array", group: "optimize" },
     { key: "전력원단위",   global: "LIB_전력원단위",          label: "건물유형별 전력 원단위 ⚠잠정값",      shape: "array", group: "optimize" },
     { key: "경관민감도",   global: "LIB_경관민감도",          label: "경관 민감도 (지자체별)",              shape: "map",   group: "optimize" },
     { key: "경관영향",     global: "LIB_경관영향",            label: "경관 영향 (에너지원별)",              shape: "map",   group: "optimize" },

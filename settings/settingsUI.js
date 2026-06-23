@@ -40,6 +40,10 @@
       opt["건물유형"] = distinct("건물유형");
       ["초기비용", "운영비", "디자인", "인센티브", "토지개발", "기계실", "공사기간", "공사난이도"]
         .forEach(function (c) { opt[c] = GRADE5; });
+    } else if (regKey === "건물적합도") {
+      opt["건물유형"] = distinct("건물유형");
+      ["고정식(수평)PV", "고정식(수직)BAPV", "BIPV", "수직밀폐형", "PEMFC(건물용)", "SOFC(건물용)", "PAFC(발전용)", "SOFC(발전용)"]
+        .forEach(function (c) { opt[c] = GRADE5; });
     } else if (regKey === "설비최적화") {
       opt["형식"] = distinct("형식");
       opt["설치공간"] = distinct("설치공간");
@@ -302,6 +306,9 @@
       + '<label class="set-toggle"><input type="checkbox" id="cfg-legalreg"'
       + (cfg.법규제약사용 !== false ? " checked" : "") + "/> "
       + '법적심의 제약 사용 <small>건축심의·환경영향평가 제약 매트릭스(9요인)를 「법규제약」 차원에 반영</small></label>'
+      + '<label class="set-toggle"><input type="checkbox" id="cfg-bldfit"'
+      + (cfg.건물적합도사용 !== false ? " checked" : "") + "/> "
+      + '건물 적합도 사용 <small>건물유형별 신재생에너지원 적합도(5등급)를 「건물적합」 차원에 반영</small></label>'
       + '<div class="set-cfg-grid">'
       + field("연료전지 최대 기수", "cfg-fc-max", cfg.연료전지최대기수, "대용량 연료전지 조합 전개 한도")
       + field("외피면적 산정 층고 (m)", "cfg-eave-h", cfg.외피층고, "외피면적 = 4·√건축 × 층수 × 층고")
@@ -344,6 +351,7 @@
         연료전지최대기수: num("cfg-fc-max"), 외피층고: num("cfg-eave-h"),
         경관보정사용: document.getElementById("cfg-landscape").checked,
         법규제약사용: document.getElementById("cfg-legalreg").checked,
+        건물적합도사용: document.getElementById("cfg-bldfit").checked,
         요구도점수: {
           "매우높음": num("cfg-req-vh"), "높음": num("cfg-req-hi"), "보통": num("cfg-req-mid"),
           "낮음": num("cfg-req-lo"), "매우낮음": num("cfg-req-vl")
