@@ -241,7 +241,19 @@ Output2 설치비율          = Σ(설비 생산량) / Output1 × 100           
 <section class="page"><h1 id="c4" class="no-break">4. 알고리즘 흐름 (<code>optimizer.js</code>)</h1>
 <h2>4.1 조합 생성 — 구조 다양화 (<code>generateCombinations</code>)</h2>
 <p>조합 = <strong>PV옵션 × 연료전지분기 × 건물설비 부분집합</strong></p>
-<ul><li><strong>PV</strong>: <code>[없음, 수평PV, BAPV, BIPV]</code> 중 택1</li><li><strong>대용량 연료전지</strong>(PAFC·SOFC발전): <code>없음 + (종류 × 1~최대기수)</code>, 1종 배타 — <strong>전력 목표가 있거나, 건물적합도에서 해당 건물유형의 발전용 적합 등급이 「높음」 이상일 때</strong> 포함(§1.2·§2.8)</li><li><strong>건물설비</strong>(지열·PEMFC·SOFC건물): <strong>부분집합 전수 열거</strong>(공집합 포함)</li></ul>
+<ul><li><strong>PV</strong>: <code>[없음, 수평PV, BAPV, BIPV]</code> 중 택1</li><li><strong>발전용 연료전지</strong>(PAFC·SOFC발전): <code>없음 + (종류 × 기수후보)</code>, 1종 배타 — <strong>전력 목표가 있거나, 건물적합도에서 해당 건물유형의 발전용 적합 등급이 「높음」 이상일 때</strong> 포함(§1.2·§2.8)</li><li><strong>건물설비</strong>(지열·PEMFC·SOFC건물): <strong>부분집합 전수 열거</strong>(공집합 포함)</li></ul>
+<div class="callout callout-note">
+<div class="callout-title">⚙ 연료전지 조합 규칙 (개정)</div>
+<div class="callout-body">
+<p><strong>① 1계열만</strong> — 한 조합에 <strong>발전용 FC와 건물용 FC를 함께 넣지 않는다.</strong> 발전용 분기에는 건물용 FC를 제외하고 <strong>지열만</strong> 연속 후보로 둔다(태양광은 PV옵션에서 별도 결합). 발전용/건물용 중 무엇이 유리한지는 <strong>건물적합 점수(§5.7)로 순위</strong>에서 가린다.</p>
+<p><strong>② 발전용 기수 = 의무 기준</strong> — 발전용은 단위용량이 커(PAFC 440·SOFC발전 300 kW/기) 의무를 정수 기수로 딱 못 맞추는 경우가 많다. 의무생산량 ÷ 1기 생산량 = <code>need</code>로부터 두 후보를 만든다:</p>
+<ul>
+<li><strong>n_ceil(라운드업)</strong>: 올림 기수 — <strong>발전용 단독으로 의무를 초과 충족</strong>(과설치).</li>
+<li><strong>n_floor(≥1)</strong>: 내림 기수 — 부족분(잔여)을 <strong>태양광·지열(연속)으로 충당</strong>하는 조합용.</li>
+</ul>
+<p>예: SOFC발전 1기=2,403만 kWh ≥ 의무 1,332만 → <code>need</code>=0.55 → 라운드업 1기만. PAFC 1기=359만 → <code>need</code>=3.71 → 3기(+태양광 충당)·4기(라운드업). 의무 미상이면 1~최대기수로 폴백.</p>
+</div>
+</div>
 <blockquote><p>부분집합 열거 이유: 용량 자동배분이 최소비용 단일설비로 수렴해 조합이 붕괴하는 것을 막고, "지열-only/PV+지열/PEMFC-only" 등 구조적으로 다른 후보를 확보해 다양한 요구도를 대표하게 한다.</p></blockquote>
 <h2>4.2 용량 자동배분 — 6개 목적함수 (<code>solveCapacity</code>)</h2>
 <p>설비 조합이 정해지면 <strong>각 설비를 몇 kW씩 설치할지</strong>를 자동으로 계산한다. 같은 조합이라도 "비용을 가장 아끼게" 깔 수도, "순익을 가장 키우게" 깔 수도 있으므로 <strong>6가지 관점으로 각각 한 번씩, 총 6번 배분</strong>해 서로 다른 후보를 만든다(<code>objCoeff</code>).</p>

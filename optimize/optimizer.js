@@ -38,65 +38,92 @@
 
   // ── 조합 생성 (§6.2[1]) ─────────────────────────────────────────
   // 반환: [{ label, 연속설비:[설비...], 고정설비:[{설비, 기수, 용량}...] }]
-  // 전력목표=false(전력생산비율 기준·예상소비량 미설정)이면 발전용 연료전지를 제외한다.
-  // 발전용(PAFC·SOFC발전)은 전력 생산이 주 용도이므로 전력 목표가 없으면 불필요하며,
-  // 이를 제외해야 지열 등 비발전 설비가 공정하게 검토된다.
+  //
+  // 정책:
+  //  · 발전용 포함 게이트 — 전력목표(전력생산비율 기준+예상소비량)가 있거나,
+  //    건물적합도(LIB_건물적합도)에서 해당 건물유형의 발전용 적합 등급이 「높음」 이상이면 포함.
+  //  · 연료전지 1계열만 — 한 조합에 발전용 FC와 건물용 FC를 함께 넣지 않는다.
+  //    발전용 분기에는 건물용 FC를 빼고 지열만 연속 후보로 둔다(태양광은 PV옵션에서 별도 결합).
+  //  · 발전용 기수는 의무 기준 — 의무를 1기 단위로 딱 못 맞추면(잔여 < 1기)
+  //    n_ceil(라운드업: 발전용 단독으로 의무 초과 충족)과 n_floor(≥1, 부족분을 태양광·지열로
+  //    충당하는 조합용) 두 후보를 만든다. 의무 미상이면 1~최대기수 폴백.
   function generateCombinations(전력목표, ctx) {
-    var lib = getLib();
+    ctx = ctx || {};
     var PV옵션 = [null, "고정식(수평)PV", "고정식(수직)BAPV", "BIPV"];
     var 지열 = find설비("수직밀폐형");
     var PEMFC = find설비("PEMFC(건물용)");
     var SOFC건물 = find설비("SOFC(건물용)");
-    // 발전용 연료전지(PAFC·SOFC발전) 후보 포함 규칙 (기수 전개·1종 배타):
-    //   (1) 전력목표(전력생산비율 기준 + 예상소비량)가 있으면 포함 — 전력 자립이 주 용도.
-    //   (2) 전력목표가 없어도, 건물적합도 매트릭스(LIB_건물적합도)에서 해당 건물유형의
-    //       발전용 적합 등급이 「높음」 이상이면 포함 — 데이터센터처럼 고전력 건물에서
-    //       발전용을 검토하기 위함. 기본값은 전부 「보통」이라 사용자가 매트릭스를 편집해야
-    //       활성화되며, 편집 전에는 기존 동작(전력목표 있을 때만 포함)과 동일하다.
+
     var TC = getTC();
     var 적합포함기준 = (TC && TC.등급점수) ? TC.등급점수("높음") : 4;
-    var 대용량연료전지 = ["PAFC(발전용)", "SOFC(발전용)"].filter(function (name) {
+    var 발전용이름 = ["PAFC(발전용)", "SOFC(발전용)"].filter(function (name) {
       if (전력목표) return true;
       if (cfg().건물적합도사용 === false) return false;
-      if (!(ctx && ctx.건물유형) || !TC || !TC.건물적합점수_설비) return false;
+      if (!ctx.건물유형 || !TC || !TC.건물적합점수_설비) return false;
       var sc = TC.건물적합점수_설비(ctx.건물유형, name);
       return sc != null && sc >= 적합포함기준;
     });
 
-    // 대용량 연료전지 분기: 없음 + (각 종류 × 1~MAX기)
-    var 연료전지분기 = [{ label: "연료전지無", 고정: [] }];
-    대용량연료전지.forEach(function (name) {
+    // 의무(에너지·전력) 총량 — 발전용 기수후보(floor/ceil) 산정용
+    var 의무에너지 = (ctx.연간단위에너지소요량 > 0 && ctx.의무설치비율기준 > 0)
+      ? ctx.연간단위에너지소요량 * ctx.의무설치비율기준 / 100 : 0;
+    var 의무전력 = (전력목표 && ctx.연간예상전력소비량 > 0 && ctx.전력생산비율기준 > 0)
+      ? ctx.연간예상전력소비량 * ctx.전력생산비율기준 / 100 : 0;
+    var 기수하드캡 = 30;  // 발전용 기수 안전 상한(조합 폭증 방지)
+
+    // 발전용 분기: 없음 + (각 종류별 기수후보). 1종 배타(한 분기에 한 종류).
+    var 연료전지분기 = [{ label: "발전용無", 고정: [] }];
+    발전용이름.forEach(function (name) {
       var s = find설비(name);
       if (!s) return;
-      var maxK = MAX_연료전지기수();
-      for (var k = 1; k <= maxK; k++) {
-        연료전지분기.push({
-          label: name + "×" + k + "기",
-          고정: [{ 설비: s, 기수: k, 용량: s.단위용량 * k }]
-        });
+      var 기당에너지 = s.c_연간단위에너지생산량 * s.단위용량;
+      var 기당전력 = s.발전가능 ? s.f_연간발전량 * s.단위용량 : 0;
+      var need = Math.max(
+        기당에너지 > 0 ? 의무에너지 / 기당에너지 : 0,
+        기당전력 > 0 ? 의무전력 / 기당전력 : 0
+      );
+      var 기수후보 = {};
+      if (need > 0) {
+        var nCeil = Math.min(기수하드캡, Math.max(1, Math.ceil(need - 1e-9)));  // 라운드업
+        var nFloor = Math.floor(need + 1e-9);                                  // 잔여를 태양광·지열로 충당
+        기수후보[nCeil] = true;
+        if (nFloor >= 1 && nFloor < nCeil) 기수후보[nFloor] = true;
+      } else {
+        var maxK = MAX_연료전지기수();   // 의무 미상 → 기존 1~최대기수 폴백
+        for (var k = 1; k <= maxK; k++) 기수후보[k] = true;
       }
+      Object.keys(기수후보).forEach(function (kStr) {
+        var kv = parseInt(kStr, 10);
+        연료전지분기.push({
+          label: name + "×" + kv + "기",
+          고정: [{ 설비: s, 기수: kv, 용량: s.단위용량 * kv }]
+        });
+      });
     });
 
-    // 건물용 연속설비(지열·PEMFC·SOFC건물)의 부분집합을 열거해 구조적으로 다양한 조합을 생성한다.
-    // (LP가 최소비용으로 단일 설비에 수렴해 조합이 2~4개로 붕괴하는 것을 방지 → 요구도 다양성 확보)
-    // 예: 지열-only(디자인 우수), PV-only(저비용), PV+지열, PEMFC-only … 가 각각 별도 후보가 된다.
-    var 건물설비 = [];
-    if (지열) 건물설비.push(지열);
-    if (PEMFC) 건물설비.push(PEMFC);
-    if (SOFC건물) 건물설비.push(SOFC건물);
-    var 부분집합 = subsets(건물설비);   // 공집합 포함 (PV·고정 연료전지만으로 충족하는 조합 허용)
+    // 연속 건물설비 후보 — 1계열 정책:
+    //   발전용無 분기 → [지열, PEMFC, SOFC건물] 부분집합(건물용 FC 허용)
+    //   발전용  분기 → [지열] 부분집합만(건물용 FC 제외; 태양광은 PV옵션에서 결합)
+    // 부분집합 열거로 "지열-only/PV+지열/PEMFC-only" 등 구조적으로 다른 후보를 확보한다.
+    var 건물설비전체 = [];
+    if (지열) 건물설비전체.push(지열);
+    if (PEMFC) 건물설비전체.push(PEMFC);
+    if (SOFC건물) 건물설비전체.push(SOFC건물);
+    var sub_건물용 = subsets(건물설비전체);
+    var sub_발전용 = subsets(지열 ? [지열] : []);
 
     var combos = [];
     PV옵션.forEach(function (pvName) {
       var pv = pvName ? find설비(pvName) : null;
       연료전지분기.forEach(function (fc) {
+        var 부분집합 = (fc.고정.length > 0) ? sub_발전용 : sub_건물용;   // 1계열 분리
         부분집합.forEach(function (sub) {
           var 연속 = [];
           if (pv) 연속.push(pv);
-          sub.forEach(function (s) { 연속.push(s); });
+          sub.forEach(function (sx) { 연속.push(sx); });
           // 소스가 전혀 없으면(연속·고정 모두 비어있음) 무효
           if (연속.length === 0 && fc.고정.length === 0) return;
-          var subLabel = sub.length ? sub.map(function (s) { return s.세부형식; }).join("+") : "건물설비無";
+          var subLabel = sub.length ? sub.map(function (sx) { return sx.세부형식; }).join("+") : "건물설비無";
           combos.push({
             label: (pvName || "PV無") + " + " + subLabel + " + " + fc.label,
             연속설비: 연속,
