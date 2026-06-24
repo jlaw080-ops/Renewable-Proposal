@@ -180,7 +180,7 @@ img{ max-width:100%; display:block; margin:8mm auto; }
 <blockquote><p>지열 의무 입력 시 건축면적(<code>inp-건축면적</code>)을 함께 사용해 <strong>옵션1(면적 기준)·옵션2(생산량 기준)</strong>을 각각 풀어 유리한 쪽을 추천한다(§4.4).</p></blockquote>
 <h2>1.2 전력생산비율 (선택)</h2>
 <table><thead><tr><th>입력</th><th>필드</th><th>설명</th></tr></thead><tbody><tr><td>건물유형</td><td><code>opt-building-type</code></td><td>전력 원단위 조회 키</td></tr><tr><td>연면적 (㎡)</td><td><code>opt-building-area</code></td><td>전력소비량 산정용</td></tr><tr><td>전력생산비율 기준 (%)</td><td><code>opt-power-ratio</code></td><td>미입력 시 <strong>전력 제약 자체를 제외</strong></td></tr><tr><td>예상 전력소비량</td><td>(자동계산)</td><td><code>연간예상전력소비량 = Σ(전력원단위 × 연면적)</code> (<code>powerEstimator.js</code>)</td></tr></tbody></table>
-<blockquote><p>전력생산비율 기준 + 예상소비량이 <strong>모두 있을 때만</strong> 발전용 연료전지(PAFC·SOFC발전)가 후보에 포함된다(전력 목표가 없으면 비발전 설비가 공정히 검토되도록 제외).</p></blockquote>
+<blockquote><p>발전용 연료전지(PAFC·SOFC발전)는 <strong>①전력생산비율 기준 + 예상소비량이 모두 있거나</strong>, <strong>②건물적합도(<code>LIB_건물적합도</code>, §2.8)에서 해당 건물유형의 발전용 적합 등급이 「높음」 이상</strong>일 때 후보에 포함된다. 기본값(전부 보통)에서는 ②가 비활성이라 전력 목표가 없으면 제외된다(비발전 설비가 공정히 검토되도록). <strong>데이터센터처럼 고전력 건물</strong>은 건물적합도 매트릭스에서 발전용을 「높음」 이상으로 올리면 전력 기준 없이도 검토된다.</p></blockquote>
 <h2>1.3 가용 면적 (기준면적 대비 비율 %, 미입력 = 무제한)</h2>
 <table><thead><tr><th>공간</th><th>기준면적</th><th>대상 설비</th></tr></thead><tbody><tr><td>옥상</td><td>건축면적</td><td>수평 PV</td></tr><tr><td>외피</td><td>예상 외피면적 = <code>4·√건축면적 × (연면적/건축면적) × 층고</code> (기본 3.5m)</td><td>BAPV·BIPV</td></tr><tr><td>대지</td><td>대지면적</td><td>지열</td></tr><tr><td>기계실</td><td>건축면적</td><td>연료전지</td></tr></tbody></table>
 <ul><li>비율(%)을 입력하면 <code>기준면적 × 비율%</code>가 해당 공간의 상한이 된다. 빈칸이면 무제한.</li></ul>
@@ -241,7 +241,7 @@ Output2 설치비율          = Σ(설비 생산량) / Output1 × 100           
 <section class="page"><h1 id="c4" class="no-break">4. 알고리즘 흐름 (<code>optimizer.js</code>)</h1>
 <h2>4.1 조합 생성 — 구조 다양화 (<code>generateCombinations</code>)</h2>
 <p>조합 = <strong>PV옵션 × 연료전지분기 × 건물설비 부분집합</strong></p>
-<ul><li><strong>PV</strong>: <code>[없음, 수평PV, BAPV, BIPV]</code> 중 택1</li><li><strong>대용량 연료전지</strong>(PAFC·SOFC발전): <code>없음 + (종류 × 1~최대기수)</code>, 1종 배타 — *전력 목표 있을 때만*</li><li><strong>건물설비</strong>(지열·PEMFC·SOFC건물): <strong>부분집합 전수 열거</strong>(공집합 포함)</li></ul>
+<ul><li><strong>PV</strong>: <code>[없음, 수평PV, BAPV, BIPV]</code> 중 택1</li><li><strong>대용량 연료전지</strong>(PAFC·SOFC발전): <code>없음 + (종류 × 1~최대기수)</code>, 1종 배타 — <strong>전력 목표가 있거나, 건물적합도에서 해당 건물유형의 발전용 적합 등급이 「높음」 이상일 때</strong> 포함(§1.2·§2.8)</li><li><strong>건물설비</strong>(지열·PEMFC·SOFC건물): <strong>부분집합 전수 열거</strong>(공집합 포함)</li></ul>
 <blockquote><p>부분집합 열거 이유: 용량 자동배분이 최소비용 단일설비로 수렴해 조합이 붕괴하는 것을 막고, "지열-only/PV+지열/PEMFC-only" 등 구조적으로 다른 후보를 확보해 다양한 요구도를 대표하게 한다.</p></blockquote>
 <h2>4.2 용량 자동배분 — 6개 목적함수 (<code>solveCapacity</code>)</h2>
 <p>설비 조합이 정해지면 <strong>각 설비를 몇 kW씩 설치할지</strong>를 자동으로 계산한다. 같은 조합이라도 "비용을 가장 아끼게" 깔 수도, "순익을 가장 키우게" 깔 수도 있으므로 <strong>6가지 관점으로 각각 한 번씩, 총 6번 배분</strong>해 서로 다른 후보를 만든다(<code>objCoeff</code>).</p>

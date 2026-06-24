@@ -41,13 +41,27 @@
   // 전력목표=false(전력생산비율 기준·예상소비량 미설정)이면 발전용 연료전지를 제외한다.
   // 발전용(PAFC·SOFC발전)은 전력 생산이 주 용도이므로 전력 목표가 없으면 불필요하며,
   // 이를 제외해야 지열 등 비발전 설비가 공정하게 검토된다.
-  function generateCombinations(전력목표) {
+  function generateCombinations(전력목표, ctx) {
     var lib = getLib();
     var PV옵션 = [null, "고정식(수평)PV", "고정식(수직)BAPV", "BIPV"];
     var 지열 = find설비("수직밀폐형");
     var PEMFC = find설비("PEMFC(건물용)");
     var SOFC건물 = find설비("SOFC(건물용)");
-    var 대용량연료전지 = 전력목표 ? ["PAFC(발전용)", "SOFC(발전용)"] : []; // 기수 전개·배타
+    // 발전용 연료전지(PAFC·SOFC발전) 후보 포함 규칙 (기수 전개·1종 배타):
+    //   (1) 전력목표(전력생산비율 기준 + 예상소비량)가 있으면 포함 — 전력 자립이 주 용도.
+    //   (2) 전력목표가 없어도, 건물적합도 매트릭스(LIB_건물적합도)에서 해당 건물유형의
+    //       발전용 적합 등급이 「높음」 이상이면 포함 — 데이터센터처럼 고전력 건물에서
+    //       발전용을 검토하기 위함. 기본값은 전부 「보통」이라 사용자가 매트릭스를 편집해야
+    //       활성화되며, 편집 전에는 기존 동작(전력목표 있을 때만 포함)과 동일하다.
+    var TC = getTC();
+    var 적합포함기준 = (TC && TC.등급점수) ? TC.등급점수("높음") : 4;
+    var 대용량연료전지 = ["PAFC(발전용)", "SOFC(발전용)"].filter(function (name) {
+      if (전력목표) return true;
+      if (cfg().건물적합도사용 === false) return false;
+      if (!(ctx && ctx.건물유형) || !TC || !TC.건물적합점수_설비) return false;
+      var sc = TC.건물적합점수_설비(ctx.건물유형, name);
+      return sc != null && sc >= 적합포함기준;
+    });
 
     // 대용량 연료전지 분기: 없음 + (각 종류 × 1~MAX기)
     var 연료전지분기 = [{ label: "연료전지無", 고정: [] }];
@@ -281,7 +295,7 @@
 
     // 전력 목표(전력생산비율 기준 + 예상소비량)가 있을 때만 발전용 연료전지를 후보에 포함
     var 전력목표 = (ctx.연간예상전력소비량 > 0 && ctx.전력생산비율기준 != null);
-    var combos = generateCombinations(전력목표);
+    var combos = generateCombinations(전력목표, ctx);
     var feasible = [];
 
     // 각 구조 조합을 5개 목적함수(최소비용·최대순익·최대인센티브·최대디자인·최소법규제약)로 풀어
