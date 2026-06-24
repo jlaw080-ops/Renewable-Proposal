@@ -391,13 +391,7 @@
         <div id="constraint-summary-text" class="constraint-summary-text" style="display:none;"></div>
 
         <button class="btn-primary btn-recommend-run" id="btn-run-recommend" type="button">AI 추천 실행</button>
-
-        <hr class="result-divider" />
-
-        <!-- 추천 결과 -->
-        <div id="recommend-result" class="recommend-result">
-          <span class="empty-state" style="padding:24px 16px;">[AI 추천 실행] 버튼을 클릭하면 최적 조합안 3개를 생성합니다.</span>
-        </div>
+        <p class="opt-area-note" style="margin-top:8px;">실행 결과는 중앙 <b>「AI 추천 결과」</b> 탭에 표시됩니다.</p>
       </div>
     </div>
 
@@ -486,6 +480,7 @@
       <div class="alt-tabs center-result-tabs" role="tablist" aria-label="결과 화면 전환">
         <button class="alt-tab active" type="button" role="tab" aria-selected="true" data-cpane="cpane-calc">계산 결과</button>
         <button class="alt-tab" type="button" role="tab" aria-selected="false" data-cpane="cpane-optimize">최적화 결과</button>
+        <button class="alt-tab" type="button" role="tab" aria-selected="false" data-cpane="cpane-recommend">AI 추천 결과</button>
       </div>
 
       <!-- 결과 패널 1: 기존 계산 결과 (Output1·Output2) -->
@@ -538,6 +533,13 @@
           <span class="empty-state" style="padding:24px 16px;">좌측 <b>「설비조합 최적화」</b> 탭에서 [최적화 실행]을 클릭하면 목표값을 충족하는 설비조합을 순위별로 제시합니다.</span>
         </div>
       </div><!-- /cpane-optimize -->
+
+      <!-- 결과 패널 3: AI 추천 결과 -->
+      <div class="center-rpane" id="cpane-recommend" role="tabpanel">
+        <div id="recommend-result" class="recommend-result">
+          <span class="empty-state" style="padding:24px 16px;">좌측 <b>「AI 추천」</b> 탭에서 [AI 추천 실행]을 클릭하면 최적 조합안 3개를 생성합니다.</span>
+        </div>
+      </div><!-- /cpane-recommend -->
     </div>
   </div>
 
@@ -965,6 +967,8 @@ function initCenterResultTabs() {
   // 최적화 실행 시 자동으로 「최적화 결과」 탭으로 전환
   var runBtn = document.getElementById('btn-run-optimize');
   if (runBtn) runBtn.addEventListener('click', function() { activate('cpane-optimize'); });
+  var recBtn = document.getElementById('btn-run-recommend');
+  if (recBtn) recBtn.addEventListener('click', function() { activate('cpane-recommend'); });
 }
 
 // ── 설정 모달 (최적화 화면의 ⚙ 설정 버튼으로 진입) ──────────────────
