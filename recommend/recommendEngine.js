@@ -193,14 +193,17 @@
       html += '<span class="recommend-rank">#' + rec.rank + '</span>';
       html += '<span class="recommend-name">' + escapeHtml(rec.name) + '</span></div>';
       if (rec.strategy) html += '<div class="recommend-strategy">' + escapeHtml(rec.strategy) + '</div>';
+      // 용량을 최적화 결과와 동일한 비례 바(.opt-cap-bar)로 표시 — 각 행 = 적용용량 / 총적용용량
       html += '<div class="recommend-systems">';
+      var totCap = (rec.systems || []).reduce(function(s, x) { return s + (x.적용용량 || 0); }, 0);
       (rec.systems || []).forEach(function(sys) {
         var src = (rec.sources || []).find(function(s) { return s.에너지원 === sys.에너지원 && s.형식 === sys.형식; });
         var allocLabel = src ? ' (' + src.allocation_pct + '%)' : '';
-        html += '<div class="recommend-sys-row">'
-          + '<span class="recommend-sys-source">' + escapeHtml(sys.에너지원) + '</span>'
-          + '<span class="recommend-sys-type">' + escapeHtml(sys.형식) + '</span>'
-          + '<span class="recommend-sys-cap">' + sys.적용용량 + ' kW' + escapeHtml(allocLabel) + '</span>'
+        var pct = totCap > 0 ? (sys.적용용량 / totCap * 100).toFixed(0) : 0;
+        html += '<div class="opt-sys-row">'
+          + '<span class="opt-sys-name">' + escapeHtml(sys.에너지원) + ' ' + escapeHtml(sys.형식) + '</span>'
+          + '<span class="opt-cap-bar"><span style="width:' + pct + '%"></span></span>'
+          + '<span class="opt-sys-cap">' + sys.적용용량 + ' kW' + escapeHtml(allocLabel) + '</span>'
           + '</div>';
       });
       html += '</div>';
