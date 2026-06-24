@@ -80,20 +80,12 @@
 
     <div class="constraint-modal-body">
 
+      <div class="constraint-note" style="margin-bottom:12px;">가용면적·우선순위(요구도)는 <b>「설비조합 최적화」 탭</b>에서 설정한 값을 그대로 사용합니다. 여기서는 최적화에 없는 보조 조건(예산·제외·특이사항)만 입력하세요.</div>
+
       <!-- 태양광 -->
       <div class="constraint-group">
         <label class="constraint-group-title">태양광</label>
-        <div class="field-row-2col">
-          <div class="field-group">
-            <label class="field-label-sm">옥상 가용면적 <span class="input-suffix">㎡</span></label>
-            <input type="number" id="constraint-solar-roof" placeholder="0" min="0" step="1" />
-          </div>
-          <div class="field-group">
-            <label class="field-label-sm">부지 가용면적 <span class="input-suffix">㎡</span></label>
-            <input type="number" id="constraint-solar-ground" placeholder="0" min="0" step="1" />
-          </div>
-        </div>
-        <div class="field-group" style="margin-top:8px;">
+        <div class="field-group">
           <label class="field-label-sm">추가 조건 (자유입력)</label>
           <textarea id="constraint-solar-note" rows="2" class="constraint-textarea" placeholder="예: 채광 불리, 경사지붕, 특정 패널 선호 등"></textarea>
         </div>
@@ -105,10 +97,6 @@
       <div class="constraint-group">
         <label class="constraint-group-title">지열</label>
         <div class="field-group">
-          <label class="field-label-sm">부지 가용면적 <span class="input-suffix">㎡</span></label>
-          <input type="number" id="constraint-geo-area" placeholder="0" min="0" step="1" />
-        </div>
-        <div class="field-group" style="margin-top:8px;">
           <label class="field-label-sm">인근 지하철 노선</label>
           <div class="radio-row">
             <label class="radio-label"><input type="radio" name="constraint-subway" id="constraint-subway-no" value="no" checked /> 없음</label>
@@ -147,18 +135,6 @@
             <label class="field-label-sm">최대 <span class="input-suffix">만원</span></label>
             <input type="number" id="constraint-budget-max" placeholder="무제한" min="0" step="100" />
           </div>
-        </div>
-      </div>
-
-      <div class="constraint-modal-divider"></div>
-
-      <!-- 우선순위 -->
-      <div class="constraint-group">
-        <label class="constraint-group-title">우선순위</label>
-        <div class="radio-row">
-          <label class="radio-label"><input type="radio" name="constraint-priority" value="cost" /> 비용 절감</label>
-          <label class="radio-label"><input type="radio" name="constraint-priority" value="efficiency" /> 효율 극대화</label>
-          <label class="radio-label"><input type="radio" name="constraint-priority" value="balanced" checked /> 균형</label>
         </div>
       </div>
 
@@ -863,33 +839,21 @@ function initRecommendTab() {
     var summaryText = document.getElementById('constraint-summary-text');
     var items = [];
 
-    var solarRoof = parseFloat(document.getElementById('constraint-solar-roof').value) || 0;
-    var solarGround = parseFloat(document.getElementById('constraint-solar-ground').value) || 0;
     var solarNote = (document.getElementById('constraint-solar-note').value || '').trim();
-    var geoArea = parseFloat(document.getElementById('constraint-geo-area').value) || 0;
     var nearSubway = document.getElementById('constraint-subway-yes').checked;
     var geoNote = (document.getElementById('constraint-geo-note').value || '').trim();
     var fuelNote = (document.getElementById('constraint-fuel-note').value || '').trim();
     var budgetMin = parseFloat(document.getElementById('constraint-budget-min').value) || 0;
     var budgetMax = parseFloat(document.getElementById('constraint-budget-max').value) || 0;
-    var priorityEl = document.querySelector('input[name=constraint-priority]:checked');
-    var priority = priorityEl ? priorityEl.value : 'balanced';
     var excluded = [];
     document.querySelectorAll('.constraint-exclude-cb:checked').forEach(function(cb) { excluded.push(cb.value); });
     var custom = (document.getElementById('constraint-custom').value || '').trim();
 
-    if (solarRoof > 0) items.push('태양광 옥상 ' + solarRoof + '㎡');
-    if (solarGround > 0) items.push('태양광 부지 ' + solarGround + '㎡');
     if (solarNote) items.push('태양광: ' + solarNote);
-    if (geoArea > 0) items.push('지열 ' + geoArea + '㎡');
     if (nearSubway) items.push('지하철 인근(지열 제한)');
     if (geoNote) items.push('지열: ' + geoNote);
     if (fuelNote) items.push('연료전지: ' + fuelNote);
     if (budgetMin > 0 || budgetMax > 0) items.push('예산 ' + (budgetMin || 0) + '~' + (budgetMax || '무제한') + '만원');
-    if (priority !== 'balanced') {
-      var labels = { cost: '비용절감 우선', efficiency: '효율 우선' };
-      items.push(labels[priority] || priority);
-    }
     if (excluded.length) items.push('제외: ' + excluded.join('/'));
     if (custom) items.push(custom);
 
@@ -907,17 +871,12 @@ function initRecommendTab() {
   }
 
   function resetConstraints() {
-    document.getElementById('constraint-solar-roof').value = '';
-    document.getElementById('constraint-solar-ground').value = '';
     document.getElementById('constraint-solar-note').value = '';
-    document.getElementById('constraint-geo-area').value = '';
     document.getElementById('constraint-subway-no').checked = true;
     document.getElementById('constraint-geo-note').value = '';
     document.getElementById('constraint-fuel-note').value = '';
     document.getElementById('constraint-budget-min').value = '';
     document.getElementById('constraint-budget-max').value = '';
-    var balancedEl = document.querySelector('input[name=constraint-priority][value=balanced]');
-    if (balancedEl) balancedEl.checked = true;
     document.querySelectorAll('.constraint-exclude-cb').forEach(function(cb) { cb.checked = false; });
     document.getElementById('constraint-custom').value = '';
     updateConstraintSummary();

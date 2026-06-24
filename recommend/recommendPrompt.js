@@ -93,20 +93,33 @@
       lines.push('');
     }
 
-    lines.push('## 제약조건');
-    if (constraints.solarRoofArea > 0) lines.push('- 태양광 옥상 가용면적: ' + constraints.solarRoofArea + ' ㎡ (약 ' + Math.floor(constraints.solarRoofArea / 5) + 'kW 설치 가능)');
-    if (constraints.solarGroundArea > 0) lines.push('- 태양광 부지 가용면적: ' + constraints.solarGroundArea + ' ㎡ (약 ' + Math.floor(constraints.solarGroundArea / 5) + 'kW 설치 가능)');
+    lines.push('## 제약조건 (설비조합 최적화 탭과 공유)');
+    // 가용면적 — 최적화 탭의 공간별 가용면적(㎡, null=무제한). 공간↔에너지원 매핑 안내.
+    var 면적 = constraints.면적 || {};
+    [['옥상', '수평 태양광', 5], ['외피', '수직 태양광·BIPV', 5], ['대지', '지열', 50], ['기계실', '연료전지', null]]
+      .forEach(function (m) {
+        var v = 면적[m[0]];
+        if (v == null) { lines.push('- ' + m[0] + ' 가용면적(' + m[1] + '): 무제한'); return; }
+        var 추정 = m[2] ? ' (약 ' + Math.floor(v / m[2]) + (m[0] === '대지' ? 'RT' : 'kW') + ' 설치 가능)' : '';
+        lines.push('- ' + m[0] + ' 가용면적(' + m[1] + '): ' + Math.round(v) + ' ㎡' + 추정);
+      });
+    // 사용자 요구도(우선순위) — 최적화 탭의 8차원 등급
+    var 요구도 = constraints.요구도 || {};
+    var 요구도라벨 = {
+      초기비용: '초기비용 절감', 운영비: '운영비 절감', 인센티브: '인센티브 확보', 디자인: '디자인 보존',
+      시공성: '시공 용이성', 의무근접: '의무비율 근접', 법규제약: '법적심의 적합', 건물적합: '건물유형 적합'
+    };
+    var 요구도줄 = Object.keys(요구도라벨)
+      .filter(function (k) { return 요구도[k]; })
+      .map(function (k) { return 요구도라벨[k] + '=' + 요구도[k]; });
+    if (요구도줄.length) lines.push('- 사용자 요구도(우선순위, 높을수록 중시): ' + 요구도줄.join(', '));
+    // 소프트 조건(최적화에 없는 것 — AI 추천 모달에서 입력)
     if (constraints.solarNote) lines.push('- 태양광 추가 조건: ' + constraints.solarNote);
-    if (constraints.geothermalArea > 0) lines.push('- 지열 가용면적: ' + constraints.geothermalArea + ' ㎡ (약 ' + Math.floor(constraints.geothermalArea / 50) + 'RT 설치 가능)');
     if (constraints.nearSubway) lines.push('- 인근 지하철 노선 존재: 지열 시스템 설치 제한 또는 불가');
     if (constraints.geothermalNote) lines.push('- 지열 추가 조건: ' + constraints.geothermalNote);
     if (constraints.fuelCellNote) lines.push('- 연료전지 추가 조건: ' + constraints.fuelCellNote);
     if (constraints.budgetMin > 0 || constraints.budgetMax > 0) lines.push('- 예산 범위: ' + (constraints.budgetMin || 0) + ' ~ ' + (constraints.budgetMax || '무제한') + ' 만원');
     if (constraints.excludeSources && constraints.excludeSources.length > 0) lines.push('- 제외 에너지원: ' + constraints.excludeSources.join(', '));
-    if (constraints.priority) {
-      var labels = { cost: '비용 절감', efficiency: '효율 극대화', balanced: '균형' };
-      lines.push('- 우선순위: ' + (labels[constraints.priority] || constraints.priority));
-    }
     if (constraints.customConstraints) lines.push('- 기타 제약사항: ' + constraints.customConstraints);
     lines.push('');
 

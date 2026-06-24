@@ -2,22 +2,26 @@
 (function() {
   "use strict";
 
+  // 구조적 조건(가용면적·요구도)은 「설비조합 최적화」 탭에서 공유하고(getConditions),
+  // 최적화에 없는 소프트 조건(예산·제외·지하철·자유텍스트)만 AI 추천 모달에서 수집한다.
+  function val(id) { var el = document.getElementById(id); return el ? (el.value || "").trim() : ""; }
   function collectConstraints() {
+    var opt = (window.OptimizeUI && window.OptimizeUI.getConditions)
+      ? window.OptimizeUI.getConditions() : {};
     return {
-      solarRoofArea: parseFloat(document.getElementById("constraint-solar-roof").value) || 0,
-      solarGroundArea: parseFloat(document.getElementById("constraint-solar-ground").value) || 0,
-      solarNote: (document.getElementById("constraint-solar-note").value || "").trim(),
-      geothermalArea: parseFloat(document.getElementById("constraint-geo-area").value) || 0,
-      nearSubway: document.getElementById("constraint-subway-yes").checked,
-      geothermalNote: (document.getElementById("constraint-geo-note").value || "").trim(),
-      fuelCellNote: (document.getElementById("constraint-fuel-note").value || "").trim(),
-      budgetMin: parseFloat(document.getElementById("constraint-budget-min").value) || 0,
-      budgetMax: parseFloat(document.getElementById("constraint-budget-max").value) || 0,
-      priority: document.querySelector("input[name=constraint-priority]:checked")
-        ? document.querySelector("input[name=constraint-priority]:checked").value
-        : "balanced",
+      // ── 최적화 탭에서 공유하는 구조적 조건 ──
+      면적: opt.면적 || {},            // { 옥상, 외피, 대지, 기계실 } ㎡ (null=무제한)
+      요구도: opt.요구도 || {},         // 8차원 등급(매우높음~매우낮음)
+      건물유형: opt.건물유형 || null,
+      // ── AI 추천 모달의 소프트 조건(최적화에 없음) ──
+      solarNote: val("constraint-solar-note"),
+      nearSubway: (function () { var e = document.getElementById("constraint-subway-yes"); return e ? e.checked : false; })(),
+      geothermalNote: val("constraint-geo-note"),
+      fuelCellNote: val("constraint-fuel-note"),
+      budgetMin: parseFloat(val("constraint-budget-min")) || 0,
+      budgetMax: parseFloat(val("constraint-budget-max")) || 0,
       excludeSources: getExcludedSources(),
-      customConstraints: (document.getElementById("constraint-custom").value || "").trim()
+      customConstraints: val("constraint-custom")
     };
   }
 

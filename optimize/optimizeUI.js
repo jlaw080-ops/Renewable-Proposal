@@ -440,5 +440,6 @@
     }
   }
 
-  window.OptimizeUI = { init: init, run: run, getState: getState, setState: setState };
+  // AI 추천 등 외부 기능이 최적화 탭의 구조적 조건(가용면적·요구도·의무비율 등)을 공유할 때 사용.
+  window.OptimizeUI = { init: init, run: run, getState: getState, setState: setState, getConditions: collectCtx };
 })();
