@@ -315,6 +315,7 @@
     html += '<div class="opt-summary"><span>실행가능 ' + r.실행가능건수 + "개 중 " + show.length
       + "개 표시 <small>(가중치 상위 + 요구도별 강점 조합)</small> / 평가 " + r.평가건수
       + '건</span><button class="opt-report-btn" type="button">보고서 출력</button></div>';
+    html += '<div class="opt-card-grid">';
     show.forEach(function (f) {
       var reg = f.targets.법적규제;
       var totC = f.items.reduce(function (s, x) { return s + x.용량; }, 0);
@@ -350,6 +351,7 @@
         + '<div class="opt-explain-text" id="opt-explain-' + f.rank + '"></div>'
         + "</div>";
     });
+    html += '</div>';
     box.innerHTML = html;
   }
 
