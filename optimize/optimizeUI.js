@@ -319,15 +319,21 @@
     show.forEach(function (f) {
       var reg = f.targets.법적규제;
       var totC = f.items.reduce(function (s, x) { return s + x.용량; }, 0);
-      var sysRows = f.items.map(function (it) {
-        var pct = totC > 0 ? (it.용량 / totC * 100).toFixed(0) : 0;
+      // 에너지원별 용량 — 가로 누적 바차트(총용량 대비 원별 비율) + 범례
+      var segColors = ["#8b5cf6", "#f472b6", "#34d399", "#fbbf24", "#60a5fa", "#f87171", "#22d3ee", "#a3e635"];
+      var segs = "", legend = "";
+      f.items.forEach(function (it, i) {
+        var pct = totC > 0 ? (it.용량 / totC * 100) : 0;
+        var col = segColors[i % segColors.length];
         var 단위 = it.고정 ? " (" + it.기수 + "기)"
           : (it.단위 ? " (" + it.단위 + "kW×" + it.단위기수 + "기)" : "");
-        return '<div class="opt-sys-row"><span class="opt-sys-name">' + it.설비.세부형식
-          + 단위 + '</span>'
-          + '<span class="opt-cap-bar"><span style="width:' + pct + '%"></span></span>'
-          + '<span class="opt-sys-cap">' + Math.round(it.용량).toLocaleString() + " kW</span></div>";
-      }).join("");
+        var capLabel = Math.round(it.용량).toLocaleString();
+        segs += '<div style="width:' + pct.toFixed(1) + "%;background:" + col
+          + '" title="' + it.설비.세부형식 + " " + capLabel + 'kW"></div>';
+        legend += '<span class="opt-leg"><span class="opt-leg-dot" style="background:' + col + '"></span>'
+          + it.설비.세부형식 + 단위 + ' <b>' + capLabel + "kW</b> (" + pct.toFixed(0) + "%)</span>";
+      });
+      var sysHtml = '<div class="opt-stack-track">' + segs + '</div><div class="opt-stack-legend">' + legend + "</div>";
       var pwr = reg.전력생산비율 != null
         ? '<div><span>전력생산</span><b>' + reg.전력생산비율.toFixed(1) + "%</b></div>" : "";
       html += '<div class="opt-card' + (f.rank === 1 ? " best" : "") + '">'
@@ -335,7 +341,7 @@
         + '<span class="opt-score">' + (f.score * 100).toFixed(0) + '점</span>'
         + (f.rank === 1 ? '<span class="opt-badge">최적</span>' : "") + "</div>"
         + tagChips(f)
-        + '<div class="opt-sys">' + sysRows + "</div>"
+        + '<div class="opt-sys">' + sysHtml + "</div>"
         + '<div class="opt-targets">'
         + '<div><span>초기비용</span><b>' + (f.targets.초기비용 / 1e8).toFixed(2) + "억</b></div>"
         + '<div><span>연간순익</span><b>' + (f.targets.운영순익 / 1e4).toFixed(0) + "만</b></div>"
