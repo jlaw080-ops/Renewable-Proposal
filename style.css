@@ -1863,12 +1863,11 @@ button, .alt-tab, .cover-image-drop, select,
   padding: 14px; border-radius: 8px; background: rgba(239,68,68,.08);
   color: var(--color-fail, #ef4444); font-size: 13px; line-height: 1.5;
 }
-/* 결과 카드 그리드 — 폭에 따라 자동 다열 배치 */
+/* 결과 카드 — 단일 열 배치 */
 .opt-card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: 1fr;
   gap: 10px;
-  align-items: start;
 }
 .opt-card {
   border: 1px solid var(--border-default); border-radius: 10px;
