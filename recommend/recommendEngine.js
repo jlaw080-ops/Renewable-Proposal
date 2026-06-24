@@ -1,19 +1,21 @@
 // recommend/recommendEngine.js
+// AI 추천 = "AI 정성평가 vs 최적화 알고리즘" 비교 도구.
+//   최적화 엔진(optimizer.js)이 동일한 입력·조건으로 feasible 후보를 생성(조합수·제약 동일)하고,
+//   ① 알고리즘 평가(8차원 가중합 순위)와 ② AI(Gemini) 정성평가 순위를 같은 후보 위에서 비교한다.
 (function() {
   "use strict";
 
-  // 구조적 조건(가용면적·요구도)은 「설비조합 최적화」 탭에서 공유하고(getConditions),
-  // 최적화에 없는 소프트 조건(예산·제외·지하철·자유텍스트)만 AI 추천 모달에서 수집한다.
+  var TOP_N = 10;   // AI에 넘겨 평가할 후보 수(알고리즘 상위)
+
+  // 소프트 조건(예산·제외·지하철·자유텍스트)만 모달에서 수집. 면적·요구도는 ctx(최적화 공유)에 있음.
   function val(id) { var el = document.getElementById(id); return el ? (el.value || "").trim() : ""; }
+  function getExcludedSources() {
+    var excluded = [];
+    document.querySelectorAll(".constraint-exclude-cb:checked").forEach(function(cb) { excluded.push(cb.value); });
+    return excluded;
+  }
   function collectConstraints() {
-    var opt = (window.OptimizeUI && window.OptimizeUI.getConditions)
-      ? window.OptimizeUI.getConditions() : {};
     return {
-      // ── 최적화 탭에서 공유하는 구조적 조건 ──
-      면적: opt.면적 || {},            // { 옥상, 외피, 대지, 기계실 } ㎡ (null=무제한)
-      요구도: opt.요구도 || {},         // 8차원 등급(매우높음~매우낮음)
-      건물유형: opt.건물유형 || null,
-      // ── AI 추천 모달의 소프트 조건(최적화에 없음) ──
       solarNote: val("constraint-solar-note"),
       nearSubway: (function () { var e = document.getElementById("constraint-subway-yes"); return e ? e.checked : false; })(),
       geothermalNote: val("constraint-geo-note"),
@@ -25,85 +27,67 @@
     };
   }
 
-  function getExcludedSources() {
-    var excluded = [];
-    document.querySelectorAll(".constraint-exclude-cb:checked").forEach(function(cb) {
-      excluded.push(cb.value);
-    });
-    return excluded;
+  // 최적화 탭과 동일한 조건(ctx) 확보. 최적화 탭 미입력 시 사업정보 계산결과(Output1/2)로 보완.
+  function ensureCtx() {
+    var ctx = (window.OptimizeUI && window.OptimizeUI.getConditions) ? window.OptimizeUI.getConditions() : {};
+    if (!(ctx.연간단위에너지소요량 > 0) && window.LAST_OUTPUT1 && window.LAST_OUTPUT1.총예상에너지사용량 > 0) {
+      ctx.연간단위에너지소요량 = Math.round(window.LAST_OUTPUT1.총예상에너지사용량);
+    }
+    if (ctx.의무설치비율기준 == null && window.LAST_OUTPUT2 && window.LAST_OUTPUT2[0] && window.LAST_OUTPUT2[0].의무비율 != null) {
+      ctx.의무설치비율기준 = window.LAST_OUTPUT2[0].의무비율;
+    }
+    return ctx;
   }
 
-  // Output_2 역산 공식으로 각 에너지원의 적용용량 계산
-  // 설치비율(%) = Σ(적용용량 × 단위에너지생산량 × 원별보정계수) / 총에너지사용량 × 100
-  // → 역산: 적용용량_i = (총필요생산량 × allocation_pct_i/100) / (단위에너지생산량_i × 원별보정계수_i)
-  function backCalculateCapacities(result, input1, output1, 의무비율) {
-    var 총에너지 = output1.총예상에너지사용량 || 0;
-    var 총필요생산량 = 총에너지 * 의무비율 / 100;
-
-    (result.recommendations || []).forEach(function(rec) {
-      var sources = rec.sources || [];
-      // allocation_pct 합계 정규화
-      var totalAlloc = sources.reduce(function(sum, s) { return sum + (s.allocation_pct || 0); }, 0) || 100;
-
-      rec.systems = sources.map(function(src) {
-        var coeff = typeof get신재생에너지계수 === 'function'
-          ? get신재생에너지계수(src.에너지원, src.형식)
-          : null;
-        var 단위 = coeff ? coeff.단위에너지생산량 : 0;
-        var 보정 = coeff ? coeff.원별보정계수 : 0;
-        var weight = (src.allocation_pct || 0) / totalAlloc;
-        var 이소스필요생산량 = 총필요생산량 * weight;
-        var 적용용량 = (단위 * 보정 > 0)
-          ? Math.round(이소스필요생산량 / (단위 * 보정) * 10) / 10
-          : 0;
-        return {
-          에너지원: src.에너지원,
-          형식: src.형식,
-          단위에너지생산량: 단위,
-          원별보정계수: 보정,
-          적용용량: 적용용량
-        };
+  // 후보 풀: 알고리즘 순위 상위 N. 제외 선호 에너지원이 포함된 조합은 풀에서 배제(두 평가 동일 풀).
+  function buildCandidates(ranked, constraints) {
+    var 제외 = constraints.excludeSources || [];
+    var filtered = ranked.filter(function(f) {
+      return !f.items.some(function(it) {
+        return 제외.indexOf(it.설비.형식) >= 0 || 제외.indexOf(it.설비.세부형식) >= 0;
       });
-
-      // Output_2 공식으로 실제 설치비율 계산 (검증용)
-      var 실제생산량 = rec.systems.reduce(function(sum, s) {
-        return sum + s.적용용량 * s.단위에너지생산량 * s.원별보정계수;
-      }, 0);
-      rec.estimated_ratio = 총에너지 > 0
-        ? Math.round(실제생산량 / 총에너지 * 1000) / 10
-        : 0;
     });
+    return filtered.slice(0, TOP_N).map(function(f, i) { return { cid: i + 1, f: f }; });
   }
 
-  async function runRecommendation() {
-    var input1 = collectInput1();
-    if (!input1.용도별연면적목록.length) {
-      alert("사업정보(용도별 연면적)를 먼저 입력해주세요.");
-      return;
+  function sysText(f) {
+    return f.items.map(function(it) {
+      return it.설비.세부형식 + " " + Math.round(it.용량).toLocaleString() + "kW";
+    }).join(" + ");
+  }
+
+  async function runComparison() {
+    var resultArea = document.getElementById("recommend-result");
+    var btn = document.getElementById("btn-run-recommend");
+
+    if (!window.Optimizer || !window.OptimizeUI) {
+      resultArea.innerHTML = '<div class="recommend-error">최적화 엔진 미로드.</div>'; return;
     }
-    var output1 = calcOutput1(input1);
-    if (output1.총예상에너지사용량 <= 0) {
-      alert("예상에너지사용량이 0입니다.");
+    var ctx = ensureCtx();
+    if (!(ctx.연간단위에너지소요량 > 0) || ctx.의무설치비율기준 == null) {
+      resultArea.innerHTML = '<div class="recommend-error">먼저 사업정보를 입력하고 「설비조합 최적화」 탭의 법적규제 기준(에너지소요량·의무비율)을 확인해주세요. (계산 시 자동 연동)</div>';
       return;
     }
 
-    // 의무비율 사전 계산 (역산에 사용)
-    var 주거구분 = (input1.용도별연면적목록 || []).some(function(x) { return x.용도 !== '공동주택'; }) ? '비주거' : '주거';
-    var 의무비율 = typeof get의무비율 === 'function'
-      ? get의무비율(input1.사업형태, input1.대지위치, 주거구분, input1.카테고리, input1.사업연도)
-      : null;
-    if (!의무비율 || 의무비율 <= 0) {
-      alert("의무설치비율을 확인할 수 없습니다.\n사업형태, 대지위치, 사업연도를 확인해주세요.");
+    // ① 최적화 엔진 실행 — 동일 입력·조건으로 후보 생성 + 알고리즘 순위
+    var optResult;
+    try { optResult = window.Optimizer.optimize(ctx); }
+    catch (e) { resultArea.innerHTML = '<div class="recommend-error">최적화 실행 오류: ' + escapeHtml(e.message) + '</div>'; return; }
+    if (!optResult.ranked || !optResult.ranked.length) {
+      resultArea.innerHTML = '<div class="recommend-error">조건을 충족하는 조합이 없습니다. 가용면적·기준을 완화해 보세요. (평가 ' + optResult.평가건수 + '건)</div>';
       return;
     }
 
     var constraints = collectConstraints();
-    var userMessage = window.RecommendPrompt.buildUserMessage(input1, output1, constraints);
-    var btn = document.getElementById("btn-run-recommend");
-    var resultArea = document.getElementById("recommend-result");
-    btn.disabled = true;
-    btn.textContent = "AI 분석 중...";
-    resultArea.innerHTML = '<div class="recommend-loading"><div class="loading-spinner" style="width:24px;height:24px;border-width:2px;"></div><span>AI가 최적 조합을 분석하고 있습니다...</span></div>';
+    var candidates = buildCandidates(optResult.ranked, constraints);
+    if (!candidates.length) {
+      resultArea.innerHTML = '<div class="recommend-error">제외 조건 적용 후 남은 후보가 없습니다.</div>'; return;
+    }
+
+    // ② AI 정성평가 (같은 후보를 순위화)
+    var userMessage = window.RecommendPrompt.buildEvalMessage(ctx, candidates, constraints);
+    btn.disabled = true; btn.textContent = "AI 평가 중...";
+    resultArea.innerHTML = '<div class="recommend-loading"><div class="loading-spinner" style="width:24px;height:24px;border-width:2px;"></div><span>AI가 ' + candidates.length + '개 후보를 정성 평가하고 있습니다...</span></div>';
     try {
       var resp = await fetch("/api/recommend", {
         method: "POST",
@@ -111,19 +95,13 @@
         body: JSON.stringify({
           system_instruction: { parts: [{ text: window.RecommendPrompt.SYSTEM_PROMPT }] },
           contents: [{ role: "user", parts: [{ text: userMessage }] }],
-          generationConfig: {
-            maxOutputTokens: 8192,
-            temperature: 0.7,
-            responseMimeType: "application/json",
-            thinkingConfig: { thinkingBudget: 0 }
-          }
+          generationConfig: { maxOutputTokens: 8192, temperature: 0.7, responseMimeType: "application/json", thinkingConfig: { thinkingBudget: 0 } }
         })
       });
       if (!resp.ok) { var errText = await resp.text(); throw new Error("API " + resp.status + ": " + errText); }
       var reader = resp.body.getReader();
       var decoder = new TextDecoder();
-      var buffer = "";
-      var accumulated = "";
+      var buffer = "", accumulated = "";
       while (true) {
         var chunk = await reader.read();
         if (chunk.done) break;
@@ -138,123 +116,82 @@
           try {
             var d = JSON.parse(raw);
             var parts = d.candidates && d.candidates[0] && d.candidates[0].content && d.candidates[0].content.parts;
-            if (parts) {
-              parts.forEach(function(part) {
-                // thought: true 부분(thinking 토큰)은 제외하고 실제 응답 텍스트만 누적
-                if (!part.thought && part.text) accumulated += part.text;
-              });
-            }
+            if (parts) parts.forEach(function(part) { if (!part.thought && part.text) accumulated += part.text; });
           } catch(e) {}
         }
       }
       var jsonStr = accumulated.trim();
-      var bs = jsonStr.indexOf("{");
-      var be = jsonStr.lastIndexOf("}");
+      var bs = jsonStr.indexOf("{"), be = jsonStr.lastIndexOf("}");
       if (bs >= 0 && be > bs) jsonStr = jsonStr.substring(bs, be + 1);
-      var result;
-      try {
-        result = JSON.parse(jsonStr);
-      } catch(parseErr) {
+      var aiResult;
+      try { aiResult = JSON.parse(jsonStr); }
+      catch(parseErr) {
         var posMatch = parseErr.message.match(/position (\d+)/);
         var pos = posMatch ? parseInt(posMatch[1]) : 0;
-        var ctx = jsonStr.substring(Math.max(0, pos - 60), pos + 60);
-        throw new Error('JSON 파싱 오류 (pos ' + pos + '): ...' + ctx + '...');
+        throw new Error('JSON 파싱 오류 (pos ' + pos + '): ...' + jsonStr.substring(Math.max(0, pos - 60), pos + 60) + '...');
       }
-
-      // Output_2 역산 공식으로 용량 계산 (의무비율 기준)
-      backCalculateCapacities(result, input1, output1, 의무비율);
-
-      window.LAST_RECOMMEND_RESULT = result;
-      renderRecommendations(result, 의무비율);
+      window.LAST_RECOMMEND_RESULT = { candidates: candidates, optResult: optResult, aiResult: aiResult };
+      renderComparison(candidates, aiResult);
     } catch(err) {
       resultArea.innerHTML = '<div class="recommend-error">오류: ' + escapeHtml(err.message) + '</div>';
     } finally {
-      btn.disabled = false;
-      btn.textContent = "AI 추천 실행";
+      btn.disabled = false; btn.textContent = "AI 추천 실행";
     }
   }
 
-  function renderRecommendations(result, 의무비율) {
+  // 알고리즘 순위 vs AI 정성평가 순위를 나란히 비교 표시
+  function renderComparison(candidates, aiResult) {
     var container = document.getElementById("recommend-result");
-    if (!result || !result.recommendations || !result.recommendations.length) {
-      container.innerHTML = '<div class="recommend-error">추천 결과를 생성하지 못했습니다.</div>';
-      return;
+    var candById = {};
+    candidates.forEach(function(c) { candById[c.cid] = c; });
+    var aiList = (aiResult.ai_ranking || []).filter(function(a) { return candById[a.id]; }).slice(0, 3);
+    var aiRankById = {};
+    aiList.forEach(function(a, i) { aiRankById[a.id] = i + 1; });
+    var bestPick = aiResult.best_pick;
+
+    function metricsLine(f) {
+      var reg = f.targets.법적규제;
+      return (f.score * 100).toFixed(0) + '점 · 초기 ' + (f.targets.초기비용 / 1e8).toFixed(2) + '억 · 순익 '
+        + (f.targets.운영순익 / 1e4).toFixed(0) + '만 · 의무 ' + reg.의무설치비율.toFixed(1) + '%'
+        + (reg.전력생산비율 != null ? ' · 전력 ' + reg.전력생산비율.toFixed(1) + '%' : '');
     }
-    var html = "";
-    if (result.reasoning) {
-      html += '<div class="recommend-reasoning"><span class="recommend-reasoning-icon">&#x1F4A1;</span><span>' + escapeHtml(result.reasoning) + '</span></div>';
+
+    var html = '';
+    if (aiResult.comparison) {
+      html += '<div class="recommend-reasoning"><span class="recommend-reasoning-icon">&#x2696;&#xFE0F;</span><span>' + escapeHtml(aiResult.comparison) + '</span></div>';
     }
-    html += '<div class="recommend-cards">';
-    result.recommendations.forEach(function(rec) {
-      var isBest = rec.rank === result.best_pick;
-      html += '<div class="recommend-card' + (isBest ? ' best' : '') + '">';
-      html += '<div class="recommend-card-header">';
-      if (isBest) html += '<span class="recommend-badge">최선안</span>';
-      html += '<span class="recommend-rank">#' + rec.rank + '</span>';
-      html += '<span class="recommend-name">' + escapeHtml(rec.name) + '</span></div>';
-      if (rec.strategy) html += '<div class="recommend-strategy">' + escapeHtml(rec.strategy) + '</div>';
-      // 용량을 최적화 결과와 동일한 비례 바(.opt-cap-bar)로 표시 — 각 행 = 적용용량 / 총적용용량
-      html += '<div class="recommend-systems">';
-      var totCap = (rec.systems || []).reduce(function(s, x) { return s + (x.적용용량 || 0); }, 0);
-      (rec.systems || []).forEach(function(sys) {
-        var src = (rec.sources || []).find(function(s) { return s.에너지원 === sys.에너지원 && s.형식 === sys.형식; });
-        var allocLabel = src ? ' (' + src.allocation_pct + '%)' : '';
-        var pct = totCap > 0 ? (sys.적용용량 / totCap * 100).toFixed(0) : 0;
-        html += '<div class="opt-sys-row">'
-          + '<span class="opt-sys-name">' + escapeHtml(sys.에너지원) + ' ' + escapeHtml(sys.형식) + '</span>'
-          + '<span class="opt-cap-bar"><span style="width:' + pct + '%"></span></span>'
-          + '<span class="opt-sys-cap">' + sys.적용용량 + ' kW' + escapeHtml(allocLabel) + '</span>'
-          + '</div>';
-      });
-      html += '</div>';
-      var ratioLabel = 의무비율 ? ' (의무비율 ' + 의무비율 + '%)' : '';
-      html += '<div class="recommend-ratio"><span>예상 설치비율' + escapeHtml(ratioLabel) + '</span><span class="recommend-ratio-value">' + (rec.estimated_ratio || 0).toFixed(1) + '%</span></div>';
-      if (rec.pros && rec.pros.length) {
-        html += '<div class="recommend-pros">';
-        rec.pros.forEach(function(p) { html += '<div class="recommend-pro-item">&#10003; ' + escapeHtml(p) + '</div>'; });
-        html += '</div>';
-      }
-      if (rec.cons && rec.cons.length) {
-        html += '<div class="recommend-cons">';
-        rec.cons.forEach(function(c) { html += '<div class="recommend-con-item">&#10007; ' + escapeHtml(c) + '</div>'; });
-        html += '</div>';
-      }
-      if (rec.constraints_analysis) html += '<div class="recommend-constraint-analysis">' + escapeHtml(rec.constraints_analysis) + '</div>';
-      html += '<button class="btn-apply-recommend" data-rank="' + rec.rank + '">이 안으로 시나리오 적용</button>';
-      html += '</div>';
+    html += '<div class="cmp-grid">';
+
+    // 좌: 최적화 알고리즘 (상위 5)
+    html += '<div class="cmp-col"><div class="cmp-col-title">&#x1F522; 최적화 알고리즘 <small>(8차원 가중합)</small></div>';
+    candidates.slice(0, 5).forEach(function(c) {
+      var aiR = aiRankById[c.cid];
+      html += '<div class="cmp-item' + (c.cid === 1 ? ' best' : '') + '">'
+        + '<div class="cmp-head"><span class="cmp-rank">알고 #' + c.cid + '</span>'
+        + '<span class="cmp-xref">' + (aiR ? 'AI #' + aiR : 'AI 권외') + '</span></div>'
+        + '<div class="cmp-sys">' + escapeHtml(sysText(c.f)) + '</div>'
+        + '<div class="cmp-metrics">' + metricsLine(c.f) + '</div></div>';
     });
     html += '</div>';
-    container.innerHTML = html;
-    container.querySelectorAll(".btn-apply-recommend").forEach(function(b) {
-      b.addEventListener("click", function() { applyRecommendation(parseInt(b.getAttribute("data-rank"))); });
-    });
-  }
 
-  function applyRecommendation(rank) {
-    var result = window.LAST_RECOMMEND_RESULT;
-    if (!result || !result.recommendations) return;
-    var rec = result.recommendations.find(function(r) { return r.rank === rank; });
-    if (!rec || !rec.systems) return;
-    var newScenario = {
-      id: "AI-" + rank,
-      systems: rec.systems.map(function(sys) {
-        var coeff = get신재생에너지계수(sys.에너지원, sys.형식);
-        return {
-          에너지원: sys.에너지원, 형식: sys.형식,
-          단위에너지생산량: coeff ? coeff.단위에너지생산량 : 0,
-          원별보정계수: coeff ? coeff.원별보정계수 : 0,
-          적용용량: sys.적용용량
-        };
-      })
-    };
-    var existIdx = scenarios.findIndex(function(s) { return s.id === newScenario.id; });
-    if (existIdx >= 0) scenarios[existIdx] = newScenario;
-    else scenarios.push(newScenario);
-    activeAltIdx = scenarios.findIndex(function(s) { return s.id === newScenario.id; });
-    var tabScenario = document.getElementById("tab-scenario");
-    if (tabScenario) tabScenario.click();
-    renderAltTabs();
-    renderAll();
+    // 우: AI 정성평가 (상위 3)
+    html += '<div class="cmp-col"><div class="cmp-col-title">&#x1F916; AI 정성평가</div>';
+    if (!aiList.length) {
+      html += '<div class="empty-state" style="padding:16px 0;">AI 평가 결과를 해석하지 못했습니다.</div>';
+    }
+    aiList.forEach(function(a, i) {
+      var c = candById[a.id];
+      html += '<div class="cmp-item' + (a.id === bestPick ? ' best' : '') + '">'
+        + '<div class="cmp-head"><span class="cmp-rank">AI #' + (i + 1) + (a.id === bestPick ? ' &#9733;' : '') + '</span>'
+        + '<span class="cmp-xref">알고 #' + a.id + '</span></div>'
+        + '<div class="cmp-sys">' + escapeHtml(sysText(c.f)) + '</div>'
+        + '<div class="cmp-metrics">' + metricsLine(c.f) + '</div>'
+        + (a.reasoning ? '<div class="cmp-reason">' + escapeHtml(a.reasoning) + '</div>' : '') + '</div>';
+    });
+    html += '</div>';
+
+    html += '</div>';
+    container.innerHTML = html;
   }
 
   function escapeHtml(s) {
@@ -262,8 +199,7 @@
   }
 
   window.RecommendEngine = {
-    run: runRecommendation,
-    collectConstraints: collectConstraints,
-    applyRecommendation: applyRecommendation
+    run: runComparison,
+    collectConstraints: collectConstraints
   };
 })();

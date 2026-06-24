@@ -1716,6 +1716,36 @@ button, .alt-tab, .cover-image-drop, select,
   color: var(--accent-yellow);
 }
 
+/* AI 정성평가 vs 최적화 알고리즘 비교 뷰 */
+.cmp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+.cmp-col { display: flex; flex-direction: column; gap: 8px; }
+.cmp-col-title {
+  font-size: 12px; font-weight: 700; color: var(--text-primary);
+  padding-bottom: 6px; border-bottom: 1px solid var(--border-default);
+}
+.cmp-col-title small { font-weight: 400; color: var(--text-hint); }
+.cmp-item {
+  border: 1px solid var(--border-default); border-radius: 8px;
+  padding: 8px 10px; background: var(--bg-card-inner);
+}
+.cmp-item.best {
+  border-color: var(--accent-primary, #10b981);
+  box-shadow: 0 0 0 1px var(--accent-primary, #10b981);
+}
+.cmp-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.cmp-rank { font-size: 12px; font-weight: 800; color: var(--text-primary); }
+.cmp-xref {
+  font-size: 10px; font-weight: 600; color: var(--text-secondary);
+  background: var(--bg-input); padding: 1px 7px; border-radius: 10px;
+}
+.cmp-sys { font-size: 11px; color: var(--text-primary); line-height: 1.45; margin-bottom: 3px; }
+.cmp-metrics { font-size: 10px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.cmp-reason {
+  font-size: 10.5px; color: var(--text-secondary); line-height: 1.5;
+  margin-top: 5px; padding-top: 5px; border-top: 1px dashed var(--border-default);
+}
+@media (max-width: 720px) { .cmp-grid { grid-template-columns: 1fr; } }
+
 /* 예상 비율 */
 .recommend-ratio {
   display: flex;
