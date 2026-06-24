@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>신재생에너지 설비조합 최적화 — 의사결정자 브리핑</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@1.3.9/dist/web/static/pretendard.css"/>
+<style>
+:root{
+  --pd-ink:#1a1a1a; --pd-ink-soft:#4a4a4a; --pd-line:#1a1a1a; --pd-line-soft:#c8c4bd;
+  --pd-paper:#fafaf7; --pd-accent:#1e40af; --pd-accent-soft:#dbe3f7; --pd-highlight:#fff3a8;
+  --pd-font:'Pretendard',-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+  --pd-mono:'JetBrains Mono',ui-monospace,monospace;
+}
+@page{ size:A4 portrait; margin:20mm 18mm 22mm 18mm;
+  @bottom-center{ content:counter(page) " / " counter(pages); font-size:9pt; color:#6b7280; } }
+*{ box-sizing:border-box; }
+body{ font-family:var(--pd-font); font-size:10.5pt; color:#1f2937; line-height:1.7;
+  background:#e5e7eb; margin:0; padding:10mm 0; }
+.page{ width:210mm; min-height:297mm; padding:20mm 18mm 22mm 18mm; margin:0 auto 10mm auto;
+  background:#fff; box-shadow:0 2px 8px rgba(0,0,0,0.15); position:relative;
+  page-break-after:always; overflow:hidden; }
+.page:last-child{ page-break-after:auto; }
+h1{ font-size:23pt; font-weight:700; color:#1e40af; margin:0 0 14px; line-height:1.25;
+  page-break-before:always; break-before:page; }
+h1.no-break, h1.cover-h{ page-break-before:avoid; break-before:avoid; }
+h2{ font-size:16pt; font-weight:600; color:#1e40af; border-left:4px solid #1e40af;
+  padding-left:10px; margin:20px 0 10px; }
+h3{ font-size:12.5pt; font-weight:600; color:#374151; margin:16px 0 8px; }
+p{ margin:8px 0; }
+a{ color:#1e40af; text-decoration:none; }
+strong{ font-weight:600; color:#111827; }
+code{ font-family:var(--pd-mono); font-size:9.2pt; background:#f3f4f6; color:#b91c1c;
+  padding:1px 5px; border-radius:3px; }
+ul,ol{ margin:8px 0; padding-left:22px; }
+li{ margin:5px 0; }
+blockquote{ margin:10px 0; padding:6px 14px; border-left:4px solid #93c5fd;
+  background:#f0f7ff; color:#374151; border-radius:0 4px 4px 0; }
+blockquote p{ margin:4px 0; font-size:10pt; }
+table{ width:100%; border-collapse:collapse; margin:12px 0; font-size:9.3pt;
+  break-inside:avoid; page-break-inside:avoid; }
+th,td{ border:1px solid #d1d5db; padding:5px 8px; text-align:left; vertical-align:top; }
+table th{ background:#1e40af; color:#fff; font-size:10pt; font-weight:600; }
+tbody tr:nth-child(even){ background:#f8fafc; }
+hr{ border:none; border-top:1px solid #e5e7eb; margin:14px 0; }
+figure{ break-inside:avoid; page-break-inside:avoid; margin:14px 0; }
+.pipeline-diagram svg{ width:100%; height:auto; display:block; }
+.pipeline-diagram svg text{ font-family:var(--pd-font); fill:var(--pd-ink); }
+/* cover */
+.cover .cover-h{ font-size:27pt; text-align:center; margin-top:38mm; line-height:1.3; }
+.cover-sub{ text-align:center; color:#374151; font-size:12pt; margin:10px 0 2px; font-weight:500; }
+.cover-meta{ text-align:center; color:#9ca3af; font-size:9.5pt; margin-bottom:24px; }
+.page-footer{ position:absolute; bottom:10mm; left:0; right:0; text-align:center; font-size:9pt; color:#6b7280; }
+/* KPI Card Grid */
+.kpi-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(38mm, 1fr));
+  gap:5mm; margin:8mm 0; break-inside:avoid; page-break-inside:avoid; }
+.kpi-card{ border-left:4px solid #1e40af; padding:4mm 5mm; background:#f8fafc; }
+.kpi-label{ font-size:8.5pt; color:#6b7280; margin-bottom:2mm; }
+.kpi-value{ font-size:22pt; font-weight:700; color:#1e40af; font-feature-settings:"tnum"; line-height:1.1; }
+.kpi-unit{ font-size:11pt; font-weight:500; color:#374151; margin-left:1.5mm; }
+.kpi-desc{ font-size:8.5pt; color:#6b7280; margin-top:2mm; line-height:1.4; }
+/* Callout */
+.callout{ border-left:4px solid; padding:4mm 6mm; margin:6mm 0; border-radius:0 2mm 2mm 0;
+  break-inside:avoid; page-break-inside:avoid; font-size:10pt; }
+.callout-title{ font-weight:600; margin-bottom:2mm; }
+.callout-body{ line-height:1.6; }
+.callout-warning{ border-color:#dc2626; background:#fef2f2; }
+.callout-warning .callout-title{ color:#dc2626; }
+.callout-note{ border-color:#1e40af; background:#eff6ff; }
+.callout-note .callout-title{ color:#1e40af; }
+.callout-tip{ border-color:#059669; background:#f0fdf4; }
+.callout-tip .callout-title{ color:#059669; }
+/* 2-Column Compare */
+.compare-2col{ display:grid; grid-template-columns:1fr 1fr; gap:5mm; margin:8mm 0;
+  break-inside:avoid; page-break-inside:avoid; }
+.compare-card{ padding:5mm 6mm; }
+.compare-asis{ border:1px solid #d1d5db; background:#f9fafb; }
+.compare-tobe{ border:2px solid #1e40af; background:#eff6ff; }
+.compare-label{ font-size:11pt; font-weight:700; margin-bottom:3mm; padding-bottom:2mm;
+  border-bottom:1px solid currentColor; }
+.compare-asis .compare-label{ color:#6b7280; }
+.compare-tobe .compare-label{ color:#1e40af; }
+.compare-card ul{ margin:0; padding-left:18px; }
+.compare-card li{ font-size:9.5pt; margin:4px 0; }
+/* Conclusion */
+.conclusion{ border-top:3px solid #1e40af; border-bottom:3px solid #1e40af;
+  background:linear-gradient(180deg, #eff6ff 0%, #ffffff 100%); padding:6mm 8mm; margin:10mm 0;
+  break-inside:avoid; page-break-inside:avoid; }
+.conclusion-title{ font-size:13pt; font-weight:700; color:#1e40af; margin-bottom:3mm; }
+.conclusion-body{ font-size:10.5pt; line-height:1.7; color:#1f2937; }
+/* Step list */
+.steps{ counter-reset:step; margin:10px 0; padding:0; list-style:none; }
+.steps>li{ position:relative; padding:6px 0 10px 44px; margin:0; border-left:2px solid #dbe3f7;
+  margin-left:14px; }
+.steps>li:last-child{ border-left:2px solid transparent; }
+.steps>li::before{ counter-increment:step; content:counter(step); position:absolute; left:-16px; top:2px;
+  width:30px; height:30px; border-radius:50%; background:#1e40af; color:#fff;
+  font-weight:700; font-size:12pt; display:flex; align-items:center; justify-content:center; }
+.steps .step-t{ font-weight:600; color:#111827; font-size:11pt; }
+.steps .step-d{ font-size:9.5pt; color:#4a4a4a; margin-top:2px; }
+.tag{ display:inline-block; background:#dbe3f7; color:#1e40af; font-size:8.5pt; font-weight:600;
+  padding:1px 7px; border-radius:10px; margin:0 3px 3px 0; }
+</style>
+</head>
+<body>
+
+<!-- ===================== COVER ===================== -->
+<section class="page cover">
+<h1 class="cover-h">신재생에너지<br/>설비조합 최적화 기법</h1>
+<p class="cover-sub">— 의사결정자를 위한 핵심 개념 브리핑 —</p>
+<p class="cover-meta">건축물 신재생에너지 의무설치 대응 · 2026</p>
+<hr/>
+<div class="conclusion">
+<div class="conclusion-title">한 문장 요약</div>
+<div class="conclusion-body">
+사람이 경험으로 고르던 <strong>"표준 설치안 몇 개"</strong> 대신, 컴퓨터가 <strong>법적 의무를 충족하는 수천 가지 설비 조합을 자동으로 만들어 보고</strong>,
+발주처가 중요하게 여기는 가치(비용·디자인·운영비·심의 등)에 따라 <strong>순위를 매겨 추천</strong>하는 기법입니다.
+"정답 하나"가 아니라 <strong>"요구에 맞춘 최적안 + 대안들"</strong>을 근거와 함께 제시합니다.
+</div>
+</div>
+<blockquote><p>본 자료는 기법의 <strong>전체 그림</strong>을 빠르게 파악하기 위한 것으로, 계산식·코드 등 상세 내용은 별도 기술 가이드(<code>설비조합최적화_시뮬레이션_가이드.html</code>)를 참조하십시오.</p></blockquote>
+<div class="page-footer"><span class="page-num"></span></div>
+</section>
+
+<!-- ===================== 1. 개념 ===================== -->
+<section class="page"><h1 id="c1" class="no-break">1. 설비조합 최적화란?</h1>
+
+<p>건축물은 법에 따라 <strong>일정 비율 이상을 신재생에너지로 충당</strong>해야 합니다(신재생에너지 의무설치비율). 이를 만족시키는 설비 구성은 한 가지가 아니라
+<strong>태양광·지열·연료전지 등을 어떻게 조합하고 각각 몇 kW씩 까느냐에 따라 무수히 많습니다.</strong></p>
+
+<p>설비조합 최적화는 이 "무수히 많은 경우의 수"를 <strong>컴퓨터가 빠짐없이 만들어 보고, 법적 의무를 통과하는 조합만 추린 뒤,
+발주처의 요구도(무엇을 중시하는가)에 맞춰 점수를 매겨 순위화</strong>하는 기법입니다.</p>
+
+<div class="kpi-grid">
+  <div class="kpi-card">
+    <div class="kpi-label">검토 대상 에너지원</div>
+    <div class="kpi-value">8<span class="kpi-unit">종</span></div>
+    <div class="kpi-desc">태양광 3종 · 지열 · 연료전지 4종</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">자동 생성·검토 조합</div>
+    <div class="kpi-value">수천<span class="kpi-unit">개</span></div>
+    <div class="kpi-desc">사람이 일일이 못 하는 전수 탐색</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">반영하는 의사결정 가치</div>
+    <div class="kpi-value">8<span class="kpi-unit">차원</span></div>
+    <div class="kpi-desc">비용·운영비·디자인·심의 등</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">결과 제시</div>
+    <div class="kpi-value">순위<span class="kpi-unit">+대안</span></div>
+    <div class="kpi-desc">최적안 1개가 아닌 비교 가능한 목록</div>
+  </div>
+</div>
+
+<div class="callout callout-tip">
+<div class="callout-title">💡 핵심 사고방식 — "조건"과 "취향"을 분리한다</div>
+<div class="callout-body">
+<p>최적화는 두 가지를 <strong>섞지 않고 단계로 나눕니다.</strong></p>
+<ul>
+<li><strong>반드시 지켜야 할 조건(법적 의무)</strong> → 통과 못 하면 <strong>탈락</strong>. 타협 대상이 아님.</li>
+<li><strong>발주처가 중시하는 가치(취향·우선순위)</strong> → 통과한 조합들 사이의 <strong>순위</strong>만 결정.</li>
+</ul>
+<p>덕분에 "법은 지켰는가?"와 "우리에게 유리한가?"가 명확히 구분되어, 의사결정 근거가 투명해집니다.</p>
+</div>
+</div>
+
+<div class="page-footer"><span class="page-num"></span></div>
+</section>
+
+<!-- ===================== 2. 프리셋 한계 vs 차별성 ===================== -->
+<section class="page"><h1 id="c2" class="no-break">2. 기존 방식의 한계와 차별성</h1>
+
+<p>지금까지는 보통 <strong>"표준 프리셋"</strong>, 즉 <em>경험적으로 정해 둔 몇 가지 설치안</em>(예: "옥상 태양광 + 지열" 패키지) 중에서 골랐습니다.
+이 방식은 빠르지만 다음과 같은 한계가 있습니다.</p>
+
+<div class="compare-2col">
+  <div class="compare-card compare-asis">
+    <div class="compare-label">기존 — 프리셋(표준안) 방식</div>
+    <ul>
+      <li><strong>선택지가 소수</strong> — 미리 정해 둔 몇 개 안에서만 고름</li>
+      <li><strong>경험·관행 의존</strong> — 담당자 역량에 결과가 좌우</li>
+      <li><strong>현장 특수성 반영 약함</strong> — 면적·지역·건물용도가 달라도 비슷한 안 적용</li>
+      <li><strong>과설치 위험</strong> — 의무비율을 크게 초과해 불필요한 비용 발생</li>
+      <li><strong>근거 제시 빈약</strong> — "왜 이 안인가"를 정량적으로 설명하기 어려움</li>
+      <li><strong>가치 반영 단편적</strong> — 비용만 보거나 디자인만 보는 식</li>
+    </ul>
+  </div>
+  <div class="compare-card compare-tobe">
+    <div class="compare-label">최적화 — 조합 자동탐색 방식</div>
+    <ul>
+      <li><strong>전수 탐색</strong> — 수천 조합을 빠짐없이 생성·검토</li>
+      <li><strong>규칙 기반·재현 가능</strong> — 누가 돌려도 동일한 기준·결과</li>
+      <li><strong>현장 맞춤</strong> — 면적·지역·건물용도·가용공간을 직접 반영</li>
+      <li><strong>최소 충족 지향</strong> — 의무를 "딱 맞게" 충족하는 안을 우대(과설치 회피)</li>
+      <li><strong>정량 근거</strong> — 모든 안에 점수·강점을 부여해 비교 설명</li>
+      <li><strong>8개 가치 동시 고려</strong> — 비용·운영비·디자인·심의 등을 한 번에</li>
+    </ul>
+  </div>
+</div>
+
+<div class="callout callout-note">
+<div class="callout-title">차별성을 한마디로</div>
+<div class="callout-body">
+프리셋이 <strong>"정해진 답 중 고르기"</strong>라면, 최적화는 <strong>"가능한 모든 답을 만들어 두고, 우리 기준으로 줄 세우기"</strong>입니다.
+의사결정자는 1위 안만 보는 것이 아니라, <strong>"비용에 강한 안 / 디자인에 강한 안 / 균형형 안"</strong>을 한 화면에서 비교해 선택할 수 있습니다.
+</div>
+</div>
+
+<div class="page-footer"><span class="page-num"></span></div>
+</section>
+
+<!-- ===================== 3. 주요 인자와 가중치 ===================== -->
+<section class="page"><h1 id="c3" class="no-break">3. 주요 인자와 가중치</h1>
+
+<h2>3.1 반드시 지켜야 할 조건 (의무 — 통과/탈락)</h2>
+<p>아래 조건을 하나라도 어기면 그 조합은 <strong>후보에서 제외</strong>됩니다. 점수와 무관한 "합격선"입니다.</p>
+<table>
+<thead><tr><th>조건</th><th>의미</th></tr></thead>
+<tbody>
+<tr><td><strong>의무설치비율</strong></td><td>생산하는 신재생에너지가 법정 의무비율 이상이어야 함 (필수)</td></tr>
+<tr><td><strong>전력생산비율</strong></td><td>전력 자립 기준이 있을 경우 이를 충족 (선택)</td></tr>
+<tr><td><strong>가용 면적</strong></td><td>옥상·외피·대지·기계실 등 설치 가능한 공간 한도를 넘지 않을 것</td></tr>
+<tr><td><strong>지열 최소의무</strong></td><td>서울시 등 지열·수열 별도 의무가 있을 경우 충족 (선택)</td></tr>
+</tbody>
+</table>
+
+<h2>3.2 발주처가 중시하는 가치 (8차원 — 순위 결정)</h2>
+<p>조건을 통과한 조합들의 <strong>순위</strong>를 정하는 평가 기준입니다. 각 차원의 중요도를 <strong>5단계(매우높음~매우낮음)</strong>로 입력합니다.</p>
+<table>
+<thead><tr><th>평가 인자</th><th>무엇을 보는가</th></tr></thead>
+<tbody>
+<tr><td><strong>① 초기비용 절감</strong></td><td>설치 장비비가 적을수록 우대</td></tr>
+<tr><td><strong>② 운영비 절감</strong></td><td>연간 운영 순익(절감액−운영비)이 클수록 우대</td></tr>
+<tr><td><strong>③ 인센티브 확보</strong></td><td>ZEB(제로에너지건축) 기여 등 인센티브 유리성</td></tr>
+<tr><td><strong>④ 디자인 보존</strong></td><td>외관 훼손·외부공간 차지가 적을수록 우대 (지역 경관 민감도 반영)</td></tr>
+<tr><td><strong>⑤ 시공 용이성</strong></td><td>공사기간·난이도가 낮을수록 우대</td></tr>
+<tr><td><strong>⑥ 의무비율 근접</strong></td><td>의무를 크게 넘기지 않고 "딱 맞게" 충족할수록 우대(과설치 회피)</td></tr>
+<tr><td><strong>⑦ 법적심의 적합성</strong></td><td>건축심의·환경영향평가에서 제약이 적을수록 우대</td></tr>
+<tr><td><strong>⑧ 건물유형 적합성</strong></td><td>해당 건물용도에 잘 맞는 에너지원일수록 우대</td></tr>
+</tbody>
+</table>
+
+<div class="callout callout-note">
+<div class="callout-title">🎚️ 가중치는 어떻게 정해지나 — "중요도 → 점수 → 비율"</div>
+<div class="callout-body">
+<p>입력한 5단계 중요도가 자동으로 가중치로 바뀝니다. 원리는 단순합니다.</p>
+<ul>
+<li>각 차원의 중요도를 점수로 환산 — <strong>매우높음 5 · 높음 4 · 보통 3 · 낮음 2 · 매우낮음 1</strong></li>
+<li>전체 합이 100%가 되도록 비율로 나눔 → 이 비율이 곧 <strong>가중치</strong></li>
+</ul>
+<p><strong>예시:</strong> "디자인"만 매우 중요(5)로 두고 나머지 7개는 보통(3)이면 → 디자인 가중치가 가장 커져, 디자인에 유리한 조합이 상위로 올라옵니다.
+건물유형·사업형태를 고르면 <strong>표준 중요도가 자동 반영</strong>되며, 이후 발주처가 자유롭게 조정할 수 있습니다.</p>
+</div>
+</div>
+
+<div class="page-footer"><span class="page-num"></span></div>
+</section>
+
+<!-- ===================== 4. 최적화 절차 ===================== -->
+<section class="page"><h1 id="c4" class="no-break">4. 최적화 절차 — 인자가 적용되는 흐름</h1>
+
+<figure class="pipeline-diagram">
+<svg viewBox="0 0 760 120" role="img" aria-label="최적화 5단계 흐름">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1e40af"/>
+    </marker>
+  </defs>
+  <g font-size="10.5" text-anchor="middle">
+    <g><rect x="6" y="35" width="130" height="50" rx="6" fill="#eff6ff" stroke="#1e40af" stroke-width="1.4"/>
+      <text x="71" y="56" font-weight="700" fill="#1e40af">① 조합 생성</text>
+      <text x="71" y="73" font-size="9" fill="#4a4a4a">수천 후보 만들기</text></g>
+    <g><rect x="160" y="35" width="130" height="50" rx="6" fill="#eff6ff" stroke="#1e40af" stroke-width="1.4"/>
+      <text x="225" y="56" font-weight="700" fill="#1e40af">② 용량 배분</text>
+      <text x="225" y="73" font-size="9" fill="#4a4a4a">몇 kW씩 자동계산</text></g>
+    <g><rect x="314" y="35" width="130" height="50" rx="6" fill="#fef2f2" stroke="#dc2626" stroke-width="1.4"/>
+      <text x="379" y="56" font-weight="700" fill="#dc2626">③ 의무 필터</text>
+      <text x="379" y="73" font-size="9" fill="#4a4a4a">조건 위반 탈락</text></g>
+    <g><rect x="468" y="35" width="130" height="50" rx="6" fill="#eff6ff" stroke="#1e40af" stroke-width="1.4"/>
+      <text x="533" y="56" font-weight="700" fill="#1e40af">④ 점수·가중합</text>
+      <text x="533" y="73" font-size="9" fill="#4a4a4a">8가치로 채점</text></g>
+    <g><rect x="622" y="35" width="132" height="50" rx="6" fill="#f0fdf4" stroke="#059669" stroke-width="1.4"/>
+      <text x="688" y="56" font-weight="700" fill="#059669">⑤ 순위·추천</text>
+      <text x="688" y="73" font-size="9" fill="#4a4a4a">최적안+대안</text></g>
+  </g>
+  <g stroke="#1e40af" stroke-width="1.5" fill="none">
+    <path d="M138 60 L158 60" marker-end="url(#ar)"/>
+    <path d="M292 60 L312 60" marker-end="url(#ar)"/>
+    <path d="M446 60 L466 60" marker-end="url(#ar)"/>
+    <path d="M600 60 L620 60" marker-end="url(#ar)"/>
+  </g>
+</svg>
+</figure>
+
+<ol class="steps">
+  <li>
+    <div class="step-t">조합 생성 — 구조가 다른 후보를 폭넓게 만든다</div>
+    <div class="step-d">태양광 종류 × 연료전지 유무 × 지열·연료전지 부분조합을 전수 열거. "지열만 / 태양광+지열 / 연료전지만" 등 <strong>성격이 다른 후보</strong>를 빠짐없이 확보한다.</div>
+  </li>
+  <li>
+    <div class="step-t">용량 자동배분 — 각 설비를 몇 kW씩 깔지 계산</div>
+    <div class="step-d">조합마다 설치 용량을 자동 산정한다. <strong>비용 최소·순익 최대 등 6가지 관점으로 각각 배분</strong>해, 같은 조합에서도 서로 다른 좋은 안을 끌어낸다. <span class="tag">선형계획법(LP) 적용</span></div>
+  </li>
+  <li>
+    <div class="step-t">의무 필터 — 법적 조건을 못 지키면 탈락</div>
+    <div class="step-d">§3.1의 의무비율·면적·전력·지열 조건을 재검증. <strong>조건 위반 조합은 여기서 제거</strong>되고, 통과한 조합만 다음 단계로 넘어간다.</div>
+  </li>
+  <li>
+    <div class="step-t">점수·가중합 — 8가지 가치로 채점</div>
+    <div class="step-d">통과 조합을 8개 인자별로 0~1점으로 환산하고, §3.2의 <strong>가중치를 곱해 합산</strong>해 종합점수를 낸다. 발주처가 중시한 가치일수록 점수에 크게 반영된다.</div>
+  </li>
+  <li>
+    <div class="step-t">순위·추천 — 최적안과 대안을 함께 제시</div>
+    <div class="step-d">종합점수로 순위를 매기고, <strong>"비용에 강한 안·디자인에 강한 안" 등 차원별 대표(챔피언)</strong>도 함께 표시한다. 각 안에는 강점 태그·목표값·심의 프로파일이 붙어 비교·설명이 쉽다.</div>
+  </li>
+</ol>
+
+<div class="page-footer"><span class="page-num"></span></div>
+</section>
+
+<!-- ===================== 5. 의사결정 활용 ===================== -->
+<section class="page"><h1 id="c5" class="no-break">5. 의사결정에 어떻게 쓰는가</h1>
+
+<h2>5.1 결과물에서 보는 것</h2>
+<ul>
+<li><strong>순위 카드</strong> — 종합점수 상위안 + 차원별 대표안을 한눈에 비교</li>
+<li><strong>강점 태그</strong> — 이 안이 "비용·운영비·디자인 중 무엇에 강한가"를 표시</li>
+<li><strong>핵심 수치</strong> — 초기비용·연간순익·의무비율 충족·전력 자립률</li>
+<li><strong>심의 프로파일</strong> — 경관·소음·생태 등 항목별 제약 정도(인허가 리스크 미리 파악)</li>
+<li><strong>근거 설명·보고서</strong> — 추천 사유를 문장으로 생성, A4 보고서로 출력</li>
+</ul>
+
+<h2>5.2 의사결정자에게 주는 가치</h2>
+<div class="kpi-grid">
+  <div class="kpi-card">
+    <div class="kpi-label">투명한 근거</div>
+    <div class="kpi-value">정량화</div>
+    <div class="kpi-desc">"왜 이 안인가"를 점수로 설명</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">비용 합리화</div>
+    <div class="kpi-value">과설치↓</div>
+    <div class="kpi-desc">의무를 딱 맞게 충족해 낭비 방지</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">유연한 선택</div>
+    <div class="kpi-value">대안 비교</div>
+    <div class="kpi-desc">우선순위 바꾸면 즉시 재추천</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">리스크 선제대응</div>
+    <div class="kpi-value">심의 가시화</div>
+    <div class="kpi-desc">인허가 제약을 사전에 확인</div>
+  </div>
+</div>
+
+<div class="conclusion">
+<div class="conclusion-title">정리</div>
+<div class="conclusion-body">
+설비조합 최적화는 <strong>"경험으로 고른 표준안"을 "근거로 줄 세운 맞춤안"으로 바꾸는 도구</strong>입니다.
+법적 의무는 <strong>합격선</strong>으로 분명히 거르고, 발주처가 중시하는 가치는 <strong>가중치</strong>로 반영해,
+의사결정자가 <strong>비용·디자인·운영·심의를 한 화면에서 비교하며 선택</strong>하도록 돕습니다.
+우선순위가 바뀌면 가중치만 조정해 <strong>즉시 다시 추천</strong>받을 수 있어, 협의·설득 과정이 빨라집니다.
+</div>
+</div>
+
+<blockquote><p>상세 계산식·라이브러리·설정 방법은 기술 가이드 <code>설비조합최적화_시뮬레이션_가이드.html</code>를 참조하십시오.</p></blockquote>
+
+<div class="page-footer"><span class="page-num"></span></div>
+</section>
+
+<script>
+document.querySelectorAll('.page').forEach(function(pg,i,all){
+  var el=pg.querySelector('.page-num');
+  if(el) el.textContent=(i+1)+' / '+all.length;
+});
+</script>
+</body>
+</html>
