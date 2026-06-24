@@ -1639,6 +1639,7 @@ function saveFormState() {
       reviewHTML: reviewEl ? reviewEl.innerHTML : '',
       reviewText: reviewEl ? reviewEl.innerText : '',
       coverImage: window.COVER_IMAGE_BASE64 || null,
+      optimize: window.OptimizeUI ? window.OptimizeUI.getState() : null,
       projectName: projectName
     };
     var projects = getProjects();
@@ -1728,6 +1729,9 @@ function applyProjectState(state) {
 
   renderAltTabs();
   renderAll();
+
+  // 설비조합 최적화 탭 — 입력값 + 마지막 최적화 결과 복원 (사업정보 복원 이후)
+  if (window.OptimizeUI && state.optimize) window.OptimizeUI.setState(state.optimize);
 }
 
 function loadFormState() {

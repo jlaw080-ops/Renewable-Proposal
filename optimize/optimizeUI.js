@@ -387,5 +387,58 @@
     }
   }
 
-  window.OptimizeUI = { init: init, run: run };
+  // ── 프로젝트 저장/복원 (최적화 탭 입력값 + 마지막 최적화 결과) ──────
+  // index.html 프로젝트 저장(saveFormState)/불러오기(applyProjectState)에서 호출.
+  // 입력값은 필드별로, 결과는 window.LAST_OPTIMIZE(전역)를 그대로 직렬화해 저장하고
+  // 복원 시 render()로 다시 그려 보고서·AI설명 버튼이 동작하도록 전역도 함께 되살린다.
+  var 저장입력필드 = [
+    ["opt-energy-demand", "energyDemand"], ["opt-req-ratio", "reqRatio"], ["opt-geo-ratio", "geoRatio"],
+    ["opt-building-type", "buildingType"], ["opt-building-area", "buildingArea"], ["opt-power-ratio", "powerRatio"],
+    ["opt-area-roof-pct", "areaRoofPct"], ["opt-area-facade-pct", "areaFacadePct"],
+    ["opt-area-land-pct", "areaLandPct"], ["opt-area-machine-pct", "areaMachinePct"]
+  ];
+  function getState() {
+    var inputs = {};
+    저장입력필드.forEach(function (m) { var el = $(m[0]); inputs[m[1]] = el ? el.value : ""; });
+    inputs.요구도 = {};
+    요구도항목.forEach(function (it) {
+      var sel = document.querySelector("input[name=opt-pri-" + it.key + "]:checked");
+      inputs.요구도[it.key] = sel ? sel.value : "보통";
+    });
+    return {
+      inputs: inputs,
+      result: (typeof window !== "undefined" && window.LAST_OPTIMIZE) || null,
+      ctx: (typeof window !== "undefined" && window._optCtx) || null,
+      explains: (typeof window !== "undefined" && window._optExplains) || null
+    };
+  }
+  function setState(s) {
+    if (!s) return;
+    var inp = s.inputs || {};
+    저장입력필드.forEach(function (m) {
+      var el = $(m[0]);
+      if (el && inp[m[1]] != null) el.value = inp[m[1]];
+    });
+    if (inp.요구도) {
+      요구도항목.forEach(function (it) {
+        var v = inp.요구도[it.key];
+        if (!v) return;
+        var r = document.querySelector('input[name=opt-pri-' + it.key + '][value="' + v + '"]');
+        if (r) r.checked = true;
+      });
+    }
+    updatePowerDemand();
+    updateAreaCalc();
+    // 마지막 최적화 결과 복원 — 전역 복원 후 재렌더(보고서·AI설명 버튼 동작 보장)
+    var box = $("optimize-result");
+    if (s.result && box) {
+      window.LAST_OPTIMIZE = s.result;
+      window._optCtx = s.ctx || {};
+      window._optExplains = s.explains || {};
+      try { render(s.result, box, s.ctx || {}); }
+      catch (e) { box.innerHTML = '<div class="opt-error">저장된 최적화 결과 복원 실패: ' + e.message + '</div>'; }
+    }
+  }
+
+  window.OptimizeUI = { init: init, run: run, getState: getState, setState: setState };
 })();
