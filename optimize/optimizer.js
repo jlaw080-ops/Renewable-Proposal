@@ -22,6 +22,17 @@
   function cfg() { return (typeof window !== "undefined" && window.OPT_CONFIG) || {}; }
   function MAX_연료전지기수() { var v = cfg().연료전지최대기수; return (v > 0) ? v : 2; }
 
+  // 의무근접 요구도 등급 → 최종 의무설치비율의 기준 대비 허용 상한(%p). null/미설정 = 무제한(Infinity).
+  //   '매우높음'이면 0.5%p 이내로 밀착(기준 ≤ 실제 ≤ 기준+0.5). 하위 등급은 점증 완화.
+  //   하한은 법적 의무라 항상 기준 이상(별도 게이트)이므로 상한 밴드만 적용한다.
+  var 기본근접밴드 = { "매우높음": 0.5, "높음": 1.5, "보통": 3.0, "낮음": 6.0, "매우낮음": null };
+  function 의무근접상한(ctx) {
+    var 등급 = (ctx && ctx.요구도 && ctx.요구도.의무근접) || "보통";
+    var 맵 = cfg().의무근접허용오차 || 기본근접밴드;
+    var v = 맵.hasOwnProperty(등급) ? 맵[등급] : (맵["보통"] != null ? 맵["보통"] : 3.0);
+    return (v == null) ? Infinity : v;
+  }
+
   function getSolver() {
     if (typeof window !== "undefined" && window.solver) return window.solver;
     return null;
@@ -243,7 +254,19 @@
     });
 
     // 최대화 목적은 의무를 만족하되 과설치 상한(OVER설치)을 둬 무한 설치를 막는다.
-    var constraints = { e_energy: isMax ? { min: 잔여에너지, max: 잔여에너지 * OVER설치 + 1e-6 } : { min: 잔여에너지 } };
+    // 의무근접 요구도가 높을수록 상한을 (기준+허용밴드%p)로 좁혀 최종 의무비율을 기준에 밀착시킨다.
+    // → 비용 외 목적(순익·디자인 등)도 밴드 안에서 최적해를 찾아 '밴드 내 다양성'을 확보.
+    var 근접밴드 = 의무근접상한(ctx);   // %p, Infinity=무제한
+    var 잔여에너지상한 = Infinity;
+    if (근접밴드 < Infinity && ctx.의무설치비율기준 > 0) {
+      var 총량상한 = 의무에너지총량 * (ctx.의무설치비율기준 + 근접밴드) / ctx.의무설치비율기준;
+      잔여에너지상한 = Math.max(잔여에너지, 총량상한 - 고정에너지);   // 음수 방어(고정이 이미 초과 시 잔여=0)
+    }
+    var emax = isMax ? 잔여에너지 * OVER설치 : Infinity;
+    if (잔여에너지상한 < Infinity) emax = Math.min(emax, 잔여에너지상한);
+    var e_energy제약 = { min: 잔여에너지 };
+    if (emax < Infinity) e_energy제약.max = emax + 1e-6;
+    var constraints = { e_energy: e_energy제약 };
     if (의무전력총량 > 0) constraints.e_power = { min: 잔여전력 };
     if (지열생산하한 > 0) constraints.geo = { min: 지열생산하한 };       // 지열 의무 옵션2(생산량)
     if (지열면적하한 > 0) constraints.geoArea = { min: 지열면적하한 };   // 지열 의무 옵션1(면적)
@@ -343,6 +366,7 @@
     var 전력목표 = (ctx.연간예상전력소비량 > 0 && ctx.전력생산비율기준 != null);
     var combos = generateCombinations(전력목표, ctx);
     var feasible = [];
+    var 근접밴드 = 의무근접상한(ctx);   // 의무근접 요구도별 최종 의무비율 허용 상한(%p, Infinity=무제한)
 
     // 각 구조 조합을 5개 목적함수(최소비용·최대순익·최대인센티브·최대디자인·최소법규제약)로 풀어
     // 가중치 낮은 요구도까지 우선 만족시키는 다양한 후보를 생성한다(중복은 이후 제거).
@@ -359,6 +383,10 @@
         var reg = targets.법적규제;
         var eps = 1e-6;
         if (ctx.의무설치비율기준 != null && reg.의무설치비율 < ctx.의무설치비율기준 - eps) return;
+        // 의무근접 요구도 상한 밴드 — 스냅·정수기수 과설치로 (기준+허용밴드%p)를 넘으면 제외.
+        //   '매우높음'이면 기준 대비 +0.5%p 초과 조합을 걸러 최종 의무비율을 ±0.5%p로 밀착시킨다.
+        if (ctx.의무설치비율기준 != null && 근접밴드 < Infinity
+          && reg.의무설치비율 > ctx.의무설치비율기준 + 근접밴드 + eps) return;
         if (reg.전력생산비율 != null && ctx.전력생산비율기준 != null
           && reg.전력생산비율 < ctx.전력생산비율기준 - eps) return;
         // 단위배수 스냅으로 면적이 늘어 제약을 초과할 수 있으므로 재검증
