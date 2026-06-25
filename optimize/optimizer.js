@@ -36,16 +36,16 @@
     return (sc - gmin) / gspan;   // 적합도 척도(0~1)와 동일 환산
   }
 
-  // 표시 제외 「예외 조합」 판정 — 단일 에너지원(형식) 100% 조합이면서 건물적합 적합도가 표시 하한 미만.
-  //   예) 공동주택 연료전지 100% 같은 저적합 단일설비 조합만 숨기고,
-  //   적합설비 혼합(용량비율 조정) 조합은 적합도와 무관하게 표시 대상으로 둔다.
+  // 표시 제외 「예외 조합」 판정 — 단일 에너지원(형식) 100% 조합이면서 건물적합 적합도가 표시 하한 「이하」.
+  //   예) 적합도 보통(이하)인 설비의 100% 조합(연료전지 100% 등)을 숨긴다.
+  //   단일설비라도 적합도가 하한보다 높으면(예: 높음·매우높음) 표시하고, 혼합(용량비율 조정) 조합은 항상 표시.
   function is예외조합(f, 표시하한) {
     if (!(표시하한 > -Infinity)) return false;                 // 필터 비활성(적합도 미사용/건물유형 미선택)
-    var fit = (f.targets.건물적합 && f.targets.건물적합.적합도 != null) ? f.targets.건물적합.적합도 : 0.5;
-    if (fit >= 표시하한 - 1e-9) return false;                  // 적합도 하한 이상 → 표시
     var 형식 = {};
     f.items.forEach(function (it) { 형식[it.설비.형식] = true; });
-    return Object.keys(형식).length <= 1;                      // 단일 형식(100%)일 때만 예외로 제외
+    if (Object.keys(형식).length > 1) return false;            // 혼합 조합 → 항상 표시
+    var fit = (f.targets.건물적합 && f.targets.건물적합.적합도 != null) ? f.targets.건물적합.적합도 : 0.5;
+    return fit <= 표시하한 + 1e-9;                             // 단일 형식 + 적합도 하한(보통) 이하 → 예외로 제외
   }
 
   // 의무근접 요구도 등급 → 최종 의무설치비율의 기준 대비 허용 상한(%p). null/미설정 = 무제한(Infinity).
@@ -259,7 +259,9 @@
   function solveCapacity(combo, ctx, obj) {
     var solver = getSolver();
     if (!solver) throw new Error("LP 솔버(window.solver) 미로드");
-    var isMax = (obj && obj !== "cost");
+    // obj = { lead: idx } → 해당 연속설비를 주력으로 생산량 최대화(용량비율 변형 생성). 그 외는 문자열 목적.
+    var leadIdx = (obj && typeof obj === "object" && obj.lead != null) ? obj.lead : null;
+    var isMax = (leadIdx != null) || (obj && obj !== "cost");
 
     var 면적 = ctx.면적 || {};
     var 의무에너지총량 = (ctx.연간단위에너지소요량 || 0) * (ctx.의무설치비율기준 || 0) / 100;
@@ -288,8 +290,12 @@
     }
     var variables = {};
     combo.연속설비.forEach(function (s, idx) {
+      // 주력 목적: 주력원은 생산량 최대화(+c), 그 외는 미세 패널티(−c·1e-3)로 최소화 → 주력 비중↑ 변형
+      var coeff = (leadIdx != null)
+        ? (idx === leadIdx ? s.c_연간단위에너지생산량 : -s.c_연간단위에너지생산량 * 1e-3)
+        : objCoeff(s, obj, ctx);
       var v = {
-        목적: objCoeff(s, obj, ctx),
+        목적: coeff,
         e_energy: s.c_연간단위에너지생산량,
         e_power: s.발전가능 ? s.f_연간발전량 : 0
       };
@@ -506,39 +512,46 @@
     var feasible = [];
     var 근접밴드 = 의무근접상한(ctx);   // 의무근접 요구도별 최종 의무비율 허용 상한(%p, Infinity=무제한)
 
-    // 각 구조 조합을 5개 목적함수(최소비용·최대순익·최대인센티브·최대디자인·최소법규제약)로 풀어
+    // 각 구조 조합을 6개 목적함수(최소비용·최대순익·최대인센티브·최대디자인·최소법규제약·최대적합)로 풀어
     // 가중치 낮은 요구도까지 우선 만족시키는 다양한 후보를 생성한다(중복은 이후 제거).
     var 목적들 = ["cost", "benefit", "incentive", "design", "constraint", "suitability"];
     var 평가수 = 0;
-    combos.forEach(function (combo) {
-      목적들.forEach(function (obj) {
-        평가수++;
-        var cap = solveCapacity(combo, ctx, obj);     // [2] 용량 LP (목적별)
-        if (!cap) return;                              // [3] 필터링(infeasible 제거)
-        var targets = TC.평가조합(cap.items, ctx);     // §5 목표값
-        // 법적규제 재검증. LP는 잔여기준으로 충족시키지만 부동소수 오차로 경계해(예 9.9999%)가
-        // 탈락하지 않도록 허용오차(eps)를 둔다 — LP 제약을 만족한 해는 정당하다.
-        var reg = targets.법적규제;
-        var eps = 1e-6;
-        if (ctx.의무설치비율기준 != null && reg.의무설치비율 < ctx.의무설치비율기준 - eps) return;
-        // 의무근접 요구도 상한 밴드 — 스냅·정수기수 과설치로 (기준+허용밴드%p)를 넘으면 제외.
-        //   '매우높음'이면 기준 대비 +0.5%p 초과 조합을 걸러 최종 의무비율을 ±0.5%p로 밀착시킨다.
-        if (ctx.의무설치비율기준 != null && 근접밴드 < Infinity
-          && reg.의무설치비율 > ctx.의무설치비율기준 + 근접밴드 + eps) return;
-        if (reg.전력생산비율 != null && ctx.전력생산비율기준 != null
-          && reg.전력생산비율 < ctx.전력생산비율기준 - eps) return;
-        // 단위배수 스냅으로 면적이 늘어 제약을 초과할 수 있으므로 재검증
-        var 면적c = ctx.면적 || {};
-        var 면적ok = ["옥상", "외피", "대지", "기계실"].every(function (sp) {
-          return 면적c[sp] == null || targets.설치면적[sp] <= 면적c[sp] + 1e-6;
-        });
-        if (!면적ok) return;
-        // label을 실제 채택 items 기준으로 재생성 (LP가 0으로 둔 설비는 제외됨)
-        var label = cap.items.map(function (it) {
-          return it.설비.세부형식 + (it.고정 ? "×" + it.기수 + "기" : " " + Math.round(it.용량) + "kW");
-        }).join(" + ");
-        feasible.push({ label: label, items: cap.items, targets: targets });
+    // 한 (구조, 목적) 평가 → 모든 필터 통과 시 feasible에 추가
+    function 평가하나(combo, obj) {
+      평가수++;
+      var cap = solveCapacity(combo, ctx, obj);       // [2] 용량 LP (목적별)
+      if (!cap) return;                                // [3] 필터링(infeasible 제거)
+      var targets = TC.평가조합(cap.items, ctx);       // §5 목표값
+      // 법적규제 재검증. LP는 잔여기준으로 충족시키지만 부동소수 오차로 경계해(예 9.9999%)가
+      // 탈락하지 않도록 허용오차(eps)를 둔다 — LP 제약을 만족한 해는 정당하다.
+      var reg = targets.법적규제;
+      var eps = 1e-6;
+      if (ctx.의무설치비율기준 != null && reg.의무설치비율 < ctx.의무설치비율기준 - eps) return;
+      // 의무근접 요구도 상한 밴드 — 스냅·정수기수 과설치로 (기준+허용밴드%p)를 넘으면 제외.
+      //   '매우높음'이면 기준 대비 +0.5%p 초과 조합을 걸러 최종 의무비율을 ±0.5%p로 밀착시킨다.
+      if (ctx.의무설치비율기준 != null && 근접밴드 < Infinity
+        && reg.의무설치비율 > ctx.의무설치비율기준 + 근접밴드 + eps) return;
+      if (reg.전력생산비율 != null && ctx.전력생산비율기준 != null
+        && reg.전력생산비율 < ctx.전력생산비율기준 - eps) return;
+      // 단위배수 스냅으로 면적이 늘어 제약을 초과할 수 있으므로 재검증
+      var 면적c = ctx.면적 || {};
+      var 면적ok = ["옥상", "외피", "대지", "기계실"].every(function (sp) {
+        return 면적c[sp] == null || targets.설치면적[sp] <= 면적c[sp] + 1e-6;
       });
+      if (!면적ok) return;
+      // label을 실제 채택 items 기준으로 재생성 (LP가 0으로 둔 설비는 제외됨)
+      var label = cap.items.map(function (it) {
+        return it.설비.세부형식 + (it.고정 ? "×" + it.기수 + "기" : " " + Math.round(it.용량) + "kW");
+      }).join(" + ");
+      feasible.push({ label: label, items: cap.items, targets: targets });
+    }
+    combos.forEach(function (combo) {
+      목적들.forEach(function (obj) { 평가하나(combo, obj); });
+      // 용량비율 변형 — 연속설비가 2개 이상이면 각 원을 '주력'으로 한 변형을 추가 생성.
+      //   같은 에너지원 구성에서 비율만 다른 조합(예: PV주력 / BIPV주력 / 연료전지주력)을 노출한다.
+      if (combo.연속설비.length > 1) {
+        combo.연속설비.forEach(function (s, idx) { 평가하나(combo, { lead: idx }); });
+      }
     });
 
     // 인센티브 확보 「매우높음」 → PV·BIPV 면적최대 + 적합도 최고 에너지원 고정 조합을 항상 주입.
