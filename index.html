@@ -405,6 +405,20 @@
         </div>
         <p class="opt-desc">목표값(의무비율·전력생산비율)을 충족하는 신재생 설비 최적 조합을 자동 탐색하여 순위화합니다. 가중치·라이브러리 값은 우측 상단 <b>⚙ 설정</b>에서 편집할 수 있습니다.</p>
 
+        <div class="section-subtitle">사업 기준 (사업정보 연동)</div>
+        <div class="opt-grid2">
+          <label class="opt-field">사업형태
+            <select id="opt-business-type">
+              <option value="">선택</option>
+              <option value="공공">공공</option>
+              <option value="민간">민간</option>
+            </select>
+          </label>
+          <label class="opt-field">사업연도
+            <select id="opt-business-year"><option value="">선택</option></select>
+          </label>
+        </div>
+
         <div class="section-subtitle">법적규제 기준</div>
         <div class="opt-grid2">
           <label class="opt-field">연간 에너지소요량 (kWh/yr)
@@ -937,6 +951,10 @@ function initApp() {
     o.value = String(y); o.textContent = String(y);
     selYr.appendChild(o);
   }
+  // 최적화 탭 사업연도 셀렉트에 동일 옵션 복제(사업정보와 연동)
+  var optYr = document.getElementById('opt-business-year');
+  if (optYr) optYr.innerHTML = selYr.innerHTML;
+  setupBusinessSync();
 
   initLeftPanelTabs();
   initSection1();
@@ -1399,6 +1417,45 @@ function calcOutput2(input1, output1) {
   });
 }
 
+// 사업정보 계산 결과(연간에너지소요량·의무설치비율)를 최적화 탭 법적규제 기준 필드에 동기화.
+// 의무비율은 시나리오와 무관(input1만으로 결정)하므로 직접 산출 — 시나리오 미입력 상태에서도 반영.
+// 유효한 값이 있을 때만 덮어써 빈 입력으로 기존 값을 지우지 않는다.
+// 사업형태·사업연도는 최적화 탭 셀렉트에도 그대로 미러링(양방향 연동의 소스→최적화 방향).
+function syncOptCriteria(input1, output1) {
+  var 에너지el = document.getElementById('opt-energy-demand');
+  if (에너지el && output1 && output1.총예상에너지사용량 > 0) {
+    에너지el.value = Math.round(output1.총예상에너지사용량);
+  }
+  var 비율el = document.getElementById('opt-req-ratio');
+  if (비율el && input1) {
+    var 주거구분 = input1.용도별연면적목록.some(function(x) { return get주거구분(x.용도) === '비주거'; }) ? '비주거' : '주거';
+    var 의무비율값 = get의무비율(input1.사업형태, input1.대지위치, 주거구분, input1.카테고리, input1.사업연도);
+    if (의무비율값 !== null && 의무비율값 !== undefined) 비율el.value = 의무비율값;
+  }
+  if (input1) {
+    var btEl = document.getElementById('opt-business-type');
+    if (btEl) btEl.value = input1.사업형태 || '';
+    var byEl = document.getElementById('opt-business-year');
+    if (byEl) byEl.value = input1.사업연도 || '';
+  }
+}
+
+// 최적화 탭 사업형태·사업연도 ↔ 사업정보 동일 항목 양방향 연동(최적화→소스 방향).
+// 최적화 셀렉트 변경 시 소스 셀렉트에 값 반영 후 change 디스패치 → 기존 핸들러
+// (renderAll 재계산 + 요구도 자동반영 autoLoadRequirements)가 그대로 발동된다.
+// 소스→최적화 방향은 renderAll의 syncOptCriteria에서 처리(프로그램적 value 설정은 change 미발생 → 루프 없음).
+function setupBusinessSync() {
+  [['opt-business-type', 'sel-사업형태'], ['opt-business-year', 'sel-사업연도']].forEach(function(pair) {
+    var opt = document.getElementById(pair[0]);
+    var src = document.getElementById(pair[1]);
+    if (!opt || !src) return;
+    opt.addEventListener('change', function() {
+      src.value = opt.value;
+      src.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+  });
+}
+
 function renderAll() {
   var input1  = collectInput1();
 
@@ -1413,6 +1470,9 @@ function renderAll() {
   window.LAST_INPUT1  = input1;
   window.LAST_OUTPUT1 = output1;
   window.LAST_OUTPUT2 = output2;
+
+  // 사업정보에서 결정된 연간에너지소요량·의무설치비율을 설비조합 최적화 탭의 법적규제 기준에 반영
+  syncOptCriteria(input1, output1);
 
   renderOutput1(output1);
   renderOutput2Panes(output2, output1);
