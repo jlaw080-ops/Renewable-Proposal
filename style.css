@@ -1981,6 +1981,8 @@ button, .alt-tab, .cover-image-drop, select,
 }
 .opt-tag.champ { background: var(--accent-primary); color: #0B1215; border-color: transparent; }
 .opt-tag.muted { color: var(--text-hint); font-weight: 400; background: transparent; }
+/* 태양광 합계 최대 → ZEB 인센티브 강조 (태양광 색 계열) */
+.opt-tag.incentive-hot { background: #f59e0b; color: #1a1a1a; border-color: transparent; font-weight: 700; box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.3); }
 
 /* ── 설정 모달 진입 버튼 (최적화 화면) ──────────────────────────── */
 .opt-title-row {

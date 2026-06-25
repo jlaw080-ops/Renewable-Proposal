@@ -268,14 +268,23 @@
       + '<div style="margin-top:4px">' + rows + '</div></details>';
   }
 
-  // 강점 요구도 태그 칩 (챔피언=★ 강조)
+  // 강점 요구도 태그 칩 (챔피언=★ 강조). 태양광 합계 최대 조합은 인센티브 태그를 강조.
   function tagChips(f) {
-    if (!f.태그 || !f.태그.length) return '<div class="opt-tags"><span class="opt-tag muted">균형형</span></div>';
-    var chips = f.태그.map(function (t) {
-      var champ = f.챔피언 && f.챔피언.indexOf(t) >= 0;
-      return '<span class="opt-tag' + (champ ? " champ" : "") + '">' + (champ ? "★ " : "") + t + "</span>";
-    }).join("");
-    return '<div class="opt-tags">' + chips + "</div>";
+    var html = "";
+    // 태양광 합계 최대 → 높은 자립률(ECO2)로 ZEB 인센티브 유리: 전용 강조 칩 선두 배치
+    if (f.최대태양광) {
+      html += '<span class="opt-tag incentive-hot" title="태양광 합계 용량 최대 → 높은 에너지자립률(ECO2)로 ZEB 등급 인센티브 확보에 유리">&#9889; 인센티브 유리</span>';
+    }
+    if (f.태그 && f.태그.length) {
+      html += f.태그.map(function (t) {
+        var champ = f.챔피언 && f.챔피언.indexOf(t) >= 0;
+        var hot = (f.최대태양광 && t === "인센티브") ? " incentive-hot" : "";  // 기존 인센티브 태그도 강조
+        return '<span class="opt-tag' + (champ ? " champ" : "") + hot + '">' + (champ ? "★ " : "") + t + "</span>";
+      }).join("");
+    } else if (!f.최대태양광) {
+      html += '<span class="opt-tag muted">균형형</span>';
+    }
+    return '<div class="opt-tags">' + html + "</div>";
   }
 
   // 표시 조합 선정: 종합점수 상위 5개 (ranked는 점수 내림차순 정렬됨)
@@ -365,6 +374,14 @@
         + ' / 옵션2(비율 50%): ' + s2 + ' → <b>' + gc.추천 + '</b> 추천</div>';
     }
     var show = pickShow(r.ranked);
+    // 태양광 합계 용량 최대 조합 식별 — 높은 에너지자립률(ECO2)로 ZEB 인센티브 확보에 유리(태그·AI설명 강조).
+    var maxPV = 0, maxPVf = null;
+    show.forEach(function (f) {
+      var pv = f.items.reduce(function (s, it) { return s + (it.설비.형식 === "태양광" ? it.용량 : 0); }, 0);
+      f.태양광합계 = pv;
+      if (pv > maxPV) { maxPV = pv; maxPVf = f; }
+    });
+    show.forEach(function (f) { f.최대태양광 = (f === maxPVf && maxPV > 0); });
     var 제외문 = (r.표시제외건수 > 0)
       ? " · 저적합 예외 " + r.표시제외건수 + "개 제외" : "";
     html += '<div class="opt-summary"><span>실행가능 ' + r.실행가능건수 + "개 중 " + show.length
