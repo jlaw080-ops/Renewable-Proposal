@@ -139,57 +139,41 @@
     }
   }
 
-  // 알고리즘 순위 vs AI 정성평가 순위를 나란히 비교 표시
+  // 알고리즘 순위 위에 AI 정성평가 순위를 겹쳐 비교 — 최적화와 동일한 카드 양식(buildCardHTML) 사용.
   function renderComparison(candidates, aiResult) {
     var container = document.getElementById("recommend-result");
     var candById = {};
     candidates.forEach(function(c) { candById[c.cid] = c; });
     var aiList = (aiResult.ai_ranking || []).filter(function(a) { return candById[a.id]; }).slice(0, 3);
-    var aiRankById = {};
-    aiList.forEach(function(a, i) { aiRankById[a.id] = i + 1; });
+    var aiRankById = {}, reasonById = {};
+    aiList.forEach(function(a, i) { aiRankById[a.id] = i + 1; reasonById[a.id] = a.reasoning; });
     var bestPick = aiResult.best_pick;
-
-    function metricsLine(f) {
-      var reg = f.targets.법적규제;
-      return (f.score * 100).toFixed(0) + '점 · 초기 ' + (f.targets.초기비용 / 1e8).toFixed(2) + '억 · 순익 '
-        + (f.targets.운영순익 / 1e4).toFixed(0) + '만 · 의무 ' + reg.의무설치비율.toFixed(1) + '%'
-        + (reg.전력생산비율 != null ? ' · 전력 ' + reg.전력생산비율.toFixed(1) + '%' : '');
-    }
+    var buildCard = window.OptimizeUI && window.OptimizeUI.buildCardHTML;
 
     var html = '';
+    // 비교 코멘트 + AI 순위 요약
     if (aiResult.comparison) {
       html += '<div class="recommend-reasoning"><span class="recommend-reasoning-icon">&#x2696;&#xFE0F;</span><span>' + escapeHtml(aiResult.comparison) + '</span></div>';
     }
-    html += '<div class="cmp-grid">';
+    var aiSummary = aiList.map(function(a, i) { return 'AI #' + (i + 1) + '=후보' + a.id; }).join(' · ');
+    html += '<div class="opt-summary"><span>알고리즘 상위 ' + Math.min(5, candidates.length) + '개 · AI 정성평가: ' + (aiSummary || '-') + '</span></div>';
 
-    // 좌: 최적화 알고리즘 (상위 5)
-    html += '<div class="cmp-col"><div class="cmp-col-title">&#x1F522; 최적화 알고리즘 <small>(8차원 가중합)</small></div>';
+    // 카드: 알고리즘 순위 순으로, 동일 양식 카드 + (AI 순위 배지·근거) 주입
+    html += '<div class="opt-card-grid">';
     candidates.slice(0, 5).forEach(function(c) {
       var aiR = aiRankById[c.cid];
-      html += '<div class="cmp-item' + (c.cid === 1 ? ' best' : '') + '">'
-        + '<div class="cmp-head"><span class="cmp-rank">알고 #' + c.cid + '</span>'
-        + '<span class="cmp-xref">' + (aiR ? 'AI #' + aiR : 'AI 권외') + '</span></div>'
-        + '<div class="cmp-sys">' + escapeHtml(sysText(c.f)) + '</div>'
-        + '<div class="cmp-metrics">' + metricsLine(c.f) + '</div></div>';
+      var head = '<span class="opt-rank">알고 #' + c.cid + '</span>'
+        + '<span class="opt-score">' + (c.f.score * 100).toFixed(0) + '점</span>'
+        + '<span class="cmp-xref">' + (aiR ? 'AI #' + aiR : 'AI 권외') + '</span>'
+        + (c.cid === bestPick ? '<span class="opt-badge">AI 최선 &#9733;</span>' : '');
+      var append = reasonById[c.cid]
+        ? '<div class="cmp-reason"><b>AI 평가:</b> ' + escapeHtml(reasonById[c.cid]) + '</div>' : '';
+      if (buildCard) {
+        html += buildCard(c.f, { head: head, best: (c.cid === bestPick), showExplain: false, append: append });
+      } else {
+        html += '<div class="cmp-item">' + escapeHtml(sysText(c.f)) + '</div>';
+      }
     });
-    html += '</div>';
-
-    // 우: AI 정성평가 (상위 3)
-    html += '<div class="cmp-col"><div class="cmp-col-title">&#x1F916; AI 정성평가</div>';
-    if (!aiList.length) {
-      html += '<div class="empty-state" style="padding:16px 0;">AI 평가 결과를 해석하지 못했습니다.</div>';
-    }
-    aiList.forEach(function(a, i) {
-      var c = candById[a.id];
-      html += '<div class="cmp-item' + (a.id === bestPick ? ' best' : '') + '">'
-        + '<div class="cmp-head"><span class="cmp-rank">AI #' + (i + 1) + (a.id === bestPick ? ' &#9733;' : '') + '</span>'
-        + '<span class="cmp-xref">알고 #' + a.id + '</span></div>'
-        + '<div class="cmp-sys">' + escapeHtml(sysText(c.f)) + '</div>'
-        + '<div class="cmp-metrics">' + metricsLine(c.f) + '</div>'
-        + (a.reasoning ? '<div class="cmp-reason">' + escapeHtml(a.reasoning) + '</div>' : '') + '</div>';
-    });
-    html += '</div>';
-
     html += '</div>';
     container.innerHTML = html;
   }
