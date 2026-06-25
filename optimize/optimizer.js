@@ -48,6 +48,17 @@
     return getLib().filter(function (s) { return s.세부형식 === 세부형식; })[0] || null;
   }
 
+  // 건물유형 적합성이 「매우낮음」인 에너지원은 추천 조합에서 완전 배제한다(후보 풀에서 제거).
+  //   OPT_CONFIG.적합매우낮음제외=false 또는 건물적합도사용=false 또는 건물유형 미선택 시 비활성(배제 안 함).
+  function 적합제외(세부형식, ctx) {
+    if (cfg().적합매우낮음제외 === false) return false;
+    if (cfg().건물적합도사용 === false) return false;
+    if (!ctx || !ctx.건물유형) return false;
+    var TC = getTC();
+    if (!TC || !TC.건물적합등급_설비) return false;
+    return TC.건물적합등급_설비(ctx.건물유형, 세부형식) === "매우낮음";
+  }
+
   // ── 조합 생성 (§6.2[1]) ─────────────────────────────────────────
   // 반환: [{ label, 연속설비:[설비...], 고정설비:[{설비, 기수, 용량}...] }]
   //
@@ -64,8 +75,10 @@
     // PV는 옥상형(수평) × 외피형(BAPV·BIPV) 직교 조합. 설치공간이 옥상/외피로 달라
     // 옥상 PV와 외피 BIPV를 동시 설치 가능(둘 다 「없음」이면 PV無).
     // 외피형 2종(BAPV·BIPV)은 동일 외피공간 경합이므로 동시 설치하지 않고 택1.
-    var PV옥상옵션 = [null, "고정식(수평)PV"];
-    var PV외피옵션 = [null, "고정식(수직)BAPV", "BIPV"];
+    // 건물유형 적합성 「매우낮음」 에너지원은 후보에서 배제(적합제외).
+    var notExcl = function (n) { return !적합제외(n, ctx); };
+    var PV옥상옵션 = [null, "고정식(수평)PV"].filter(function (n) { return !n || notExcl(n); });
+    var PV외피옵션 = [null, "고정식(수직)BAPV", "BIPV"].filter(function (n) { return !n || notExcl(n); });
     var PV조합 = [];
     PV옥상옵션.forEach(function (옥상) {
       PV외피옵션.forEach(function (외피) {
@@ -75,13 +88,14 @@
         PV조합.push(names);   // [] = PV無
       });
     });
-    var 지열 = find설비("수직밀폐형");
-    var PEMFC = find설비("PEMFC(건물용)");
-    var SOFC건물 = find설비("SOFC(건물용)");
+    var 지열 = notExcl("수직밀폐형") ? find설비("수직밀폐형") : null;
+    var PEMFC = notExcl("PEMFC(건물용)") ? find설비("PEMFC(건물용)") : null;
+    var SOFC건물 = notExcl("SOFC(건물용)") ? find설비("SOFC(건물용)") : null;
 
     var TC = getTC();
     var 적합포함기준 = (TC && TC.등급점수) ? TC.등급점수("높음") : 4;
     var 발전용이름 = ["PAFC(발전용)", "SOFC(발전용)"].filter(function (name) {
+      if (적합제외(name, ctx)) return false;   // 「매우낮음」 적합성 발전용도 배제
       if (전력목표) return true;
       if (cfg().건물적합도사용 === false) return false;
       if (!ctx.건물유형 || !TC || !TC.건물적합점수_설비) return false;
@@ -340,6 +354,96 @@
     return o;
   }
 
+  // ── 인센티브 확보 「매우높음」 전용 고정 조합 ────────────────────
+  // 옥상 PV·외피 BIPV를 가용면적 최대까지 채워 ZEB(인센티브) 기여를 극대화하고,
+  // 부족한 의무비율은 건물유형 적합도가 가장 높은 에너지원으로 충당한다.
+  //   · PV·BIPV는 연속용량 → 면적÷ⓜ가 면적기준 최대용량(스냅 없음).
+  //   · 면적 미입력(무제한) 공간은 '최대'가 무의미 → 해당 PV로 의무를 균등 충족하는 결정적 조합으로 폴백.
+  //   · 적합성 「매우낮음」으로 배제된 에너지원은 사용하지 않는다(적합제외와 일관).
+  // 반환: feasible 항목 { label, items, targets, 고정조합 } 또는 null(구성 불가).
+  function build인센티브챔피언(ctx) {
+    var TC = getTC();
+    if (!TC) return null;
+    var 면적 = ctx.면적 || {};
+    var 의무에너지총량 = (ctx.연간단위에너지소요량 || 0) * (ctx.의무설치비율기준 || 0) / 100;
+    if (!(의무에너지총량 > 0)) return null;
+
+    var pv = 적합제외("고정식(수평)PV", ctx) ? null : find설비("고정식(수평)PV");
+    var bipv = 적합제외("BIPV", ctx) ? null : find설비("BIPV");
+    if (!pv && !bipv) return null;
+
+    var items = [], 누적생산 = 0, 면적채움가능 = true;
+    [[pv, "옥상"], [bipv, "외피"]].forEach(function (pair) {
+      var s = pair[0]; if (!s) return;
+      var cap면적 = 면적[pair[1]];
+      if (cap면적 != null && cap면적 > 0) {
+        var c = cap면적 / s.m_설치면적;                 // 면적기준 최대용량(연속)
+        누적생산 += s.c_연간단위에너지생산량 * c;
+        items.push({ 설비: s, 용량: c, 단위: null, 단위기수: null, 고정: false });
+      } else {
+        면적채움가능 = false;                            // 무제한 면적 → 폴백
+      }
+    });
+
+    // 폴백: 일부 PV 면적이 무제한이면 '최대'가 무의미 → PV·BIPV로 의무를 균등 충족(과설치 없이 결정적)
+    if (!면적채움가능) {
+      var pvList = [pv, bipv].filter(Boolean);
+      items = []; 누적생산 = 0;
+      var share = 의무에너지총량 / pvList.length;
+      pvList.forEach(function (s) {
+        var c = share / s.c_연간단위에너지생산량;
+        누적생산 += s.c_연간단위에너지생산량 * c;
+        items.push({ 설비: s, 용량: c, 단위: null, 단위기수: null, 고정: false });
+      });
+    }
+
+    // 잔여 의무 → 건물유형 적합도 최고 에너지원으로 충당
+    var 잔여 = 의무에너지총량 - 누적생산;
+    if (잔여 > 1e-6) {
+      var topup = pick최적합탑업(ctx);
+      if (topup) {
+        var snap = snapToUnit(잔여 / topup.c_연간단위에너지생산량, topup.스냅단위);
+        items.push({ 설비: topup, 용량: snap.용량, 단위: snap.단위, 단위기수: snap.기수, 고정: false });
+      }
+    }
+    if (items.length === 0) return null;
+
+    var targets = TC.평가조합(items, ctx);
+    // 의무 미충족(적합源 부재 등)이면 고정조합 보장 불가 → 폐기
+    if (ctx.의무설치비율기준 != null
+      && targets.법적규제.의무설치비율 < ctx.의무설치비율기준 - 1e-6) return null;
+    // 면적 초과(탑업이 가용공간 초과)면 물리적 불가 → 폐기
+    var 면적ok = ["옥상", "외피", "대지", "기계실"].every(function (sp) {
+      return 면적[sp] == null || targets.설치면적[sp] <= 면적[sp] + 1e-6;
+    });
+    if (!면적ok) return null;
+
+    var label = items.map(function (it) {
+      return it.설비.세부형식 + " " + Math.round(it.용량) + "kW";
+    }).join(" + ");
+    return { label: label, items: items, targets: targets, 고정조합: "인센티브" };
+  }
+
+  // PV·BIPV 외의 에너지원 중 건물유형 적합도가 가장 높은 설비(탑업용). 적합성 「매우낮음」은 제외.
+  function pick최적합탑업(ctx) {
+    var TC = getTC();
+    var 후보 = ["수직밀폐형", "PEMFC(건물용)", "SOFC(건물용)"];
+    if (ctx.연간예상전력소비량 > 0 && ctx.전력생산비율기준 != null) {
+      후보 = 후보.concat(["PAFC(발전용)", "SOFC(발전용)"]);
+    }
+    var 중립 = (TC && TC.등급점수) ? TC.등급점수("보통") : 3;
+    var best = null, bestSc = -Infinity;
+    후보.forEach(function (name) {
+      if (적합제외(name, ctx)) return;
+      var s = find설비(name); if (!s) return;
+      var sc = (TC && TC.건물적합점수_설비 && ctx.건물유형)
+        ? TC.건물적합점수_설비(ctx.건물유형, name) : null;
+      if (sc == null) sc = 중립;                          // 미설정/미선택 → 중립
+      if (sc > bestSc) { bestSc = sc; best = s; }          // 동점은 후보 순서(첫 항목) 우선
+    });
+    return best;
+  }
+
   // ── 메인 최적화 (§6.2 전체) ─────────────────────────────────────
   // 지열 의무(비율>0)가 있으면 옵션1(면적: 건축면적×비율)·옵션2(생산량: 의무×비율)를
   // 각각 산출하고, 사용자 요구도 점수(rank1.score)가 높은 쪽을 추천한다 (서울 의무 "또는" 관계).
@@ -402,6 +506,13 @@
         feasible.push({ label: label, items: cap.items, targets: targets });
       });
     });
+
+    // 인센티브 확보 「매우높음」 → PV·BIPV 면적최대 + 적합도 최고 에너지원 고정 조합을 항상 주입.
+    // (목적별 LP·의무근접 밴드와 무관하게 결정적으로 생성 — 의도적 인센티브 극대화 조합)
+    if (ctx.요구도 && ctx.요구도.인센티브 === "매우높음") {
+      var champ = build인센티브챔피언(ctx);
+      if (champ) feasible.push(champ);
+    }
 
     // 중복 해 제거: LP가 연속변수를 0으로 만들어 실질적으로 동일해진 조합 통합
     var seen = {}, deduped = [];
