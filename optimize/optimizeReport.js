@@ -60,13 +60,19 @@
     "border-radius:6px;font-size:13px;cursor:pointer}" +
     "@media print{button.noprint{display:none}body{padding:0}}";
 
-  // 신재생 에너지원(형식)별 색상 — 누적차트·범례·설비 점 공통
-  var 에너지색 = {
-    "태양광": "#f59e0b", "태양열": "#ef4444", "지열": "#16a34a", "연료전지": "#3b82f6",
-    "수열에너지": "#06b6d4", "수열": "#06b6d4", "소형풍력": "#8b5cf6", "풍력": "#8b5cf6",
-    "목재펠릿": "#92400e", "집광채광": "#eab308"
+  // 신재생 에너지원(세부형식)별 색상 — 누적차트·범례·설비 점 공통.
+  // 결과 화면처럼 모든 에너지원을 개별 색으로 세분화(태양광 PV·BAPV·BIPV도 각각 구분).
+  var 세부색 = {
+    "고정식(수평)PV": "#f59e0b", "고정식(수직)BAPV": "#f472b6", "BIPV": "#8b5cf6",
+    "수직밀폐형": "#16a34a", "PEMFC(건물용)": "#3b82f6", "SOFC(건물용)": "#06b6d4",
+    "PAFC(발전용)": "#ef4444", "SOFC(발전용)": "#a3e635"
   };
-  function colorOf(형식) { return 에너지색[형식] || "#6b7280"; }
+  // 미등재(커스텀) 세부형식은 이름 해시로 결정적 색 생성 → 항상 동일 색·서로 구분.
+  function hashColor(s) {
+    var h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+    return "hsl(" + (h % 360) + ",62%,55%)";
+  }
+  function colorOf(세부형식) { return 세부색[세부형식] || hashColor(String(세부형식 || "")); }
 
   function 조건표(ctx) {
     ctx = ctx || {};
@@ -111,7 +117,7 @@
     var tot = items.reduce(function (s, x) { return s + x.용량; }, 0) || 1;
     var segs = items.map(function (it) {
       var pct = it.용량 / tot * 100;
-      return "<span style='width:" + pct.toFixed(2) + "%;background:" + colorOf(it.설비.형식) + "' " +
+      return "<span style='width:" + pct.toFixed(2) + "%;background:" + colorOf(it.설비.세부형식) + "' " +
         "title='" + escapeHtml(it.설비.세부형식) + " " + Math.round(it.용량) + "kW (" +
         pct.toFixed(0) + "%)'></span>";
     }).join("");
@@ -121,7 +127,7 @@
   function 설비목록(items) {
     return items.map(function (it) {
       var sub = 단위표시(it);
-      return "<div class='sys-row'><span class='dot' style='background:" + colorOf(it.설비.형식) + "'></span>" +
+      return "<div class='sys-row'><span class='dot' style='background:" + colorOf(it.설비.세부형식) + "'></span>" +
         "<span class='sys-name'>" + escapeHtml(it.설비.세부형식) +
         (sub ? " <small>" + escapeHtml(sub) + "</small>" : "") + "</span>" +
         "<span class='sys-cap'>" + Math.round(it.용량).toLocaleString() + " kW</span></div>";
@@ -184,11 +190,11 @@
       "</div>";
   }
 
-  // 에너지원 색상 범례 (결과에 등장하는 형식만)
+  // 에너지원 색상 범례 (결과에 등장하는 세부형식만 — 결과 화면처럼 에너지원별 세분화)
   function 범례(r) {
     var seen = [];
     r.ranked.forEach(function (f) {
-      f.items.forEach(function (it) { if (seen.indexOf(it.설비.형식) < 0) seen.push(it.설비.형식); });
+      f.items.forEach(function (it) { if (seen.indexOf(it.설비.세부형식) < 0) seen.push(it.설비.세부형식); });
     });
     return "<div class='legend'>" + seen.map(function (t) {
       return "<span class='lg'><span class='dot' style='background:" + colorOf(t) + "'></span>" + escapeHtml(t) + "</span>";
@@ -215,7 +221,7 @@
       " · 실행가능 " + r.실행가능건수 + "개 조합 / 평가 " + r.평가건수 + "건</div>" +
       "<h2>1. 입력 조건</h2>" + 조건표(ctx) +
       "<h2>2. 최적 설비조합 순위 (전체 " + r.ranked.length + "개 조합)</h2>" + 순위카드(r, explains) +
-      "<div class='footer'>※ 신재생 용량 막대는 에너지원별 색상으로 구분한 누적차트(용량 비율)입니다.<br>" +
+      "<div class='footer'>※ 신재생 용량 막대는 에너지원(세부형식)별 색상으로 구분한 누적차트(용량 비율)입니다.<br>" +
       "※ 전력 원단위는 잠정 추정값이며 실측·공인 통계에 의한 확정이 필요합니다.<br>" +
       "※ 본 보고서는 의사결정 참고용이며, 최종 설계는 현장 여건·법적 검토를 반영해야 합니다.</div>" +
       "<button class='noprint' onclick='window.print()'>인쇄 / PDF 저장</button>" +
