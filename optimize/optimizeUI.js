@@ -278,15 +278,10 @@
     return '<div class="opt-tags">' + chips + "</div>";
   }
 
-  // 표시 조합 선정: 가중치 상위 10개 + 차원별 챔피언(가중치 낮은 요구도 대표) 주입
+  // 표시 조합 선정: 종합점수 상위 5개 (ranked는 점수 내림차순 정렬됨)
+  var MAX_SHOW = 5;
   function pickShow(ranked) {
-    var MIN_SHOW = 10;
-    var show = ranked.slice(0, Math.min(MIN_SHOW, ranked.length));
-    ranked.forEach(function (f) {
-      if (f.챔피언 && f.챔피언.length && show.indexOf(f) < 0) show.push(f);
-    });
-    show.sort(function (a, b) { return a.rank - b.rank; });
-    return show;
+    return ranked.slice(0, Math.min(MAX_SHOW, ranked.length));
   }
 
   // 단일 조합 카드 HTML 생성 — 최적화 결과·AI 추천 비교에서 공용으로 사용(동일 양식 보장).
@@ -371,9 +366,9 @@
     }
     var show = pickShow(r.ranked);
     var 제외문 = (r.표시제외건수 > 0)
-      ? " · 적합도 미달 " + r.표시제외건수 + "개 제외" : "";
+      ? " · 저적합 예외 " + r.표시제외건수 + "개 제외" : "";
     html += '<div class="opt-summary"><span>실행가능 ' + r.실행가능건수 + "개 중 " + show.length
-      + "개 표시 <small>(가중치 상위 + 요구도별 강점 조합" + 제외문 + ")</small> / 평가 " + r.평가건수
+      + "개 표시 <small>(종합점수 상위 " + MAX_SHOW + "개" + 제외문 + ")</small> / 평가 " + r.평가건수
       + '건</span><button class="opt-report-btn" type="button">보고서 출력</button></div>';
     html += '<div class="opt-card-grid">';
     show.forEach(function (f) { html += buildCardHTML(f); });
