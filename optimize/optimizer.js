@@ -9,7 +9,8 @@
 // 설계 결정(개발기획서 검토 반영):
 //   C1 — 연료전지 정수용량 외부화: 대용량 연료전지(PAFC 440·SOFC발전 300 kW/기)는
 //        "기수(0/1/2기)"를 조합 후보로 전개, 1종 배타. 소용량(PEMFC 10)·모듈러(SOFC건물)는
-//        연속 LP 변수로 근사(설치 시 반올림). PV는 3종 중 택1(+없음).
+//        연속 LP 변수로 근사(설치 시 반올림). PV는 옥상형(수평) × 외피형(BAPV·BIPV) 조합
+//        — 옥상 PV와 외피 BIPV는 설치공간이 달라 동시 설치 가능(예: 옥상 PV + 외피 BIPV).
 //   C2 — 내부 LP는 초기비용 최소화(min Σⓓ·C)로 용량 결정. 정성·순익 trade-off는 조합 평가에서.
 //   H3 — 가중치: 요구도(높음3/보통2/낮음1) → 합=1 정규화.
 //   H4 — min-max 정규화 분모 0 가드(전 조합 동일값이면 중립 1.0).
@@ -49,7 +50,20 @@
   //    충당하는 조합용) 두 후보를 만든다. 의무 미상이면 1~최대기수 폴백.
   function generateCombinations(전력목표, ctx) {
     ctx = ctx || {};
-    var PV옵션 = [null, "고정식(수평)PV", "고정식(수직)BAPV", "BIPV"];
+    // PV는 옥상형(수평) × 외피형(BAPV·BIPV) 직교 조합. 설치공간이 옥상/외피로 달라
+    // 옥상 PV와 외피 BIPV를 동시 설치 가능(둘 다 「없음」이면 PV無).
+    // 외피형 2종(BAPV·BIPV)은 동일 외피공간 경합이므로 동시 설치하지 않고 택1.
+    var PV옥상옵션 = [null, "고정식(수평)PV"];
+    var PV외피옵션 = [null, "고정식(수직)BAPV", "BIPV"];
+    var PV조합 = [];
+    PV옥상옵션.forEach(function (옥상) {
+      PV외피옵션.forEach(function (외피) {
+        var names = [];
+        if (옥상) names.push(옥상);
+        if (외피) names.push(외피);
+        PV조합.push(names);   // [] = PV無
+      });
+    });
     var 지열 = find설비("수직밀폐형");
     var PEMFC = find설비("PEMFC(건물용)");
     var SOFC건물 = find설비("SOFC(건물용)");
@@ -113,19 +127,20 @@
     var sub_발전용 = subsets(지열 ? [지열] : []);
 
     var combos = [];
-    PV옵션.forEach(function (pvName) {
-      var pv = pvName ? find설비(pvName) : null;
+    PV조합.forEach(function (pvNames) {
+      var pvList = pvNames.map(function (n) { return find설비(n); }).filter(Boolean);
       연료전지분기.forEach(function (fc) {
         var 부분집합 = (fc.고정.length > 0) ? sub_발전용 : sub_건물용;   // 1계열 분리
         부분집합.forEach(function (sub) {
           var 연속 = [];
-          if (pv) 연속.push(pv);
+          pvList.forEach(function (pv) { 연속.push(pv); });
           sub.forEach(function (sx) { 연속.push(sx); });
           // 소스가 전혀 없으면(연속·고정 모두 비어있음) 무효
           if (연속.length === 0 && fc.고정.length === 0) return;
+          var pvLabel = pvList.length ? pvList.map(function (pv) { return pv.세부형식; }).join("+") : "PV無";
           var subLabel = sub.length ? sub.map(function (sx) { return sx.세부형식; }).join("+") : "건물설비無";
           combos.push({
-            label: (pvName || "PV無") + " + " + subLabel + " + " + fc.label,
+            label: pvLabel + " + " + subLabel + " + " + fc.label,
             연속설비: 연속,
             고정설비: fc.고정
           });
@@ -265,14 +280,18 @@
   // ── 가중치 도출 (H3) ────────────────────────────────────────────
   // 요구도: { 초기비용, 운영비, 인센티브, 디자인, 시공성, 의무근접 } 각 "높음"|"보통"|"낮음"
   // → 점수 3/2/1, 합=1 정규화
+  // 건물적합(건물유형 적합성)은 다른 인자보다 우선순위가 높아 별도 배수(OPT_CONFIG.건물적합가중배수,
+  //   기본 2.0)를 곱해 가중치 비중을 상향한다 → 건물유형에 맞는 에너지원 조합이 상위로 올라옴.
   function deriveWeights(요구도) {
     요구도 = 요구도 || {};
     var map = cfg().요구도점수 || { "높음": 3, "보통": 2, "낮음": 1 };
+    var 건물적합배수 = cfg().건물적합가중배수 > 0 ? cfg().건물적합가중배수 : 2;
     var keys = ["초기비용", "운영비", "인센티브", "디자인", "시공성", "의무근접", "법규제약", "건물적합"];
     var raw = {}, sum = 0;
     keys.forEach(function (k) {
       var 보통 = map["보통"] != null ? map["보통"] : 2;
       var v = map[요구도[k]] != null ? map[요구도[k]] : 보통; // 미지정은 보통
+      if (k === "건물적합") v *= 건물적합배수;                 // 건물유형 적합성 우선순위 상향
       raw[k] = v; sum += v;
     });
     var w = {};
