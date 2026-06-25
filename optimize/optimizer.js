@@ -22,6 +22,20 @@
   function cfg() { return (typeof window !== "undefined" && window.OPT_CONFIG) || {}; }
   function MAX_연료전지기수() { var v = cfg().연료전지최대기수; return (v > 0) ? v : 2; }
 
+  // 건물유형 적합도 「표시 하한」 — 조합의 건물적합 적합도(0~1)가 이 값 미만이면 화면 표시에서 제외
+  //   (평가·점수 산정은 그대로 수행). 기본 하한 등급 「보통」(=0.5). 적합도 미사용/건물유형 미선택 시
+  //   비활성(-Infinity → 제외 없음). 기본값(전 설비 보통)에서는 모두 0.5라 제외 발생하지 않음.
+  function 적합표시하한(ctx) {
+    if (cfg().건물적합도사용 === false) return -Infinity;
+    if (!ctx || !ctx.건물유형) return -Infinity;
+    var 표 = cfg().등급점수 || { "매우높음": 5, "높음": 4, "보통": 3, "낮음": 2, "매우낮음": 1 };
+    var 등급 = cfg().적합표시하한등급 || "보통";
+    var vals = Object.keys(표).map(function (k) { return 표[k]; });
+    var gmin = Math.min.apply(null, vals), gspan = (Math.max.apply(null, vals) - gmin) || 1;
+    var sc = 표.hasOwnProperty(등급) ? 표[등급] : (표["보통"] != null ? 표["보통"] : 3);
+    return (sc - gmin) / gspan;   // 적합도 척도(0~1)와 동일 환산
+  }
+
   // 의무근접 요구도 등급 → 최종 의무설치비율의 기준 대비 허용 상한(%p). null/미설정 = 무제한(Infinity).
   //   '매우높음'이면 0.5%p 이내로 밀착(기준 ≤ 실제 ≤ 기준+0.5). 하위 등급은 점증 완화.
   //   하한은 법적 의무라 항상 기준 이상(별도 게이트)이므로 상한 밴드만 적용한다.
@@ -585,14 +599,24 @@
     // 차별성이 없는(span<0.05) 차원은 생략. → 가중치 낮은 항목의 대표 조합도 챔피언으로 노출됨.
     tagDimensions(feasible);
 
-    // [5] 순위화
-    var ranked = feasible.slice().sort(function (a, b) { return b.score - a.score; });
+    // [5] 표시 필터 — 건물적합 적합도가 표시 하한 미만인 조합은 평가는 유지하되 화면 표시(ranked)에서 제외.
+    //   → 적합도 낮은 설비(예: 공동주택의 건물용 연료전지) 위주 조합이 추천에 노출되지 않게 함.
+    //   적합도 높은 설비 조합이 자연히 상위로 올라온다(건물적합 가중배수와 병행).
+    var 표시하한 = 적합표시하한(ctx);
+    var 표시대상 = feasible.filter(function (f) {
+      var fit = (f.targets.건물적합 && f.targets.건물적합.적합도 != null) ? f.targets.건물적합.적합도 : 0.5;
+      return fit >= 표시하한 - 1e-9;
+    });
+
+    // [6] 순위화 (표시 대상만)
+    var ranked = 표시대상.slice().sort(function (a, b) { return b.score - a.score; });
     ranked.forEach(function (f, i) { f.rank = i + 1; });
 
     return {
       ranked: ranked,
       평가건수: 평가수,
       실행가능건수: feasible.length,
+      표시제외건수: feasible.length - 표시대상.length,
       가중치: w
     };
   }

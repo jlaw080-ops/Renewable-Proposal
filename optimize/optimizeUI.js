@@ -347,8 +347,10 @@
 
   function render(r, box, ctx) {
     if (!r.ranked.length) {
-      box.innerHTML = '<div class="opt-error">조건을 충족하는 조합이 없습니다. 면적·기준을 완화해 보세요. (평가 '
-        + r.평가건수 + "건)</div>"; return;
+      var msg = (r.실행가능건수 > 0)
+        ? '실행가능 조합 ' + r.실행가능건수 + '개가 모두 건물유형 적합도 기준 미달로 표시에서 제외되었습니다. 설정에서 적합도 또는 표시 하한 등급을 조정하세요.'
+        : '조건을 충족하는 조합이 없습니다. 면적·기준을 완화해 보세요.';
+      box.innerHTML = '<div class="opt-error">' + msg + ' (평가 ' + r.평가건수 + '건)</div>'; return;
     }
     var html = "";
     // 경관 보정 적용 안내 (지자체 설정 + 경관보정 활성 시)
@@ -368,8 +370,10 @@
         + ' / 옵션2(비율 50%): ' + s2 + ' → <b>' + gc.추천 + '</b> 추천</div>';
     }
     var show = pickShow(r.ranked);
+    var 제외문 = (r.표시제외건수 > 0)
+      ? " · 적합도 미달 " + r.표시제외건수 + "개 제외" : "";
     html += '<div class="opt-summary"><span>실행가능 ' + r.실행가능건수 + "개 중 " + show.length
-      + "개 표시 <small>(가중치 상위 + 요구도별 강점 조합)</small> / 평가 " + r.평가건수
+      + "개 표시 <small>(가중치 상위 + 요구도별 강점 조합" + 제외문 + ")</small> / 평가 " + r.평가건수
       + '건</span><button class="opt-report-btn" type="button">보고서 출력</button></div>';
     html += '<div class="opt-card-grid">';
     show.forEach(function (f) { html += buildCardHTML(f); });
