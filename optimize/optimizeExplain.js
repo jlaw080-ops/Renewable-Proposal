@@ -57,7 +57,8 @@
         var obj = JSON.parse(json);
         var parts = obj && obj.candidates && obj.candidates[0] &&
           obj.candidates[0].content && obj.candidates[0].content.parts;
-        if (parts) parts.forEach(function (p) { if (p.text) text += p.text; });
+        // thought(사고과정) 파트는 본문에서 제외하고 실제 답변 텍스트만 누적
+        if (parts) parts.forEach(function (p) { if (p.text && !p.thought) text += p.text; });
       } catch (e) { /* 부분 청크는 무시 */ }
     });
     return text;
@@ -73,7 +74,9 @@
         model: "gemini-2.5-flash",
         system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
         contents: [{ role: "user", parts: [{ text: userMsg }] }],
-        generationConfig: { maxOutputTokens: 2048, temperature: 0.6, responseMimeType: "text/plain" }
+        // thinkingBudget:0 — gemini-2.5-flash는 기본 thinking이 켜져 maxOutputTokens 예산을
+        //   소진해 본문이 MAX_TOKENS로 잘린다. thinking을 끄고 토큰 여유를 둬 끝까지 작성되게 함.
+        generationConfig: { maxOutputTokens: 4096, temperature: 0.6, responseMimeType: "text/plain", thinkingConfig: { thinkingBudget: 0 } }
       })
     });
     if (!resp.ok) {
