@@ -289,6 +289,62 @@
     return show;
   }
 
+  // 단일 조합 카드 HTML 생성 — 최적화 결과·AI 추천 비교에서 공용으로 사용(동일 양식 보장).
+  //   opts.head        : 카드 헤더 내부 HTML 오버라이드(기본 "#rank 점수 [최적]")
+  //   opts.best        : best 강조 여부(기본 rank===1)
+  //   opts.showExplain : AI 설명 버튼 표시(기본 true). #optimize-result 외부에선 false 권장.
+  //   opts.append      : 카드 맨 아래 추가 HTML(예: AI 평가 근거)
+  function buildCardHTML(f, opts) {
+    opts = opts || {};
+    var reg = f.targets.법적규제;
+    var totC = f.items.reduce(function (s, x) { return s + x.용량; }, 0);
+    // 에너지원별 용량 — 가로 누적 바차트(총용량 대비 원별 비율) + 범례
+    var segColors = ["#8b5cf6", "#f472b6", "#34d399", "#fbbf24", "#60a5fa", "#f87171", "#22d3ee", "#a3e635"];
+    var segs = "", legend = "";
+    f.items.forEach(function (it, i) {
+      var pct = totC > 0 ? (it.용량 / totC * 100) : 0;
+      var col = segColors[i % segColors.length];
+      var 단위 = it.고정 ? " (" + it.기수 + "기)"
+        : (it.구성 && it.구성.length
+          ? " (" + it.구성.map(function (p) { return p.단위 + "kW×" + p.기수 + "기"; }).join(" + ") + ")"
+          : (it.단위 ? " (" + it.단위 + "kW×" + it.단위기수 + "기)" : ""));
+      var capLabel = Math.round(it.용량).toLocaleString();
+      segs += '<div style="width:' + pct.toFixed(1) + "%;background:" + col
+        + '" title="' + it.설비.세부형식 + " " + capLabel + 'kW"></div>';
+      legend += '<span class="opt-leg"><span class="opt-leg-dot" style="background:' + col + '"></span>'
+        + it.설비.세부형식 + 단위 + ' <b>' + capLabel + "kW</b> (" + pct.toFixed(0) + "%)</span>";
+    });
+    var sysHtml = '<div class="opt-stack-track">' + segs + '</div><div class="opt-stack-legend">' + legend + "</div>";
+    var pwr = reg.전력생산비율 != null
+      ? '<div><span>전력생산</span><b>' + reg.전력생산비율.toFixed(1) + "%</b></div>" : "";
+    var head = (opts.head != null) ? opts.head
+      : '<span class="opt-rank">#' + f.rank + '</span>'
+        + '<span class="opt-score">' + (f.score * 100).toFixed(0) + '점</span>'
+        + (f.rank === 1 ? '<span class="opt-badge">최적</span>' : "");
+    var isBest = (opts.best != null) ? opts.best : (f.rank === 1);
+    var tail = (opts.showExplain === false) ? ""
+      : '<button class="opt-explain-btn" data-rank="' + f.rank + '" type="button">AI 설명 생성</button>'
+        + '<div class="opt-explain-text" id="opt-explain-' + f.rank + '"></div>';
+    return '<div class="opt-card' + (isBest ? " best" : "") + '">'
+      + '<div class="opt-card-head">' + head + "</div>"
+      + tagChips(f)
+      + '<div class="opt-sys">' + sysHtml + "</div>"
+      + '<div class="opt-targets">'
+      + '<div><span>초기비용</span><b>' + (f.targets.초기비용 / 1e8).toFixed(2) + "억</b></div>"
+      + '<div><span>연간순익</span><b>' + (f.targets.운영순익 / 1e4).toFixed(0) + "만</b></div>"
+      + '<div><span>의무비율</span><b' + (reg.의무설치비율_충족 === false ? ' class="opt-fail"' : "") + ">"
+      + reg.의무설치비율.toFixed(1) + "%</b></div>" + pwr + "</div>"
+      + '<div class="opt-quali"><span>디자인</span>' + gradeBar(f.targets.정성.디자인)
+      + "<span>시공성</span>" + gradeBar(f.targets.정성.시공성)
+      + "<span>ZEB</span>" + gradeBar(f.targets.정성.ZEB)
+      + "<span>심의적합</span>" + gradeBar(1 + 4 * ((f.targets.제약 && f.targets.제약.적합도 != null) ? f.targets.제약.적합도 : 1))
+      + "<span>건물적합</span>" + gradeBar(1 + 4 * ((f.targets.건물적합 && f.targets.건물적합.적합도 != null) ? f.targets.건물적합.적합도 : 0.5)) + "</div>"
+      + constraintProfileHTML(f)
+      + tail
+      + (opts.append || "")
+      + "</div>";
+  }
+
   function render(r, box, ctx) {
     if (!r.ranked.length) {
       box.innerHTML = '<div class="opt-error">조건을 충족하는 조합이 없습니다. 면적·기준을 완화해 보세요. (평가 '
@@ -316,47 +372,7 @@
       + "개 표시 <small>(가중치 상위 + 요구도별 강점 조합)</small> / 평가 " + r.평가건수
       + '건</span><button class="opt-report-btn" type="button">보고서 출력</button></div>';
     html += '<div class="opt-card-grid">';
-    show.forEach(function (f) {
-      var reg = f.targets.법적규제;
-      var totC = f.items.reduce(function (s, x) { return s + x.용량; }, 0);
-      // 에너지원별 용량 — 가로 누적 바차트(총용량 대비 원별 비율) + 범례
-      var segColors = ["#8b5cf6", "#f472b6", "#34d399", "#fbbf24", "#60a5fa", "#f87171", "#22d3ee", "#a3e635"];
-      var segs = "", legend = "";
-      f.items.forEach(function (it, i) {
-        var pct = totC > 0 ? (it.용량 / totC * 100) : 0;
-        var col = segColors[i % segColors.length];
-        var 단위 = it.고정 ? " (" + it.기수 + "기)"
-          : (it.단위 ? " (" + it.단위 + "kW×" + it.단위기수 + "기)" : "");
-        var capLabel = Math.round(it.용량).toLocaleString();
-        segs += '<div style="width:' + pct.toFixed(1) + "%;background:" + col
-          + '" title="' + it.설비.세부형식 + " " + capLabel + 'kW"></div>';
-        legend += '<span class="opt-leg"><span class="opt-leg-dot" style="background:' + col + '"></span>'
-          + it.설비.세부형식 + 단위 + ' <b>' + capLabel + "kW</b> (" + pct.toFixed(0) + "%)</span>";
-      });
-      var sysHtml = '<div class="opt-stack-track">' + segs + '</div><div class="opt-stack-legend">' + legend + "</div>";
-      var pwr = reg.전력생산비율 != null
-        ? '<div><span>전력생산</span><b>' + reg.전력생산비율.toFixed(1) + "%</b></div>" : "";
-      html += '<div class="opt-card' + (f.rank === 1 ? " best" : "") + '">'
-        + '<div class="opt-card-head"><span class="opt-rank">#' + f.rank + '</span>'
-        + '<span class="opt-score">' + (f.score * 100).toFixed(0) + '점</span>'
-        + (f.rank === 1 ? '<span class="opt-badge">최적</span>' : "") + "</div>"
-        + tagChips(f)
-        + '<div class="opt-sys">' + sysHtml + "</div>"
-        + '<div class="opt-targets">'
-        + '<div><span>초기비용</span><b>' + (f.targets.초기비용 / 1e8).toFixed(2) + "억</b></div>"
-        + '<div><span>연간순익</span><b>' + (f.targets.운영순익 / 1e4).toFixed(0) + "만</b></div>"
-        + '<div><span>의무비율</span><b' + (reg.의무설치비율_충족 === false ? ' class="opt-fail"' : "") + ">"
-        + reg.의무설치비율.toFixed(1) + "%</b></div>" + pwr + "</div>"
-        + '<div class="opt-quali"><span>디자인</span>' + gradeBar(f.targets.정성.디자인)
-        + "<span>시공성</span>" + gradeBar(f.targets.정성.시공성)
-        + "<span>ZEB</span>" + gradeBar(f.targets.정성.ZEB)
-        + "<span>심의적합</span>" + gradeBar(1 + 4 * ((f.targets.제약 && f.targets.제약.적합도 != null) ? f.targets.제약.적합도 : 1))
-        + "<span>건물적합</span>" + gradeBar(1 + 4 * ((f.targets.건물적합 && f.targets.건물적합.적합도 != null) ? f.targets.건물적합.적합도 : 0.5)) + "</div>"
-        + constraintProfileHTML(f)
-        + '<button class="opt-explain-btn" data-rank="' + f.rank + '" type="button">AI 설명 생성</button>'
-        + '<div class="opt-explain-text" id="opt-explain-' + f.rank + '"></div>'
-        + "</div>";
-    });
+    show.forEach(function (f) { html += buildCardHTML(f); });
     html += '</div>';
     box.innerHTML = html;
   }
@@ -447,5 +463,5 @@
   }
 
   // AI 추천 등 외부 기능이 최적화 탭의 구조적 조건(가용면적·요구도·의무비율 등)을 공유할 때 사용.
-  window.OptimizeUI = { init: init, run: run, getState: getState, setState: setState, getConditions: collectCtx };
+  window.OptimizeUI = { init: init, run: run, getState: getState, setState: setState, getConditions: collectCtx, buildCardHTML: buildCardHTML };
 })();

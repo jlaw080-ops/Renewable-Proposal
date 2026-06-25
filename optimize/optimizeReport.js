@@ -97,7 +97,9 @@
   function clampPct(p) { return Math.max(0, Math.min(100, p)); }
   function 단위표시(it) {
     return it.고정 ? "(" + it.기수 + "기)"
-      : (it.단위 ? "(" + it.단위 + "kW×" + it.단위기수 + "기)" : "");
+      : (it.구성 && it.구성.length
+        ? "(" + it.구성.map(function (p) { return p.단위 + "kW×" + p.기수 + "기"; }).join(" + ") + ")"
+        : (it.단위 ? "(" + it.단위 + "kW×" + it.단위기수 + "기)" : ""));
   }
   // 등급점수(기본 1~5) → 0~100% 막대
   function gbar(pct) {

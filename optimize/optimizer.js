@@ -185,17 +185,25 @@
     return out;
   }
 
-  // 연속 LP 결과를 단위용량(스냅단위)의 정수배수로 스냅한다.
-  // 의무 충족 유지를 위해 결과 이상의 최소 배수(올림)를, 단위 중 최소 초과가 되는 것으로 선택.
+  // 연속 LP 결과를 단위용량(스냅단위)으로 스냅한다.
+  // 정책: 가장 큰 단위를 먼저 채우고(넘지 않게 floor), 남은 용량은 더 작은 단위로 채우되
+  //   최소 단위는 올림하여 의무 충족(결과 이상)을 보장한다.
+  //   예) PEMFC[5,6,10] c=245 → 10kW×24 + 5kW×1, SOFC[2,8] c=42 → 8kW×5 + 2kW×1.
+  // 반환: { 용량(스냅 합계), 단위/기수(최대 단위 tier — 레거시), 구성:[{단위,기수}...] 큰 단위 우선 }
   function snapToUnit(c, units) {
-    if (!units || !units.length) return { 용량: c, 단위: null, 기수: null };
-    var best = null;
-    units.forEach(function (u) {
-      var k = Math.max(1, Math.ceil(c / u - 1e-9));
-      var v = k * u;
-      if (!best || v < best.용량) best = { 용량: v, 단위: u, 기수: k };
-    });
-    return best;
+    if (!units || !units.length) return { 용량: c, 단위: null, 기수: null, 구성: null };
+    var sorted = units.slice().sort(function (a, b) { return b - a; });  // 내림차순
+    var remaining = c, 구성 = [];
+    for (var i = 0; i < sorted.length; i++) {
+      var u = sorted[i];
+      var n = (i < sorted.length - 1)
+        ? Math.floor(remaining / u + 1e-9)              // 큰 단위: 넘지 않게 floor
+        : Math.max(0, Math.ceil(remaining / u - 1e-9)); // 최소 단위: 남은 용량 올림 충당
+      if (n > 0) { 구성.push({ 단위: u, 기수: n }); remaining -= n * u; }
+    }
+    if (구성.length === 0) 구성.push({ 단위: sorted[sorted.length - 1], 기수: 1 });  // c<=0 방어(최소 1대)
+    var total = 구성.reduce(function (s, p) { return s + p.단위 * p.기수; }, 0);
+    return { 용량: total, 단위: 구성[0].단위, 기수: 구성[0].기수, 구성: 구성 };
   }
 
   // 목적함수별 변수 계수 — 최소비용(cost) 또는 최대화(benefit·incentive·design)
@@ -304,7 +312,7 @@
       var c = res["v" + idx] || 0;
       if (c > 1e-6) {
         var snap = snapToUnit(c, s.스냅단위);
-        items.push({ 설비: s, 용량: snap.용량, 단위: snap.단위, 단위기수: snap.기수, 고정: false });
+        items.push({ 설비: s, 용량: snap.용량, 단위: snap.단위, 단위기수: snap.기수, 구성: snap.구성, 고정: false });
       }
     });
     combo.고정설비.forEach(function (f) {
@@ -403,7 +411,7 @@
       var topup = pick최적합탑업(ctx);
       if (topup) {
         var snap = snapToUnit(잔여 / topup.c_연간단위에너지생산량, topup.스냅단위);
-        items.push({ 설비: topup, 용량: snap.용량, 단위: snap.단위, 단위기수: snap.기수, 고정: false });
+        items.push({ 설비: topup, 용량: snap.용량, 단위: snap.단위, 단위기수: snap.기수, 구성: snap.구성, 고정: false });
       }
     }
     if (items.length === 0) return null;
