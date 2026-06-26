@@ -77,7 +77,16 @@
   function 조건표(ctx) {
     ctx = ctx || {};
     var 면적 = ctx.면적 || {};
+    var rng = ctx.면적범위 || null;
     function v(x, u) { return x == null ? "—" : x.toLocaleString() + (u || ""); }
+    // 가용면적: 범위(min~max)가 있으면 범위로, 없으면 단일값. min==max(기계실 단일)이면 단일 표기.
+    function 면적V(sp) {
+      if (rng && rng[sp]) {
+        var lo = Math.round(rng[sp].min), hi = Math.round(rng[sp].max);
+        return lo === hi ? lo.toLocaleString() : lo.toLocaleString() + "~" + hi.toLocaleString();
+      }
+      return 면적[sp] == null ? "—" : Math.round(면적[sp]).toLocaleString();
+    }
     var 요구 = ctx.요구도 || {};
     var 요구문 = ["초기비용", "운영비", "인센티브", "디자인", "시공성", "의무근접", "법규제약", "건물적합"]
       .map(function (k) { return k + ":" + (요구[k] || "보통"); }).join(", ");
@@ -87,8 +96,8 @@
       "<tr><th>의무설치비율 기준</th><td class='l'>" + v(ctx.의무설치비율기준, "%") + "</td>" +
       "<th>전력생산비율 기준</th><td class='l'>" + v(ctx.전력생산비율기준, "%") + "</td></tr>" +
       "<tr><th>예상 전력소비량</th><td class='l'>" + v(ctx.연간예상전력소비량, " kWh/yr") + "</td>" +
-      "<th>가용면적(옥상/외피/대지/기계실)</th><td class='l'>" +
-      v(면적.옥상) + " / " + v(면적.외피) + " / " + v(면적.대지) + " / " + v(면적.기계실) + " ㎡</td></tr>" +
+      "<th>가용면적 최소~최대(옥상/외피/대지/기계실)</th><td class='l'>" +
+      면적V("옥상") + " / " + 면적V("외피") + " / " + 면적V("대지") + " / " + 면적V("기계실") + " ㎡</td></tr>" +
       "<tr><th>사용자 요구도</th><td class='l' colspan='3'>" + escapeHtml(요구문) + "</td></tr>" +
       "</tbody></table>";
   }
@@ -171,6 +180,8 @@
     var reg = f.targets.법적규제;
     var pwr = reg.전력생산비율 != null
       ? "<div><span>전력생산</span><b>" + reg.전력생산비율.toFixed(1) + "%</b></div>" : "";
+    var util = (f.면적이용률 != null)
+      ? "<div><span>면적이용</span><b>" + Math.round(f.면적이용률 * 100) + "%</b></div>" : "";
     var ex = (explains && explains[f.rank])
       ? "<div class='explain'><h3>AI 설명</h3><p>" + escapeHtml(explains[f.rank]) + "</p></div>" : "";
     return "<div class='card" + (f.rank === 1 ? " best" : "") + "'>" +
@@ -183,7 +194,7 @@
       "<div class='targets'>" +
       "<div><span>초기비용</span><b>" + 억(f.targets.초기비용) + "억</b></div>" +
       "<div><span>연간순익</span><b>" + (f.targets.운영순익 / 1e4).toFixed(0) + "만</b></div>" +
-      "<div><span>의무비율</span><b>" + reg.의무설치비율.toFixed(1) + "%</b></div>" + pwr + "</div>" +
+      "<div><span>의무비율</span><b>" + reg.의무설치비율.toFixed(1) + "%</b></div>" + pwr + util + "</div>" +
       정성막대(f) +
       제약프로파일(f) +
       ex +

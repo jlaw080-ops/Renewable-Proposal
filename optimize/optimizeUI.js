@@ -52,14 +52,21 @@
       var el = $(id);
       if (el) { el.addEventListener("change", updatePowerDemand); el.addEventListener("input", updatePowerDemand); }
     });
-    // 가용면적 비율 → 실시간 계산
-    ["roof", "facade", "land", "machine"].forEach(function (k) {
-      var el = $("opt-area-" + k + "-pct");
-      if (el) el.addEventListener("input", updateAreaCalc);
+    // 가용면적 비율 → 실시간 계산 (옥상·외피·대지=최소~최대, 기계실=단일)
+    ["roof", "facade", "land"].forEach(function (k) {
+      ["min", "max"].forEach(function (b) {
+        var el = $("opt-area-" + k + "-" + b);
+        if (el) el.addEventListener("input", updateAreaCalc);
+      });
     });
-    // 건물유형·사업형태 → 표준 요구도 자동 반영
+    var mEl = $("opt-area-machine-pct");
+    if (mEl) mEl.addEventListener("input", updateAreaCalc);
+    // 건물유형·사업형태 → 표준 요구도 자동 반영 + 외피 가용비율 기본값 갱신
     var bt = $("opt-building-type");
-    if (bt) bt.addEventListener("change", autoLoadRequirements);
+    if (bt) {
+      bt.addEventListener("change", autoLoadRequirements);
+      bt.addEventListener("change", onBuildingTypeArea);
+    }
     var sf = document.getElementById("sel-사업형태");
     if (sf) sf.addEventListener("change", autoLoadRequirements);
     // 탭 진입 시 기존 계산결과 연동
@@ -71,6 +78,8 @@
     // 결과 영역 이벤트 위임 (보고서 출력 + AI 설명)
     var resultBox = $("optimize-result");
     if (resultBox) resultBox.addEventListener("click", onResultClick);
+    // 가용면적 비율 기본값 자동 입력(빈 칸만)
+    loadAreaDefaultsIfEmpty();
   }
 
   // 기존 사업정보 계산 결과(Output1/2)에서 에너지소요량·의무비율 자동 채움(빈 칸만)
@@ -83,6 +92,7 @@
     if (rr && !rr.value && window.LAST_OUTPUT2 && window.LAST_OUTPUT2[0] && window.LAST_OUTPUT2[0].의무비율 != null) {
       rr.value = window.LAST_OUTPUT2[0].의무비율;
     }
+    loadAreaDefaultsIfEmpty();   // 가용면적 비율 기본값(빈 칸만)
     updateAreaCalc(); // 사업정보 기준면적 반영
   }
 
@@ -129,16 +139,70 @@
     ];
   }
   function 면적표시(v) { return v > 0 ? Math.round(v).toLocaleString() + "㎡" : "—"; }
+
+  // ── 가용면적 비율 기본값 (문서: 태양광·지열 가용면적 적용 방식 변경, 2026-06-26) ──
+  //   PV(옥상)·지열(대지)은 건물유형 무관, 외피(BAPV·BIPV)는 건물유형별. 자동 입력 후 수정 가능.
+  var AREA_RANGE_DEFAULT = { roof: { min: 20, max: 70 }, land: { min: 0, max: 50 } };
+  var FACADE_RANGE_BY_TYPE = {
+    "공동주택": { min: 10, max: 25 }, "주상복합": { min: 10, max: 25 },
+    "사무실·업무시설": { min: 20, max: 60 }, "데이터센터": { min: 20, max: 60 },
+    "상가": { min: 15, max: 30 }
+  };
+  var FACADE_RANGE_FALLBACK = { min: 15, max: 30 };   // 미매핑 유형 폴백
+  function facadeDefault() {
+    var bt = $("opt-building-type"); var t = bt ? bt.value : "";
+    return FACADE_RANGE_BY_TYPE[t] || FACADE_RANGE_FALLBACK;
+  }
+  function setRange(key, r) {
+    var lo = $("opt-area-" + key + "-min"), hi = $("opt-area-" + key + "-max");
+    if (lo) lo.value = r.min; if (hi) hi.value = r.max;
+  }
+  function fillRangeIfEmpty(key, r) {
+    var lo = $("opt-area-" + key + "-min"), hi = $("opt-area-" + key + "-max");
+    if (lo && lo.value === "") lo.value = r.min;
+    if (hi && hi.value === "") hi.value = r.max;
+  }
+  // 건물유형 변경 시: 외피는 유형 의존이므로 갱신, 옥상·대지는 빈 칸만 채움.
+  function onBuildingTypeArea() {
+    setRange("facade", facadeDefault());
+    fillRangeIfEmpty("roof", AREA_RANGE_DEFAULT.roof);
+    fillRangeIfEmpty("land", AREA_RANGE_DEFAULT.land);
+    updateAreaCalc();
+  }
+  function loadAreaDefaultsIfEmpty() {
+    fillRangeIfEmpty("roof", AREA_RANGE_DEFAULT.roof);
+    fillRangeIfEmpty("land", AREA_RANGE_DEFAULT.land);
+    fillRangeIfEmpty("facade", facadeDefault());
+    updateAreaCalc();
+  }
+  // 행별 입력 비율(최소·최대). machine은 단일 pct.
+  function rangePct(key) {
+    return { min: num("opt-area-" + key + "-min"), max: num("opt-area-" + key + "-max") };
+  }
+
   // 기준면적·계산결과 실시간 갱신
   function updateAreaCalc() {
     areaSpecs().forEach(function (s) {
       var key = s[0], base = s[1], label = s[2];
       var baseEl = $("opt-base-" + key);
       if (baseEl) baseEl.textContent = label + " " + 면적표시(base);
-      var p = num("opt-area-" + key + "-pct");
       var calcEl = $("opt-area-" + key + "-calc");
-      if (calcEl) calcEl.textContent = (p != null && base > 0)
-        ? "= " + Math.round(base * p / 100).toLocaleString() + "㎡" : "= —";
+      if (!calcEl) return;
+      if (key === "machine") {                       // 단일 비율
+        var p = num("opt-area-machine-pct");
+        calcEl.textContent = (p != null && base > 0)
+          ? "= " + Math.round(base * p / 100).toLocaleString() + "㎡" : "= —";
+        return;
+      }
+      var r = rangePct(key);                          // 최소~최대 비율
+      if (base > 0 && (r.min != null || r.max != null)) {
+        var lo = (r.min != null) ? Math.round(base * r.min / 100) : null;
+        var hi = (r.max != null) ? Math.round(base * r.max / 100) : null;
+        calcEl.textContent = "= " + (lo != null ? lo.toLocaleString() + "㎡" : "—")
+          + " ~ " + (hi != null ? hi.toLocaleString() + "㎡" : "—");
+      } else {
+        calcEl.textContent = "= —";
+      }
     });
     // 외피: 정사각형 평면 가정 → 4개 방위 면이 균등(각 = 전체/4). 전체 면적과 함께 방위별 예상 표시.
     var 외피 = getBaseAreas().외피면적;
@@ -150,16 +214,34 @@
         : "방위별 예상: —";
     }
   }
-  // 비율 → 가용면적(㎡). 비율 미입력 또는 기준면적 0이면 null(무제한)
-  function collectAreas() {
-    var area = {};
+
+  // 비율 → 가용면적. 옥상·외피·대지는 {min,max}(㎡) 범위, 기계실은 단일 cap.
+  //   반환: { 면적: {sp: 상한㎡|null}, 면적범위: {sp: {min,max}|null} }
+  //   면적(상한)은 인센티브 챔피언·지열의무 등 기존 로직 호환용. 미입력/기준0 → null(무제한).
+  function collectAreaData() {
     var keymap = { roof: "옥상", facade: "외피", land: "대지", machine: "기계실" };
-    areaSpecs().forEach(function (s) {
-      var key = s[0], base = s[1];
-      var p = num("opt-area-" + key + "-pct");
-      area[keymap[key]] = (p != null && base > 0) ? base * p / 100 : null;
+    var b = getBaseAreas();
+    var baseOf = { roof: b.건축면적, facade: b.외피면적, land: b.대지면적, machine: b.건축면적 };
+    var 면적 = {}, 면적범위 = {};
+    ["roof", "facade", "land"].forEach(function (key) {
+      var base = baseOf[key], sp = keymap[key], r = rangePct(key);
+      if (base > 0 && (r.min != null || r.max != null)) {
+        var pmin = (r.min != null) ? r.min : r.max;   // 한쪽만 입력 시 동일값(점)
+        var pmax = (r.max != null) ? r.max : r.min;
+        var lo = base * Math.min(pmin, pmax) / 100;
+        var hi = base * Math.max(pmin, pmax) / 100;
+        면적범위[sp] = { min: lo, max: hi };
+        면적[sp] = hi;                                 // 상한
+      } else {
+        면적범위[sp] = null; 면적[sp] = null;          // 무제한
+      }
     });
-    return area;
+    var mp = num("opt-area-machine-pct");
+    if (baseOf.machine > 0 && mp != null) {
+      var cap = baseOf.machine * mp / 100;
+      면적["기계실"] = cap; 면적범위["기계실"] = { min: cap, max: cap };
+    } else { 면적["기계실"] = null; 면적범위["기계실"] = null; }
+    return { 면적: 면적, 면적범위: 면적범위 };
   }
 
   // ── 건물유형별 표준 요구도 자동 반영 (LIB_요구도) ───────────────
@@ -201,6 +283,7 @@
   }
 
   function collectCtx() {
+    var ad = collectAreaData();
     var 요구도 = {};
     요구도항목.forEach(function (it) {
       var sel = document.querySelector("input[name=opt-pri-" + it.key + "]:checked");
@@ -220,7 +303,8 @@
         ? { 비율: num("opt-geo-ratio"), 건축면적: 사업면적("inp-건축면적") } : null,
       연간예상전력소비량: pd ? parseFloat(pd) : 0,
       전력생산비율기준: num("opt-power-ratio"),
-      면적: collectAreas(),
+      면적: ad.면적,
+      면적범위: ad.면적범위,
       요구도: 요구도
     };
   }
@@ -330,6 +414,8 @@
     var sysHtml = '<div class="opt-stack-track">' + segs + '</div><div class="opt-stack-legend">' + legend + "</div>";
     var pwr = reg.전력생산비율 != null
       ? '<div><span>전력생산</span><b>' + reg.전력생산비율.toFixed(1) + "%</b></div>" : "";
+    var util = (f.면적이용률 != null)
+      ? '<div><span>면적이용</span><b>' + Math.round(f.면적이용률 * 100) + "%</b></div>" : "";
     var head = (opts.head != null) ? opts.head
       : '<span class="opt-rank">#' + f.rank + '</span>'
         + '<span class="opt-score">' + (f.score * 100).toFixed(0) + '점</span>'
@@ -346,7 +432,7 @@
       + '<div><span>초기비용</span><b>' + (f.targets.초기비용 / 1e8).toFixed(2) + "억</b></div>"
       + '<div><span>연간순익</span><b>' + (f.targets.운영순익 / 1e4).toFixed(0) + "만</b></div>"
       + '<div><span>의무비율</span><b' + (reg.의무설치비율_충족 === false ? ' class="opt-fail"' : "") + ">"
-      + reg.의무설치비율.toFixed(1) + "%</b></div>" + pwr + "</div>"
+      + reg.의무설치비율.toFixed(1) + "%</b></div>" + pwr + util + "</div>"
       + '<div class="opt-quali"><span>디자인</span>' + gradeBar(f.targets.정성.디자인)
       + "<span>시공성</span>" + gradeBar(f.targets.정성.시공성)
       + "<span>ZEB</span>" + gradeBar(f.targets.정성.ZEB)
@@ -381,6 +467,9 @@
       var s2 = gc.옵션2.ranked[0] ? (gc.옵션2.ranked[0].score * 100).toFixed(0) + "점" : "불가";
       html += '<div class="opt-geo-banner">지열 의무 비교 — 옵션1(면적 50%): ' + s1
         + ' / 옵션2(비율 50%): ' + s2 + ' → <b>' + gc.추천 + '</b> 추천</div>';
+    }
+    if (ctx && ctx.면적범위) {
+      html += '<div class="opt-geo-banner">면적이용률 구간 스윕 — 가용면적 최소~최대 비율을 5단계로 변화시켜 면적활용 변형 조합을 함께 평가했습니다 (카드의 「면적이용」 참고).</div>';
     }
     var show = pickShow(r.ranked);
     // 태양광 합계 용량 최대 조합 식별 — 높은 에너지자립률(ECO2)로 ZEB 인센티브 확보에 유리(태그·AI설명 강조).
@@ -441,8 +530,10 @@
   var 저장입력필드 = [
     ["opt-energy-demand", "energyDemand"], ["opt-req-ratio", "reqRatio"], ["opt-geo-ratio", "geoRatio"],
     ["opt-building-type", "buildingType"], ["opt-building-area", "buildingArea"], ["opt-power-ratio", "powerRatio"],
-    ["opt-area-roof-pct", "areaRoofPct"], ["opt-area-facade-pct", "areaFacadePct"],
-    ["opt-area-land-pct", "areaLandPct"], ["opt-area-machine-pct", "areaMachinePct"]
+    ["opt-area-roof-min", "areaRoofMin"], ["opt-area-roof-max", "areaRoofMax"],
+    ["opt-area-facade-min", "areaFacadeMin"], ["opt-area-facade-max", "areaFacadeMax"],
+    ["opt-area-land-min", "areaLandMin"], ["opt-area-land-max", "areaLandMax"],
+    ["opt-area-machine-pct", "areaMachinePct"]
   ];
   function getState() {
     var inputs = {};

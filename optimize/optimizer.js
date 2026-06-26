@@ -516,25 +516,48 @@
     // 가중치 낮은 요구도까지 우선 만족시키는 다양한 후보를 생성한다(중복은 이후 제거).
     var 목적들 = ["cost", "benefit", "incentive", "design", "constraint", "suitability"];
     var 평가수 = 0;
-    // 한 (구조, 목적) 평가 → 모든 필터 통과 시 feasible에 추가
-    function 평가하나(combo, obj) {
+    // 면적이용률(0~1) — 결과 PV·지열 설치면적 합 / 가용 상한(ctx.면적) 합. 기계실 제외.
+    //   가용 상한 미입력(무제한) 공간은 분모에서 제외. 표시·정렬용 실제 이용도(스냅·정수 반영).
+    function 면적이용률(targets) {
+      var base = ctx.면적 || {};
+      var 사용 = 0, 가용 = 0;
+      ["옥상", "외피", "대지"].forEach(function (sp) {
+        var cap = base[sp];
+        if (cap != null && cap > 0) { 가용 += cap; 사용 += Math.min(targets.설치면적[sp] || 0, cap); }
+      });
+      return 가용 > 0 ? 사용 / 가용 : null;
+    }
+    // 통합 이용률 단계 t(0~1) → 공간별 유효 가용면적. 범위 없으면(단일 cap) ctx.면적 그대로.
+    //   유효면적_sp = min_sp + t·(max_sp − min_sp). 무제한(범위 null) 공간은 null 유지.
+    function effArea(t) {
+      if (t == null) return ctx.면적 || {};
+      var rng = ctx.면적범위 || {}, base = ctx.면적 || {}, out = {};
+      ["옥상", "외피", "대지", "기계실"].forEach(function (sp) {
+        var r = rng[sp];
+        out[sp] = (r && r.max != null) ? (r.min + t * (r.max - r.min))
+          : (base[sp] != null ? base[sp] : null);
+      });
+      return out;
+    }
+    // 한 (구조, 목적, 이용률단계) 평가 → 모든 필터 통과 시 feasible에 추가
+    function 평가하나(combo, obj, stepArea, 이용률t) {
       평가수++;
-      var cap = solveCapacity(combo, ctx, obj);       // [2] 용량 LP (목적별)
+      var stepCtx = _assign(ctx, { 면적: stepArea });  // 단계 가용면적으로 LP 제약 구성
+      var cap = solveCapacity(combo, stepCtx, obj);    // [2] 용량 LP (목적별)
       if (!cap) return;                                // [3] 필터링(infeasible 제거)
-      var targets = TC.평가조합(cap.items, ctx);       // §5 목표값
+      var targets = TC.평가조합(cap.items, ctx);       // §5 목표값(면적 cap 무관 — items 기준)
       // 법적규제 재검증. LP는 잔여기준으로 충족시키지만 부동소수 오차로 경계해(예 9.9999%)가
       // 탈락하지 않도록 허용오차(eps)를 둔다 — LP 제약을 만족한 해는 정당하다.
       var reg = targets.법적규제;
       var eps = 1e-6;
       if (ctx.의무설치비율기준 != null && reg.의무설치비율 < ctx.의무설치비율기준 - eps) return;
       // 의무근접 요구도 상한 밴드 — 스냅·정수기수 과설치로 (기준+허용밴드%p)를 넘으면 제외.
-      //   '매우높음'이면 기준 대비 +0.5%p 초과 조합을 걸러 최종 의무비율을 ±0.5%p로 밀착시킨다.
       if (ctx.의무설치비율기준 != null && 근접밴드 < Infinity
         && reg.의무설치비율 > ctx.의무설치비율기준 + 근접밴드 + eps) return;
       if (reg.전력생산비율 != null && ctx.전력생산비율기준 != null
         && reg.전력생산비율 < ctx.전력생산비율기준 - eps) return;
-      // 단위배수 스냅으로 면적이 늘어 제약을 초과할 수 있으므로 재검증
-      var 면적c = ctx.면적 || {};
+      // 단위배수 스냅으로 면적이 늘어 단계 가용면적을 초과할 수 있으므로 재검증
+      var 면적c = stepArea || {};
       var 면적ok = ["옥상", "외피", "대지", "기계실"].every(function (sp) {
         return 면적c[sp] == null || targets.설치면적[sp] <= 면적c[sp] + 1e-6;
       });
@@ -543,22 +566,28 @@
       var label = cap.items.map(function (it) {
         return it.설비.세부형식 + (it.고정 ? "×" + it.기수 + "기" : " " + Math.round(it.용량) + "kW");
       }).join(" + ");
-      feasible.push({ label: label, items: cap.items, targets: targets });
+      feasible.push({ label: label, items: cap.items, targets: targets, 이용률단계: 이용률t, 면적이용률: 면적이용률(targets) });
     }
-    combos.forEach(function (combo) {
-      목적들.forEach(function (obj) { 평가하나(combo, obj); });
-      // 용량비율 변형 — 연속설비가 2개 이상이면 각 원을 '주력'으로 한 변형을 추가 생성.
-      //   같은 에너지원 구성에서 비율만 다른 조합(예: PV주력 / BIPV주력 / 연료전지주력)을 노출한다.
-      if (combo.연속설비.length > 1) {
-        combo.연속설비.forEach(function (s, idx) { 평가하나(combo, { lead: idx }); });
-      }
+
+    // 가용면적 범위가 있으면 통합 이용률을 5단계로 스윕(범위 내 조합 다양화), 없으면 단일 평가.
+    //   각 단계의 가용면적 상한 안에서 목적별 LP를 풀어 저/중/고 면적이용 변형 조합을 확보한다.
+    var 스윕단계 = ctx.면적범위 ? [0, 0.25, 0.5, 0.75, 1.0] : [null];
+    스윕단계.forEach(function (t) {
+      var sa = effArea(t);
+      combos.forEach(function (combo) {
+        목적들.forEach(function (obj) { 평가하나(combo, obj, sa, t); });
+        // 용량비율 변형 — 연속설비가 2개 이상이면 각 원을 '주력'으로 한 변형을 추가 생성.
+        if (combo.연속설비.length > 1) {
+          combo.연속설비.forEach(function (s, idx) { 평가하나(combo, { lead: idx }, sa, t); });
+        }
+      });
     });
 
-    // 인센티브 확보 「매우높음」 → PV·BIPV 면적최대 + 적합도 최고 에너지원 고정 조합을 항상 주입.
+    // 인센티브 확보 「매우높음」 → PV·BIPV 면적최대(상한) + 적합도 최고 에너지원 고정 조합을 항상 주입.
     // (목적별 LP·의무근접 밴드와 무관하게 결정적으로 생성 — 의도적 인센티브 극대화 조합)
     if (ctx.요구도 && ctx.요구도.인센티브 === "매우높음") {
       var champ = build인센티브챔피언(ctx);
-      if (champ) feasible.push(champ);
+      if (champ) { champ.면적이용률 = 면적이용률(champ.targets); feasible.push(champ); }
     }
 
     // 중복 해 제거: LP가 연속변수를 0으로 만들어 실질적으로 동일해진 조합 통합

@@ -1846,7 +1846,7 @@ button, .alt-tab, .cover-image-drop, select,
 }
 .opt-area-list { display: flex; flex-direction: column; gap: 7px; }
 .opt-area-row {
-  display: grid; grid-template-columns: 1.1fr 1fr 52px 1fr; gap: 8px; align-items: center;
+  display: grid; grid-template-columns: 1.05fr 0.9fr 1.45fr 1.1fr; gap: 8px; align-items: center;
   font-size: 11px;
 }
 .opt-area-name { color: var(--text-primary); font-weight: 600; }
@@ -1856,6 +1856,10 @@ button, .alt-tab, .cover-image-drop, select,
   padding: 6px; border: 1px solid var(--border-default); border-radius: 6px;
   background: var(--bg-input); color: var(--text-primary); font-size: 12px; text-align: right; width: 100%;
 }
+.opt-area-row > input.opt-pct { max-width: 90px; justify-self: start; }
+.opt-pct-range { display: flex; align-items: center; gap: 4px; }
+.opt-pct-range .opt-pct { padding: 6px 4px; }
+.opt-pct-sep { flex: 0 0 auto; color: var(--text-hint); }
 .opt-area-eq { color: var(--accent-primary, #10b981); font-weight: 700; font-variant-numeric: tabular-nums; }
 .opt-area-orient {
   margin: -2px 0 1px 4px; padding-left: 8px; border-left: 2px solid var(--border-default);
