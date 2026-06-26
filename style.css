@@ -1857,6 +1857,10 @@ button, .alt-tab, .cover-image-drop, select,
   background: var(--bg-input); color: var(--text-primary); font-size: 12px; text-align: right; width: 100%;
 }
 .opt-area-eq { color: var(--accent-primary, #10b981); font-weight: 700; font-variant-numeric: tabular-nums; }
+.opt-area-orient {
+  margin: -2px 0 1px 4px; padding-left: 8px; border-left: 2px solid var(--border-default);
+  font-size: 10.5px; color: var(--text-secondary); font-variant-numeric: tabular-nums; line-height: 1.5;
+}
 .opt-area-note { margin-top: 8px; font-size: 10.5px; color: var(--text-hint); line-height: 1.5; }
 
 .opt-priority { display: flex; flex-direction: column; gap: 8px; }

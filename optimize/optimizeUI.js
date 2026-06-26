@@ -140,6 +140,15 @@
       if (calcEl) calcEl.textContent = (p != null && base > 0)
         ? "= " + Math.round(base * p / 100).toLocaleString() + "㎡" : "= —";
     });
+    // 외피: 정사각형 평면 가정 → 4개 방위 면이 균등(각 = 전체/4). 전체 면적과 함께 방위별 예상 표시.
+    var 외피 = getBaseAreas().외피면적;
+    var orientEl = $("opt-facade-orient");
+    if (orientEl) {
+      orientEl.textContent = 외피 > 0
+        ? "방위별 예상(각 면) — 동 " + 면적표시(외피 / 4) + " · 서 " + 면적표시(외피 / 4)
+          + " · 남 " + 면적표시(외피 / 4) + " · 북 " + 면적표시(외피 / 4)
+        : "방위별 예상: —";
+    }
   }
   // 비율 → 가용면적(㎡). 비율 미입력 또는 기준면적 0이면 null(무제한)
   function collectAreas() {
