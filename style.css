@@ -3,59 +3,66 @@
    ENERGINNO Brand Design System
    ================================================================ */
 
-/* --- CSS 변수 (ENERGINNO Brand Palette) ---
-   Primary: Teal (#2ABFBF) — 브랜드 메인 컬러, 로고 기반
-   Accent:  Warm Amber (#E5A84B) — 데이터 강조, CTA 보조
-   Signal:  에너지 도메인에 맞는 의미적 색상
+/* --- CSS 변수 (ENERBUILD 레퍼런스 — Light SaaS Palette) ---
+   Brand:   Green (#2EA043) — 신재생/제로에너지 브랜드 메인
+   Action:  Blue (#2563EB) — 주요 CTA 액션
+   Surface: White on cool-gray canvas, Inter 타이포그래피
    ------------------------------------------------------------ */
 :root {
-  /* 배경 — 차가운 청록 톤으로 브랜드 연결 */
-  --bg-page:           #0B1215;
-  --bg-card:           #111B20;
-  --bg-card-inner:     #162226;
-  --bg-input:          #1C2A2F;
-  --bg-input-readonly: #13202A;
+  /* 배경 — 흰색 표면 + 쿨그레이 캔버스 */
+  --bg-page:           #F7F8FA;
+  --bg-card:           #FFFFFF;
+  --bg-card-inner:     #F2F4F6;
+  --bg-base:           #F2F4F6;
+  --bg-input:          #FFFFFF;
+  --bg-input-readonly: #F2F4F6;
+  --bg-hover:          rgba(17, 24, 39, 0.04);
 
-  /* 텍스트 — 충분한 명암비 확보 (WCAG AA+) */
-  --text-primary:      #E8EDEF;
-  --text-secondary:    #94A3AB;
-  --text-hint:         #607078;
+  /* 텍스트 — 라이트 배경 명암비 (WCAG AA+) */
+  --text-primary:      #1C1C1C;
+  --text-secondary:    #68768B;
+  --text-hint:         #9AA4B2;
 
   /* 테두리 */
-  --border-default:    #243038;
-  --border-focus:      #2ABFBF;
+  --border-default:    #E5E7EB;
+  --border-focus:      #2EA043;
 
-  /* 브랜드 컬러 */
-  --accent-primary:    #2ABFBF;
-  --accent-primary-dim:#1E8A8A;
-  --accent-warm:       #E5A84B;
-  --accent-warm-dim:   #C48B33;
+  /* 브랜드 컬러 — 그린(브랜드) + 블루(액션) */
+  --accent-primary:    #2EA043;
+  --accent-primary-dim:#25863A;
+  --accent-primary-rgb:46, 160, 67;
+  --accent-action:     #2563EB;
+  --accent-warm:       #C77C02;
+  --accent-warm-dim:   #9C6200;
 
   /* 시맨틱 컬러 */
-  --color-pass:        #34D399;
-  --color-fail:        #F87171;
-  --color-na:          #6B7B84;
+  --color-pass:        #1A8B45;
+  --color-fail:        #DC2626;
+  --color-na:          #8B95A1;
 
   /* 섹션 도트 — 각 패널 구분 */
-  --dot-input:         #2ABFBF;
-  --dot-scenario:      #E5A84B;
-  --dot-result:        #34D399;
-  --dot-review:        #7DD3E8;
+  --dot-input:         #2EA043;
+  --dot-scenario:      #C77C02;
+  --dot-result:        #1A8B45;
+  --dot-review:        #2563EB;
 
-  /* 데이터 시각화 팔레트 */
-  --chart-1:           #2ABFBF;
+  /* 데이터 시각화 팔레트 (바 채움용 — 명도 유지) */
+  --chart-1:           #2EA043;
   --chart-2:           #E5A84B;
-  --chart-3:           #34D399;
-  --chart-4:           #7DD3E8;
+  --chart-3:           #1FAE6B;
+  --chart-4:           #2563EB;
   --chart-5:           #F0946C;
 
-  /* 레거시 호환 (JS에서 참조하는 변수) */
-  --accent-purple:     #2ABFBF;
-  --accent-yellow:     #E5A84B;
-  --accent-pink:       #7DD3E8;
-  --dot-purple:        #2ABFBF;
-  --dot-yellow:        #E5A84B;
-  --dot-pink:          #7DD3E8;
+  /* 모노스페이스 (숫자·데이터) */
+  --font-mono:         'IBM Plex Mono', 'Fira Code', monospace;
+
+  /* 레거시 호환 (JS·일부 규칙에서 참조) */
+  --accent-purple:     #2EA043;
+  --accent-yellow:     #C77C02;
+  --accent-pink:       #2563EB;
+  --dot-purple:        #2EA043;
+  --dot-yellow:        #C77C02;
+  --dot-pink:          #2563EB;
 }
 
 /* --- 전역 리셋 --- */
@@ -64,13 +71,14 @@
 body {
   background-color: var(--bg-page);
   color: var(--text-primary);
-  font-family: 'Noto Sans KR', 'IBM Plex Sans', sans-serif;
+  font-family: 'Inter', 'Noto Sans KR', 'IBM Plex Sans', sans-serif;
   font-size: 14px;
   line-height: 1.6;
   min-height: 100vh;
   overflow: auto;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.011em;
 }
 
 /* 숫자·데이터 전용 모노스페이스 */
@@ -99,14 +107,15 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
 /* --- 헤더 --- */
 header {
   background-color: var(--bg-card);
-  border-bottom: 2px solid transparent;
-  border-image: linear-gradient(90deg, var(--accent-primary), var(--accent-primary-dim), transparent) 1;
+  border-bottom: 1px solid var(--border-default);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.03);
   padding: 0 24px;
-  height: 52px;
+  height: 56px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   grid-column: 1 / -1;
+  z-index: 5;
 }
 .header-logo {
   height: 28px;
@@ -175,7 +184,7 @@ header {
   border-bottom: 2px solid transparent;
   cursor: pointer;
   transition: color 0.2s, border-color 0.2s, background 0.2s;
-  font-family: 'Noto Sans KR', sans-serif;
+  font-family: 'Inter', 'Noto Sans KR', sans-serif;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -185,12 +194,12 @@ header {
 }
 .left-tab:hover {
   color: var(--text-secondary);
-  background: rgba(42, 191, 191, 0.03);
+  background: rgba(46, 160, 67, 0.03);
 }
 .left-tab.active {
   color: var(--text-primary);
   border-bottom-color: var(--accent-primary);
-  background: rgba(42, 191, 191, 0.05);
+  background: rgba(46, 160, 67, 0.05);
 }
 .left-tab-dot {
   width: 6px;
@@ -246,6 +255,7 @@ header {
   margin: 12px;
   border: 1px solid var(--border-default);
   border-left: 3px solid var(--border-default);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
   transition: border-left-color 0.2s;
 }
 .section-card.input-section    { border-left-color: var(--dot-input); }
@@ -353,12 +363,12 @@ select {
   width: 100%;
   box-sizing: border-box;
   transition: border-color 0.2s, box-shadow 0.2s;
-  font-family: 'Noto Sans KR', sans-serif;
+  font-family: 'Inter', 'Noto Sans KR', sans-serif;
 }
 input:focus, select:focus {
   outline: none;
   border-color: var(--accent-primary);
-  box-shadow: 0 0 0 2px rgba(42, 191, 191, 0.15);
+  box-shadow: 0 0 0 2px rgba(46, 160, 67, 0.15);
 }
 input[readonly] {
   background: var(--bg-input-readonly);
@@ -508,16 +518,16 @@ select {
   cursor: pointer;
   transition: border-color 0.2s, color 0.2s, background 0.2s;
   margin-top: 8px;
-  font-family: 'Noto Sans KR', sans-serif;
+  font-family: 'Inter', 'Noto Sans KR', sans-serif;
 }
 .btn-add:hover {
   border-color: var(--accent-primary);
   color: var(--accent-primary);
-  background: rgba(42, 191, 191, 0.05);
+  background: rgba(46, 160, 67, 0.05);
 }
 .btn-primary {
   background: var(--accent-primary);
-  color: #0B1215;
+  color: #ffffff;
   border: none;
   border-radius: 6px;
   padding: 10px 20px;
@@ -525,11 +535,11 @@ select {
   font-weight: 700;
   cursor: pointer;
   transition: background 0.2s, transform 0.1s;
-  font-family: 'Noto Sans KR', sans-serif;
+  font-family: 'Inter', 'Noto Sans KR', sans-serif;
   letter-spacing: 0.01em;
 }
 .btn-primary:hover {
-  background: #25ABAB;
+  background: var(--accent-primary-dim);
 }
 .btn-primary:active {
   transform: scale(0.98);
@@ -548,7 +558,7 @@ select {
   font-size: 13px;
   cursor: pointer;
   transition: border-color 0.2s, color 0.2s;
-  font-family: 'Noto Sans KR', sans-serif;
+  font-family: 'Inter', 'Noto Sans KR', sans-serif;
 }
 .btn-secondary:hover {
   border-color: var(--accent-primary);
@@ -577,7 +587,7 @@ select {
   cursor: pointer;
   transition: color 0.2s, border-color 0.2s;
   margin-bottom: -1px;
-  font-family: 'Noto Sans KR', sans-serif;
+  font-family: 'Inter', 'Noto Sans KR', sans-serif;
   letter-spacing: 0.02em;
 }
 .alt-tab:hover {
@@ -693,10 +703,11 @@ select {
   margin-bottom: 20px;
 }
 .kpi-card {
-  background: var(--bg-card-inner);
+  background: var(--bg-card);
   border-radius: 10px;
   padding: 18px 20px;
   border: 1px solid var(--border-default);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
   position: relative;
   overflow: hidden;
 }
@@ -831,7 +842,7 @@ select {
   border-bottom: 1px solid rgba(36, 48, 56, 0.5);
 }
 .result-table tbody tr:hover td {
-  background: rgba(42, 191, 191, 0.03);
+  background: rgba(46, 160, 67, 0.03);
 }
 .result-table tr:last-child td { border-bottom: none; }
 .result-table .total-row td {
@@ -893,7 +904,7 @@ select {
 .btn-gear:hover {
   color: var(--accent-primary);
   border-color: var(--accent-primary);
-  background: rgba(42, 191, 191, 0.08);
+  background: rgba(46, 160, 67, 0.08);
 }
 .review-section-inner {
   display: flex;
@@ -1002,7 +1013,7 @@ select {
   padding: 4px 10px;
   cursor: pointer;
   transition: border-color 0.15s;
-  font-family: 'Noto Sans KR', sans-serif;
+  font-family: 'Inter', 'Noto Sans KR', sans-serif;
 }
 .btn-copy-review:hover { border-color: var(--border-focus); }
 
@@ -1012,7 +1023,8 @@ select {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.65);
+  background: rgba(17, 24, 39, 0.45);
+  backdrop-filter: blur(2px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1026,7 +1038,7 @@ select {
   padding: 28px;
   width: 560px;
   max-width: 90vw;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 16px 48px rgba(16, 24, 40, 0.16);
 }
 .modal-header {
   display: flex;
@@ -1046,7 +1058,7 @@ select {
   font-size: 20px;
   cursor: pointer;
   padding: 4px;
-  font-family: 'Noto Sans KR', sans-serif;
+  font-family: 'Inter', 'Noto Sans KR', sans-serif;
 }
 .modal-close:hover { color: var(--text-primary); }
 
@@ -1134,7 +1146,7 @@ select {
   border-radius: 8px;
   color: var(--text-primary);
   font-size: 13px;
-  font-family: 'Noto Sans KR', sans-serif;
+  font-family: 'Inter', 'Noto Sans KR', sans-serif;
   line-height: 1.7;
   padding: 12px;
   box-sizing: border-box;
@@ -1170,7 +1182,8 @@ select {
 .loading-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 17, 23, 0.85);
+  background: rgba(247, 248, 250, 0.82);
+  backdrop-filter: blur(2px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1240,7 +1253,7 @@ select {
   padding: 4px 10px;
   cursor: pointer;
   transition: border-color 0.15s, color 0.15s;
-  font-family: 'Noto Sans KR', sans-serif;
+  font-family: 'Inter', 'Noto Sans KR', sans-serif;
 }
 .btn-sm-outline:hover {
   border-color: var(--border-focus);
@@ -1266,7 +1279,7 @@ select {
   padding: 4px 0;
   min-width: 140px;
   z-index: 200;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  box-shadow: 0 8px 24px rgba(16, 24, 40, 0.12);
 }
 .report-save-menu.open {
   display: block;
@@ -1541,7 +1554,7 @@ button, .alt-tab, .cover-image-drop, select,
   white-space: nowrap;
 }
 .constraint-badge-empty {
-  background: rgba(255,255,255,0.07);
+  background: var(--bg-card-inner);
   color: var(--text-hint);
 }
 .constraint-badge-set {
@@ -1555,7 +1568,7 @@ button, .alt-tab, .cover-image-drop, select,
   line-height: 1.5;
   margin-bottom: 10px;
   padding: 6px 10px;
-  background: rgba(255,255,255,0.04);
+  background: var(--bg-card-inner);
   border-radius: 6px;
   word-break: break-all;
 }
@@ -1573,15 +1586,16 @@ button, .alt-tab, .cover-image-drop, select,
   font-size: 14px;
   font-weight: 600;
   margin-top: 8px;
-  background: linear-gradient(135deg, var(--accent-primary), var(--accent-yellow));
+  background: var(--accent-primary);
   border: none;
   border-radius: 8px;
-  color: #0B1215;
+  color: #ffffff;
   cursor: pointer;
-  transition: opacity 0.2s;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.08);
+  transition: background 0.2s;
 }
 .btn-recommend-run:hover {
-  opacity: 0.9;
+  background: var(--accent-primary-dim);
 }
 .btn-recommend-run:disabled {
   opacity: 0.5;
@@ -1618,8 +1632,8 @@ button, .alt-tab, .cover-image-drop, select,
   gap: 8px;
   padding: 12px 14px;
   margin-bottom: 12px;
-  background: rgba(42, 191, 191, 0.08);
-  border: 1px solid rgba(42, 191, 191, 0.2);
+  background: rgba(46, 160, 67, 0.08);
+  border: 1px solid rgba(46, 160, 67, 0.2);
   border-radius: 8px;
   font-size: 13px;
   color: var(--text-primary);
@@ -1647,7 +1661,7 @@ button, .alt-tab, .cover-image-drop, select,
 }
 .recommend-card.best {
   border-color: var(--accent-primary);
-  box-shadow: 0 0 0 1px var(--accent-primary), 0 2px 12px rgba(42, 191, 191, 0.15);
+  box-shadow: 0 0 0 1px var(--accent-primary), 0 2px 12px rgba(46, 160, 67, 0.15);
 }
 
 /* 카드 헤더 */
@@ -1661,7 +1675,7 @@ button, .alt-tab, .cover-image-drop, select,
   padding: 2px 8px;
   font-size: 10px;
   font-weight: 700;
-  color: #0B1215;
+  color: #ffffff;
   background: var(--accent-primary);
   border-radius: 4px;
   text-transform: uppercase;
@@ -1753,7 +1767,7 @@ button, .alt-tab, .cover-image-drop, select,
   align-items: center;
   padding: 8px 10px;
   margin-bottom: 8px;
-  background: rgba(42, 191, 191, 0.06);
+  background: rgba(46, 160, 67, 0.06);
   border-radius: 6px;
   font-size: 12px;
   color: var(--text-secondary);
@@ -1807,7 +1821,7 @@ button, .alt-tab, .cover-image-drop, select,
   transition: all 0.2s;
 }
 .btn-apply-recommend:hover {
-  background: rgba(42, 191, 191, 0.1);
+  background: rgba(46, 160, 67, 0.1);
 }
 
 /* 추천 섹션 카드 */
@@ -1994,7 +2008,7 @@ button, .alt-tab, .cover-image-drop, select,
   background: var(--bg-input); color: var(--text-secondary);
   border: 1px solid var(--border-default); white-space: nowrap;
 }
-.opt-tag.champ { background: var(--accent-primary); color: #0B1215; border-color: transparent; }
+.opt-tag.champ { background: var(--accent-primary); color: #ffffff; border-color: transparent; }
 .opt-tag.muted { color: var(--text-hint); font-weight: 400; background: transparent; }
 /* 태양광 합계 최대 → ZEB 인센티브 강조 (태양광 색 계열) */
 .opt-tag.incentive-hot { background: #f59e0b; color: #1a1a1a; border-color: transparent; font-weight: 700; box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.3); }
@@ -2045,7 +2059,7 @@ button, .alt-tab, .cover-image-drop, select,
   font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 10px;
   background: var(--bg-input); color: var(--text-hint); white-space: nowrap;
 }
-.set-badge.on { background: var(--accent-warm-dim); color: #0B1215; }
+.set-badge.on { background: var(--accent-warm-dim); color: #ffffff; }
 .set-card-body { padding: 4px 14px 14px; }
 
 .set-filter {
@@ -2086,8 +2100,8 @@ select.set-select option { background: var(--bg-card-inner); color: var(--text-p
   font-family: inherit; transition: background 0.15s, border-color 0.15s;
 }
 .set-btn:hover { border-color: var(--border-focus); }
-.set-btn-save { background: var(--accent-primary); color: #0B1215; border-color: transparent; }
-.set-btn-save:hover { background: #25ABAB; }
+.set-btn-save { background: var(--accent-primary); color: #ffffff; border-color: transparent; }
+.set-btn-save:hover { background: var(--accent-primary-dim); }
 .set-btn-reset { color: var(--text-secondary); }
 .set-msg { font-size: 11.5px; font-weight: 600; }
 .set-msg.ok { color: var(--color-pass); }
