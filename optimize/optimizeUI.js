@@ -327,6 +327,7 @@
         window.LAST_OPTIMIZE = r;   // P5 AI 설명용
         window._optCtx = ctx;       // 설명 생성 맥락
         window._optExplains = {};   // 생성된 AI 설명(보고서용)
+        window._optMemos = {};      // 조합별 메모(보고서용)
       } catch (e) {
         box.innerHTML = '<div class="opt-error">오류: ' + e.message + "</div>";
       }
@@ -546,7 +547,8 @@
         var filtered = {};
         for (var k in r) if (Object.prototype.hasOwnProperty.call(r, k)) filtered[k] = r[k];
         filtered.ranked = r.ranked.filter(function (f) { return ranks.indexOf(f.rank) >= 0; });
-        window.OptimizeReport.openReport(filtered, ctx, window._optExplains);
+        if (!window._optMemos) window._optMemos = {};
+        window.OptimizeReport.openReport(filtered, ctx, window._optExplains, window._optMemos);
       } finally {
         reportBtn.disabled = false;
         reportBtn.textContent = orig;
@@ -599,7 +601,8 @@
       inputs: inputs,
       result: (typeof window !== "undefined" && window.LAST_OPTIMIZE) || null,
       ctx: (typeof window !== "undefined" && window._optCtx) || null,
-      explains: (typeof window !== "undefined" && window._optExplains) || null
+      explains: (typeof window !== "undefined" && window._optExplains) || null,
+      memos: (typeof window !== "undefined" && window._optMemos) || null
     };
   }
   function setState(s) {
@@ -625,6 +628,7 @@
       window.LAST_OPTIMIZE = s.result;
       window._optCtx = s.ctx || {};
       window._optExplains = s.explains || {};
+      window._optMemos = s.memos || {};
       try { render(s.result, box, s.ctx || {}); }
       catch (e) { box.innerHTML = '<div class="opt-error">저장된 최적화 결과 복원 실패: ' + e.message + '</div>'; }
     }

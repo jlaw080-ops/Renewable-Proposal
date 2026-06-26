@@ -56,9 +56,17 @@
     ".pf-name{flex:0 0 92px;color:#555}.pf-grade{flex:0 0 56px;color:#333}" +
     ".pf-bar{flex:1;height:6px;background:#eee;border-radius:3px;overflow:hidden}" +
     ".pf-bar>span{display:block;height:100%;background:#dc2626}" +
-    "button.noprint{margin-top:20px;padding:10px 20px;background:#10b981;color:#fff;border:none;" +
+    // ── 조합별 메모 입력란 ──
+    ".memo-label{font-size:11px;color:#888;margin:6px 0 2px}" +
+    ".memo{width:100%;min-height:42px;margin:0 0 10px;padding:7px 9px;border:1px solid #cbd5e1;" +
+    "border-radius:6px;font-family:inherit;font-size:12px;color:#1a1a1a;background:#fffef7;" +
+    "resize:vertical;box-sizing:border-box;display:block;line-height:1.5}" +
+    ".memo:focus{outline:none;border-color:#10b981;box-shadow:0 0 0 2px rgba(16,185,129,.25)}" +
+    ".actions{margin-top:20px;display:flex;gap:10px;flex-wrap:wrap}" +
+    "button.noprint{padding:10px 20px;background:#10b981;color:#fff;border:none;" +
     "border-radius:6px;font-size:13px;cursor:pointer}" +
-    "@media print{button.noprint{display:none}body{padding:0}}";
+    "button.noprint.alt{background:#fff;color:#0a7a5a;border:1px solid #10b981}" +
+    "@media print{button.noprint,.actions{display:none}body{padding:0}.memo:placeholder-shown{display:none}.memo-label{display:none}}";
 
   // 신재생 에너지원(세부형식)별 색상 — 누적차트·범례·설비 점 공통.
   // 결과 화면처럼 모든 에너지원을 개별 색으로 세분화(태양광 PV·BAPV·BIPV도 각각 구분).
@@ -175,9 +183,12 @@
       "<div style='margin-top:4px'>" + rows + "</div></details>";
   }
 
-  // 단일 조합 카드 (스크린샷 항목 그대로)
-  function 조합카드(f, explains) {
+  // 단일 조합 카드 (스크린샷 항목 그대로). memos[rank] 있으면 헤더 밑 메모란에 채움.
+  function 조합카드(f, explains, memos) {
     var reg = f.targets.법적규제;
+    var memoVal = (memos && memos[f.rank] != null) ? memos[f.rank] : "";
+    var memoHtml = "<div class='memo-label'>메모</div>" +
+      "<textarea class='memo' data-rank='" + f.rank + "' placeholder='메모 입력...'>" + escapeHtml(memoVal) + "</textarea>";
     var pwr = reg.전력생산비율 != null
       ? "<div><span>전력생산</span><b>" + reg.전력생산비율.toFixed(1) + "%</b></div>" : "";
     var util = (f.면적이용률 != null)
@@ -188,6 +199,7 @@
       "<div class='card-head'><span class='rank'>#" + f.rank + "</span>" +
       "<span class='score'>" + (f.score * 100).toFixed(0) + "점</span>" +
       (f.rank === 1 ? "<span class='badge'>최적</span>" : "") + "</div>" +
+      memoHtml +
       태그칩(f) +
       누적차트(f.items) +
       "<div class='sys'>" + 설비목록(f.items) + "</div>" +
@@ -213,17 +225,19 @@
   }
 
   // 생성된 모든 조합을 카드로 (순위순)
-  function 순위카드(r, explains) {
+  function 순위카드(r, explains, memos) {
     return 범례(r) + "<div class='cards'>" +
-      r.ranked.map(function (f) { return 조합카드(f, explains); }).join("") + "</div>";
+      r.ranked.map(function (f) { return 조합카드(f, explains, memos); }).join("") + "</div>";
   }
 
-  function buildReportHTML(r, ctx, explains) {
+  function buildReportHTML(r, ctx, explains, memos) {
     var now = new Date().toLocaleString("ko-KR");
-    // 인쇄 시 접힌 제약 프로파일을 자동 펼쳤다가 복원 (화면은 스크린샷과 동일하게 접힘 유지)
-    var printScript = "<script>" +
+    // 인쇄 시 접힌 제약 프로파일 자동 펼침/복원 + 메모 입력을 부모창에 동기화 + HTML 다운로드.
+    var script = "<script>" +
       "window.addEventListener('beforeprint',function(){document.querySelectorAll('details').forEach(function(d){d.setAttribute('data-o',d.open?'1':'0');d.open=true;});});" +
       "window.addEventListener('afterprint',function(){document.querySelectorAll('details').forEach(function(d){d.open=d.getAttribute('data-o')==='1';});});" +
+      "document.addEventListener('input',function(e){var t=e.target;if(t&&t.classList&&t.classList.contains('memo')){if(window.opener&&window.opener.OptimizeReport&&window.opener.OptimizeReport.receiveMemo){try{window.opener.OptimizeReport.receiveMemo(t.getAttribute('data-rank'),t.value);}catch(_){}}}});" +
+      "function downloadReportHTML(){var a=document.querySelectorAll('textarea.memo');for(var i=0;i<a.length;i++){a[i].textContent=a[i].value;}var h='<!DOCTYPE html>\\n'+document.documentElement.outerHTML;var b=new Blob([h],{type:'text/html;charset=utf-8'});var u=URL.createObjectURL(b);var l=document.createElement('a');l.href=u;l.download='신재생에너지_설비조합_최적화_보고서.html';document.body.appendChild(l);l.click();document.body.removeChild(l);setTimeout(function(){URL.revokeObjectURL(u);},1000);}" +
       "<\/script>";
     return "<!DOCTYPE html><html lang='ko'><head><meta charset='utf-8'>" +
       "<title>신재생에너지 설비조합 최적화 보고서</title><style>" + CSS + "</style></head><body>" +
@@ -231,22 +245,33 @@
       "<div class='meta'>생성일시: " + escapeHtml(now) +
       " · 실행가능 " + r.실행가능건수 + "개 조합 / 평가 " + r.평가건수 + "건</div>" +
       "<h2>1. 입력 조건</h2>" + 조건표(ctx) +
-      "<h2>2. 최적 설비조합 순위 (선택 " + r.ranked.length + "개 조합)</h2>" + 순위카드(r, explains) +
+      "<h2>2. 최적 설비조합 순위 (선택 " + r.ranked.length + "개 조합)</h2>" + 순위카드(r, explains, memos) +
       "<div class='footer'>※ 신재생 용량 막대는 에너지원(세부형식)별 색상으로 구분한 누적차트(용량 비율)입니다.<br>" +
       "※ 전력 원단위는 잠정 추정값이며 실측·공인 통계에 의한 확정이 필요합니다.<br>" +
       "※ 본 보고서는 의사결정 참고용이며, 최종 설계는 현장 여건·법적 검토를 반영해야 합니다.</div>" +
+      "<div class='actions'>" +
+      "<button class='noprint alt' onclick='downloadReportHTML()'>HTML 다운로드</button>" +
       "<button class='noprint' onclick='window.print()'>인쇄 / PDF 저장</button>" +
-      printScript +
+      "</div>" +
+      script +
       "</body></html>";
   }
 
-  function openReport(r, ctx, explains) {
+  // 메모 객체 참조 보관 — 부모창(보고서 팝업)의 메모 입력을 같은 객체에 반영해 프로젝트 저장과 연동.
+  var _memosRef = null;
+  function openReport(r, ctx, explains, memos) {
     if (!r || !r.ranked || !r.ranked.length) { alert("먼저 최적화를 실행하세요."); return; }
-    var html = buildReportHTML(r, ctx, explains);
+    _memosRef = memos || {};
+    var html = buildReportHTML(r, ctx, explains, _memosRef);
     var w = window.open("", "_blank");
     if (!w) { alert("팝업이 차단되었습니다. 팝업을 허용해 주세요."); return; }
     w.document.open(); w.document.write(html); w.document.close();
   }
+  // 보고서 팝업의 메모 입력 콜백 — _memosRef(= window._optMemos)를 갱신해 저장 시 함께 보존.
+  function receiveMemo(rank, value) {
+    if (!_memosRef) _memosRef = {};
+    _memosRef[rank] = value;
+  }
 
-  window.OptimizeReport = { buildReportHTML: buildReportHTML, openReport: openReport };
+  window.OptimizeReport = { buildReportHTML: buildReportHTML, openReport: openReport, receiveMemo: receiveMemo };
 })();
