@@ -225,7 +225,7 @@
         <span class="left-tab-dot" style="background:var(--dot-scenario)"></span>
         시나리오
       </button>
-      <button class="left-tab" role="tab" aria-selected="false" aria-controls="panel-recommend" id="tab-recommend" data-panel="panel-recommend">
+      <button class="left-tab" role="tab" aria-selected="false" aria-controls="panel-recommend" id="tab-recommend" data-panel="panel-recommend" style="display:none">
         <span class="left-tab-dot" style="background:var(--accent-yellow)"></span>
         AI 추천
       </button>
@@ -449,7 +449,9 @@
           </div>
         </div>
 
-        <div class="section-subtitle">가용 면적 (기준면적 대비 최소~최대 비율 %, 미입력=무제한)</div>
+        <details class="opt-toggle" open>
+        <summary class="section-subtitle opt-toggle-summary">가용 면적 (기준면적 대비 최소~최대 비율 %, 미입력=무제한)</summary>
+        <div class="opt-toggle-body">
         <div class="opt-area-list">
           <div class="opt-area-row">
             <span class="opt-area-name">옥상 <small>수평PV</small></span>
@@ -490,10 +492,16 @@
           </div>
         </div>
         <div class="opt-area-note">최소~최대 비율은 건물유형 선택 시 자동 입력되며 수정 가능합니다 (PV 20~70%, 지열 0~50%, 외피 BAPV·BIPV는 건물유형별). 최적화는 이 구간을 5단계로 스윕해 면적이용률 변형 조합을 함께 제시합니다.<br>외피 면적 = 4·√건축면적 × (연면적 ÷ 건축면적) × 3.5m (정사각형 평면·층고 3.5m 가정)</div>
+        </div>
+        </details>
 
-        <div class="section-subtitle">사용자 요구도 (가중치)</div>
+        <details class="opt-toggle" open>
+        <summary class="section-subtitle opt-toggle-summary">사용자 요구도 (가중치)</summary>
+        <div class="opt-toggle-body">
         <div class="opt-area-note" style="margin:0 0 8px;">사업형태·건물유형 선택 시 표준 요구도가 자동 반영됩니다 (수정 가능).</div>
         <div id="opt-priority-rows" class="opt-priority"></div>
+        </div>
+        </details>
 
         <button class="btn-primary btn-recommend-run" id="btn-run-optimize" type="button">최적화 실행</button>
         <p class="opt-area-note" style="margin-top:8px;">실행 결과는 중앙 <b>「최적화 결과」</b> 탭에 표시됩니다.</p>
