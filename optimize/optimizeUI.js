@@ -380,8 +380,8 @@
     return '<div class="opt-tags">' + html + "</div>";
   }
 
-  // 표시 조합 선정: 종합점수 상위 5개 (ranked는 점수 내림차순 정렬됨)
-  var MAX_SHOW = 5;
+  // 표시 조합 선정: 종합점수 상위 20개 (ranked는 점수 내림차순 정렬됨)
+  var MAX_SHOW = 20;
   function pickShow(ranked) {
     return ranked.slice(0, Math.min(MAX_SHOW, ranked.length));
   }
@@ -391,6 +391,7 @@
   //   opts.best        : best 강조 여부(기본 rank===1)
   //   opts.showExplain : AI 설명 버튼 표시(기본 true). #optimize-result 외부에선 false 권장.
   //   opts.append      : 카드 맨 아래 추가 HTML(예: AI 평가 근거)
+  //   opts.selectable  : 보고서 포함 선택 체크박스 표시(기본 false, 최적화 결과 화면 전용). rank===1 기본 선택.
   function buildCardHTML(f, opts) {
     opts = opts || {};
     var reg = f.targets.법적규제;
@@ -421,11 +422,15 @@
         + '<span class="opt-score">' + (f.score * 100).toFixed(0) + '점</span>'
         + (f.rank === 1 ? '<span class="opt-badge">최적</span>' : "");
     var isBest = (opts.best != null) ? opts.best : (f.rank === 1);
+    var selectBox = opts.selectable
+      ? '<label class="opt-select-lbl"><input type="checkbox" class="opt-select" data-rank="' + f.rank + '"'
+        + (f.rank === 1 ? " checked" : "") + ">보고서 포함</label>"
+      : "";
     var tail = (opts.showExplain === false) ? ""
       : '<button class="opt-explain-btn" data-rank="' + f.rank + '" type="button">AI 설명 생성</button>'
         + '<div class="opt-explain-text" id="opt-explain-' + f.rank + '"></div>';
     return '<div class="opt-card' + (isBest ? " best" : "") + '">'
-      + '<div class="opt-card-head">' + head + "</div>"
+      + '<div class="opt-card-head">' + head + selectBox + "</div>"
       + tagChips(f)
       + '<div class="opt-sys">' + sysHtml + "</div>"
       + '<div class="opt-targets">'
@@ -484,20 +489,67 @@
       ? " · 저적합 예외 " + r.표시제외건수 + "개 제외" : "";
     html += '<div class="opt-summary"><span>실행가능 ' + r.실행가능건수 + "개 중 " + show.length
       + "개 표시 <small>(종합점수 상위 " + MAX_SHOW + "개" + 제외문 + ")</small> / 평가 " + r.평가건수
-      + '건</span><button class="opt-report-btn" type="button">보고서 출력</button></div>';
+      + '건</span><span class="opt-report-actions">'
+      + '<label class="opt-select-all-lbl"><input type="checkbox" id="opt-select-all">전체 선택</label>'
+      + '<button class="opt-report-btn" type="button">선택 조합 보고서 출력</button></span></div>';
     html += '<div class="opt-card-grid">';
-    show.forEach(function (f) { html += buildCardHTML(f); });
+    show.forEach(function (f) { html += buildCardHTML(f, { selectable: true }); });
     html += '</div>';
     box.innerHTML = html;
   }
 
-  // 결과 영역 클릭 처리 (이벤트 위임): 보고서 출력 + AI 설명 생성
+  // 결과 영역 클릭 처리 (이벤트 위임): 전체 선택 토글 + 보고서 출력 + AI 설명 생성
   async function onResultClick(e) {
     if (!e.target.closest) return;
-    // 보고서 출력
-    if (e.target.closest(".opt-report-btn")) {
-      if (window.OptimizeReport) {
-        window.OptimizeReport.openReport(window.LAST_OPTIMIZE, window._optCtx, window._optExplains);
+    // 전체 선택/해제 토글
+    if (e.target.id === "opt-select-all") {
+      var box0 = $("optimize-result");
+      var on = e.target.checked;
+      Array.prototype.forEach.call(box0.querySelectorAll(".opt-select"), function (c) { c.checked = on; });
+      return;
+    }
+    // 선택 조합 보고서 출력 — 선택분만 필터 + 미생성 AI 설명 자동 생성
+    var reportBtn = e.target.closest(".opt-report-btn");
+    if (reportBtn) {
+      var box = $("optimize-result");
+      var r = window.LAST_OPTIMIZE, ctx = window._optCtx || {};
+      if (!window.OptimizeReport || !r || !r.ranked) return;
+      var ranks = [];
+      Array.prototype.forEach.call(box.querySelectorAll(".opt-select:checked"), function (c) {
+        ranks.push(parseInt(c.dataset.rank, 10));
+      });
+      if (!ranks.length) { alert("보고서에 포함할 조합을 1개 이상 선택하세요."); return; }
+      if (!window._optExplains) window._optExplains = {};
+      var orig = reportBtn.textContent;
+      reportBtn.disabled = true;
+      try {
+        // 선택 조합의 AI 설명을 자동 생성(이미 생성된 것은 재사용)
+        if (window.OptimizeExplain) {
+          var todo = ranks.filter(function (rk) { return !window._optExplains[rk]; });
+          for (var i = 0; i < todo.length; i++) {
+            var rk = todo[i];
+            var card = r.ranked[rk - 1];
+            if (!card) continue;
+            reportBtn.textContent = "AI 설명 생성 중… (" + (i + 1) + "/" + todo.length + ")";
+            try {
+              var text = await window.OptimizeExplain.explain(card, ctx);
+              window._optExplains[rk] = text;
+              var elx = $("opt-explain-" + rk);   // 카드의 설명 영역도 함께 갱신
+              if (elx) elx.textContent = text;
+            } catch (err) {
+              window._optExplains[rk] = "(AI 설명 생성 실패: " + err.message + ")";
+            }
+          }
+        }
+        reportBtn.textContent = "보고서 생성 중…";
+        // 선택 조합만 담은 결과로 보고서 생성(원본 LAST_OPTIMIZE는 보존)
+        var filtered = {};
+        for (var k in r) if (Object.prototype.hasOwnProperty.call(r, k)) filtered[k] = r[k];
+        filtered.ranked = r.ranked.filter(function (f) { return ranks.indexOf(f.rank) >= 0; });
+        window.OptimizeReport.openReport(filtered, ctx, window._optExplains);
+      } finally {
+        reportBtn.disabled = false;
+        reportBtn.textContent = orig;
       }
       return;
     }

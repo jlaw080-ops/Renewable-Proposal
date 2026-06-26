@@ -1897,6 +1897,13 @@ button, .alt-tab, .cover-image-drop, select,
   background: var(--bg-input); color: var(--text-primary); font-size: 12px; font-weight: 700; cursor: pointer;
 }
 .opt-report-btn:hover { background: var(--bg-hover, rgba(255,255,255,.06)); }
+.opt-report-btn:disabled { opacity: .6; cursor: default; }
+.opt-report-actions { display: flex; align-items: center; gap: 10px; }
+.opt-select-all-lbl, .opt-select-lbl {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; font-weight: 600; color: var(--text-secondary); cursor: pointer; white-space: nowrap;
+}
+.opt-select-lbl input, .opt-select-all-lbl input { cursor: pointer; margin: 0; }
 .opt-error {
   padding: 14px; border-radius: 8px; background: rgba(239,68,68,.08);
   color: var(--color-fail, #ef4444); font-size: 13px; line-height: 1.5;
