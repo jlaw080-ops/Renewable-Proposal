@@ -6,3 +6,8 @@ config.js
 
 # 편집 임시파일
 *.tmp.*
+
+# Next.js 및 Node.js
+node_modules/
+.next/
+.env*.local

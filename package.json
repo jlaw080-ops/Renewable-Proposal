@@ -1,0 +1,15 @@
+{
+  "name": "renewable-proposal",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "verify": "node verify/verify_all.js public && node verify/verify_output12.js public"
+  },
+  "dependencies": {
+    "next": "^16.2.12",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  }
+}
