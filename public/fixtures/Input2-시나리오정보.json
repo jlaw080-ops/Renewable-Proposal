@@ -1,52 +1,12 @@
 {
   "scenarios": [
     {
-      "id": "ALT-1",
-      "label": "ALT-1",
+      "name": "ALT1",
       "systems": [
         {
-          "id": "system_1",
-          "에너지원": {
-            "value": null,
-            "type": "select",
-            "source": "신재생에너지계수라이브러리.json",
-            "sourceKey": "에너지원",
-            "label": "에너지원"
-          },
-          "형식": {
-            "value": null,
-            "type": "select",
-            "source": "신재생에너지계수라이브러리.json",
-            "sourceKey": "형식",
-            "dependsOn": "에너지원",
-            "label": "형식"
-          },
-          "단위에너지생산량": {
-            "value": null,
-            "type": "number",
-            "unit": "kWh/kW·yr",
-            "readonly": true,
-            "source": "신재생에너지계수라이브러리.json",
-            "sourceKey": "단위에너지생산량",
-            "dependsOn": ["에너지원", "형식"],
-            "label": "단위 에너지생산량"
-          },
-          "원별보정계수": {
-            "value": null,
-            "type": "number",
-            "readonly": true,
-            "source": "신재생에너지계수라이브러리.json",
-            "sourceKey": "원별보정계수",
-            "dependsOn": ["에너지원", "형식"],
-            "label": "원별 보정계수"
-          },
-          "적용용량": {
-            "value": null,
-            "type": "number",
-            "unit": "kW",
-            "required": true,
-            "label": "적용용량"
-          }
+          "에너지원": "태양광",
+          "형식": "태양광-고정식",
+          "적용용량": 50
         }
       ]
     }

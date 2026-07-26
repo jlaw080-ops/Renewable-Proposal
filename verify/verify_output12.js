@@ -14,29 +14,10 @@ function load(rel) {
 globalThis.window = win;
 globalThis.fetch = () => Promise.reject(new Error("fetch disabled — window fallback 강제")); // libraryLoader 방법 B 유도
 (async () => {
-  const engine = await import("../engine/index.js");
-  const { runCalculation, loadLibraries } = engine;
+  const { runCalculation, loadLibraries } = await import("../engine/index.js");
   await loadLibraries();
-
-  // fixture 파일에서 스키마 로드
-  let input1Raw = JSON.parse(fs.readFileSync("public/fixtures/Input1-사업정보.json", "utf8"));
-  let input2Raw = JSON.parse(fs.readFileSync("public/fixtures/Input2-시나리오정보.json", "utf8"));
-
-  // fixture이 스키마 정의 형식인 경우, 최소 테스트 데이터 생성
-  const input1 = (input1Raw.프로젝트정보 !== undefined) ? {
-    사업형태: "민간", 사업연도: "2025", 대지위치: "서울특별시",
-    대지면적: 10000, 건축면적: 5000, 연면적: 20000,
-    건폐율: 50, 용적률: 200,
-    용도별연면적목록: [
-      { 용도: "공동주택", 연면적: 15000 },
-      { 용도: "판매 및 영업시설", 연면적: 5000 }
-    ]
-  } : input1Raw;
-
-  const input2 = (input2Raw.scenarios === undefined) ? {
-    scenarios: [{ name: "ALT1", systems: [{ 에너지원: "태양광", 형식: "태양광-고정식", 적용용량: 50 }] }]
-  } : input2Raw;
-
+  const input1 = JSON.parse(fs.readFileSync("public/fixtures/Input1-사업정보.json", "utf8"));
+  const input2 = JSON.parse(fs.readFileSync("public/fixtures/Input2-시나리오정보.json", "utf8"));
   const { output1, output2 } = await runCalculation(input1, input2, "가");
   console.log(JSON.stringify({ output1, output2 }, null, 2));
 })().catch(e => { console.error("FAIL:", e.message); process.exit(1); });
