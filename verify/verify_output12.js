@@ -14,8 +14,16 @@ function load(rel) {
 globalThis.window = win;
 globalThis.fetch = () => Promise.reject(new Error("fetch disabled — window fallback 강제")); // libraryLoader 방법 B 유도
 (async () => {
+  // libraryLoader console.log 가로채기 (로드 중 로그 제거)
+  const originalLog = console.log;
+  console.log = () => {};
+
   const { runCalculation, loadLibraries } = await import("../engine/index.js");
   await loadLibraries();
+
+  // console.log 복원
+  console.log = originalLog;
+
   const input1 = JSON.parse(fs.readFileSync("public/fixtures/Input1-사업정보.json", "utf8"));
   const input2 = JSON.parse(fs.readFileSync("public/fixtures/Input2-시나리오정보.json", "utf8"));
   const { output1, output2 } = await runCalculation(input1, input2, "가");
