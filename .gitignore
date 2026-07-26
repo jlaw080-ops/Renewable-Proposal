@@ -11,3 +11,6 @@ config.js
 node_modules/
 .next/
 .env*.local
+
+# 레포 미포함 문서 보관 (사용자 결정: untracked 유지)
+_untracked_보관/
