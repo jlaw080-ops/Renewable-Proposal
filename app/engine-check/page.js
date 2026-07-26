@@ -17,7 +17,7 @@ export default function EngineCheck() {
           fetch("/fixtures/Input2-시나리오정보.json").then(r => r.json()),
         ]);
         setResult(await runCalculation(input1, input2, "가"));
-      } catch (e) { setRunError(e.message); }
+      } catch (e) { setRunError(e instanceof Error ? `${e.message}\n${e.stack}` : String(e)); }
     })();
   }, [ready]);
 
