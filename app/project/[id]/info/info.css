@@ -1,0 +1,7 @@
+.info { display: flex; flex-direction: column; gap: var(--sp-5); }
+.info__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--sp-4); }
+.info__rows { display: flex; flex-direction: column; gap: var(--sp-3); }
+.info__row { display: grid; grid-template-columns: 2fr 1fr auto; gap: var(--sp-3); align-items: end; }
+.info__sum { margin-top: var(--sp-3); font-size: var(--fs-13); color: var(--text-secondary); }
+.info__sum--warn { color: var(--accent-warm-dim); }
+@media (max-width: 767px) { .info__row { grid-template-columns: 1fr; } }
