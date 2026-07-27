@@ -1,4 +1,5 @@
 import { Noto_Sans_KR, IBM_Plex_Mono } from "next/font/google";
+import ToastProvider from "@/components/ui/ToastProvider";
 import "./globals.css";
 
 const sans = Noto_Sans_KR({ subsets: ["latin"], weight: ["400", "500", "700"], variable: "--font-sans" });
@@ -12,7 +13,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="ko" className={`${sans.variable} ${mono.variable}`}>
-      <body>{children}</body>
+      <body><ToastProvider>{children}</ToastProvider></body>
     </html>
   );
 }
