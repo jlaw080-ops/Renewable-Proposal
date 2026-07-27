@@ -8,5 +8,14 @@ const nextConfig = {
     // 제거 조건: Turbopack 버그 수정 시 (upstream issue 해결), 이 줄 제거 후 npm run build 재확인
     root: process.cwd(),
   },
+  async redirects() {
+    return [
+      {
+        source: "/project/:id",
+        destination: "/project/:id/info",
+        permanent: false,
+      },
+    ];
+  },
 };
 export default nextConfig;
