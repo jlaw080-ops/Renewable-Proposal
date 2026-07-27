@@ -15,6 +15,9 @@ export async function GET(request) {
     const jusoUrl = "https://business.juso.go.kr/addrlink/addrLinkApi.do?"
       + new URLSearchParams({ confmKey: jusoKey, currentPage: "1", countPerPage: "1", keyword: address, resultType: "json" });
     const jusoResp = await fetch(jusoUrl);
+    if (!jusoResp.ok) {
+      return NextResponse.json({ error: "도로명주소 API 오류", detail: await jusoResp.text() }, { status: jusoResp.status });
+    }
     const cand = pickJusoCandidate(await jusoResp.json());
     if (!cand) return NextResponse.json({ juso: null, land: null });
 
@@ -27,6 +30,9 @@ export async function GET(request) {
         numOfRows: "100", pageNo: "1", _type: "json",
       });
     const bldResp = await fetch(bldUrl);
+    if (!bldResp.ok) {
+      return NextResponse.json({ error: "건축물대장 API 오류", detail: await bldResp.text() }, { status: bldResp.status });
+    }
     const land = aggregateLandInfo(await bldResp.json());
     return NextResponse.json({ juso: { roadAddr: cand.roadAddr, jibunAddr: cand.jibunAddr }, land });
   } catch (err) {
