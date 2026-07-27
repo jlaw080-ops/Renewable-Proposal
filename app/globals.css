@@ -1,7 +1,35 @@
-:root {
-  --color-surface: #faf9f5;
-  --color-text: #1f2430;
-  --font-body: "Pretendard", "Noto Sans KR", system-ui, sans-serif;
+@import "../styles/tokens.css";
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body { height: 100%; }
+
+body {
+  background: var(--bg-page);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: var(--fs-14);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
 }
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: var(--color-surface); color: var(--color-text); font-family: var(--font-body); }
+
+a { color: var(--accent-action); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+button { font-family: inherit; }
+
+:focus-visible {
+  outline: 2px solid var(--accent-action);
+  outline-offset: 2px;
+}
+
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px;
+  clip-path: inset(50%); overflow: hidden; white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}

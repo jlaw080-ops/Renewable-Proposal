@@ -1,0 +1,64 @@
+/* 디자인 토큰 — ENERBUILD 라이트 SaaS (legacy/style.css 검증 팔레트 승계·체계화)
+   이 파일이 유일한 스타일 상수 원천. 컴포넌트 CSS에 리터럴 색·크기 하드코딩 금지 */
+:root {
+  /* 캔버스·표면 */
+  --bg-page: #F7F8FA;
+  --bg-card: #FFFFFF;
+  --bg-card-inner: #F2F4F6;
+  --bg-input: #FFFFFF;
+  --bg-input-readonly: #F2F4F6;
+  --bg-hover: rgba(17, 24, 39, 0.04);
+
+  /* 텍스트 (라이트 배경 WCAG AA+) */
+  --text-primary: #1C1C1C;
+  --text-secondary: #68768B;
+  --text-hint: #9AA4B2;
+  --text-invert: #FFFFFF;
+
+  /* 테두리 */
+  --border-default: #E5E7EB;
+  --border-strong: #D2D6DC;
+  --border-focus: #2EA043;
+
+  /* 브랜드·액션 */
+  --accent-primary: #2EA043;      /* 브랜드 그린 */
+  --accent-primary-dim: #25863A;
+  --accent-primary-rgb: 46, 160, 67;
+  --accent-action: #2563EB;       /* CTA 블루 */
+  --accent-action-dim: #1D4ED8;
+  --accent-warm: #C77C02;         /* 앰버 (최적화·강조) */
+  --accent-warm-dim: #9C6200;
+
+  /* 시맨틱 */
+  --color-pass: #1A8B45;  --color-pass-bg: #E7F6EC;
+  --color-fail: #DC2626;  --color-fail-bg: #FDECEC;
+  --color-na:   #8B95A1;  --color-na-bg:   #F0F2F4;
+
+  /* 단계 도트 (워크스페이스 4단계 — 검토 절차의 색 인코딩) */
+  --dot-step1: #2EA043;   /* 사업정보(입력) */
+  --dot-step2: #1A8B45;   /* 검토 계산(결과) */
+  --dot-step3: #C77C02;   /* 최적화·AI */
+  --dot-step4: #2563EB;   /* 보고서 */
+
+  /* 타이포 */
+  --font-body: var(--font-sans), 'Noto Sans KR', system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), 'IBM Plex Mono', monospace;
+  --fs-12: 12px; --fs-13: 13px; --fs-14: 14px; --fs-16: 16px;
+  --fs-18: 18px; --fs-22: 22px; --fs-28: 28px;
+
+  /* 간격 (4px 그리드) */
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px;
+  --sp-5: 20px; --sp-6: 24px; --sp-8: 32px; --sp-10: 40px;
+
+  /* 라운드·그림자·레이어 */
+  --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
+  --shadow-card: 0 1px 2px rgba(17,24,39,.05), 0 1px 3px rgba(17,24,39,.06);
+  --shadow-pop: 0 8px 24px rgba(17,24,39,.14);
+  --z-modal: 1000; --z-toast: 1100;
+
+  /* 레이아웃·모션 */
+  --nav-width: 240px;
+  --content-max: 1200px;
+  --dur-fast: 150ms; --dur-normal: 250ms;
+  --ease-out: cubic-bezier(.16, 1, .3, 1);
+}
