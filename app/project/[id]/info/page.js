@@ -8,6 +8,8 @@ import Card from "@/components/ui/Card";
 import Field from "@/components/ui/Field";
 import Select from "@/components/ui/Select";
 import Button from "@/components/ui/Button";
+import Badge from "@/components/ui/Badge";
+import LocationPicker from "@/components/map/LocationPicker";
 import "./info.css";
 
 const toOptions = arr => arr.map(v => ({ value: v, label: v }));
@@ -35,6 +37,10 @@ export default function InfoPage() {
     apply({ 용도별연면적목록: rows });
   }
 
+  function handleLocation({ region, address, lat, lng }) {
+    apply({ 대지위치: region, 위치정보: { address, lat, lng } });
+  }
+
   const 용도합 = input1.용도별연면적목록.reduce((s, r) => s + (Number(r.연면적) || 0), 0);
   const 총연면적 = Number(input1.연면적) || 0;
   const 합계불일치 = 총연면적 > 0 && Math.abs(용도합 - 총연면적) > 0.01;
@@ -52,6 +58,10 @@ export default function InfoPage() {
           <Field label="총 연면적 (㎡)" type="number" mono value={input1.연면적}
             onChange={e => apply({ 연면적: num(e.target.value) })} />
         </div>
+      </Card>
+
+      <Card title="위치 선택 (지도)" actions={<Badge tone="action">3경로 동기</Badge>}>
+        <LocationPicker value={input1.위치정보} onResolve={handleLocation} />
       </Card>
 
       <Card title="용도별 연면적" actions={
