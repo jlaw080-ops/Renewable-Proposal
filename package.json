@@ -5,7 +5,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "verify": "node verify/verify_all.js public && node verify/verify_output12.js public"
+    "verify": "node verify/verify_all.js public && node verify/verify_output12.js public",
+    "test": "node --test tests/"
   },
   "dependencies": {
     "next": "^16.2.12",
