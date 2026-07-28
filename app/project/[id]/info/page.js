@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { getProject, updateProject } from "@/lib/projectStore";
 import { REGION_OPTIONS } from "@/lib/regionResolver";
-import { 사업형태_OPTIONS, 사업연도_OPTIONS, 용도_OPTIONS, EMPTY_INPUT1 } from "@/lib/formOptions";
+import { 사업형태_OPTIONS, 사업연도_OPTIONS, 용도_OPTIONS, EMPTY_INPUT1, 세대수_OPTIONS } from "@/lib/formOptions";
 import Card from "@/components/ui/Card";
 import Field from "@/components/ui/Field";
 import Select from "@/components/ui/Select";
@@ -88,15 +88,23 @@ export default function InfoPage() {
       }>
         <div className="info__rows">
           {input1.용도별연면적목록.map((row, i) => (
-            <div className="info__row" key={i}>
-              <Select label={i === 0 ? "용도" : undefined} placeholder="용도 선택" options={toOptions(용도_OPTIONS)}
-                value={row.용도} onChange={e => applyRow(i, { 용도: e.target.value })} />
-              <Field label={i === 0 ? "연면적 (㎡)" : undefined} type="number" mono value={row.연면적}
-                onChange={e => applyRow(i, { 연면적: num(e.target.value) })} />
-              <Button size="sm" variant="danger" disabled={input1.용도별연면적목록.length <= 1}
-                onClick={() => apply({ 용도별연면적목록: input1.용도별연면적목록.filter((_, idx) => idx !== i) })}>
-                삭제
-              </Button>
+            <div className="info__rowgroup" key={i}>
+              <div className="info__row">
+                <Select label={i === 0 ? "용도" : undefined} placeholder="용도 선택" options={toOptions(용도_OPTIONS)}
+                  value={row.용도} onChange={e => applyRow(i, { 용도: e.target.value })} />
+                <Field label={i === 0 ? "연면적 (㎡)" : undefined} type="number" mono value={row.연면적}
+                  onChange={e => applyRow(i, { 연면적: num(e.target.value) })} />
+                <Button size="sm" variant="danger" disabled={input1.용도별연면적목록.length <= 1}
+                  onClick={() => apply({ 용도별연면적목록: input1.용도별연면적목록.filter((_, idx) => idx !== i) })}>
+                  삭제
+                </Button>
+              </div>
+              {row.용도 === "공동주택" && (
+                <div className="info__seda">
+                  <Select label="세대 수 (규모등급 판정용)" placeholder="선택하세요" options={toOptions(세대수_OPTIONS)}
+                    value={row.세대수 ?? ""} onChange={e => applyRow(i, { 세대수: e.target.value })} />
+                </div>
+              )}
             </div>
           ))}
         </div>
