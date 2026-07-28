@@ -10,6 +10,7 @@ import Button from "@/components/ui/Button";
 import OptimizeForm from "@/components/optimize/OptimizeForm";
 import ComboCard from "@/components/optimize/ComboCard";
 import RecommendPanel from "@/components/optimize/RecommendPanel";
+import ConstraintsModal, { constraintsSummary } from "@/components/optimize/ConstraintsModal";
 import { buildCandidates, requestRecommend } from "@/lib/recommendClient";
 import "./optimize.css";
 
@@ -27,6 +28,8 @@ export default function OptimizePage() {
   const [runError, setRunError] = useState(null);
   const [busy, setBusy] = useState(false);
   const [ai, setAi] = useState({ status: "idle", result: null, error: null });
+  const [aiConstraints, setAiConstraints] = useState(null);
+  const [constraintsModalOpen, setConstraintsModalOpen] = useState(false);
   const lastAutoKey = useRef("");                  // 요구도 자동 반영 중복 방지
 
   useEffect(() => {
@@ -37,6 +40,7 @@ export default function OptimizePage() {
     setInput3({ ...EMPTY_INPUT3, ...(p.data.input3 ?? {}), 면적비율: { ...EMPTY_INPUT3.면적비율, ...(p.data.input3?.면적비율 ?? {}) }, 요구도: { ...EMPTY_INPUT3.요구도, ...(p.data.input3?.요구도 ?? {}) } });
     setMemos(p.data.optMemos ?? {});
     setAi(a => (p.data.aiRecommend ? { status: "done", result: p.data.aiRecommend, error: null } : a));
+    setAiConstraints(p.data.aiConstraints ?? null);
   }, [id]);
 
   // 파생값: 검토 계산 재실행 (calc 페이지와 동일 체계)
@@ -90,12 +94,17 @@ export default function OptimizePage() {
     updateProject(id, { data: { optMemos: next } });
   }
 
+  function applyConstraints(c) {
+    setAiConstraints(c);
+    updateProject(id, { data: { aiConstraints: c } });
+  }
+
   async function runRecommend() {
     if (!result) return;
     setAi({ status: "loading", result: null, error: null });
     try {
       const candidates = buildCandidates(result.r.ranked);
-      const parsed = await requestRecommend({ ctx: result.ctx, candidates });
+      const parsed = await requestRecommend({ ctx: result.ctx, candidates, constraints: aiConstraints });
       setAi({ status: "done", result: parsed, error: null });
       updateProject(id, { data: { aiRecommend: parsed } });
     } catch (e) {
@@ -152,7 +161,8 @@ export default function OptimizePage() {
       {!result && ai.result && (
         <Card title="AI 추천 (저장된 결과)" inner>
           <RecommendPanel status={ai.status} aiResult={ai.result} error={ai.error}
-            onRun={runRecommend} disabled />
+            onRun={runRecommend} onOpenConstraints={() => setConstraintsModalOpen(true)}
+            constraintsLabel={constraintsSummary(aiConstraints)} disabled />
           <p className="opt__hint">[최적 조합 탐색]을 다시 실행하면 추천 조합에 ⭐ 배지와 근거가 표시됩니다.</p>
         </Card>
       )}
@@ -164,7 +174,8 @@ export default function OptimizePage() {
             {result.r.표시제외건수 > 0 ? ` · 적합도 미달 제외 ${result.r.표시제외건수}건` : ""}
           </p>
           <RecommendPanel status={ai.status} aiResult={ai.result} error={ai.error}
-            onRun={runRecommend} disabled={!result || shown.length === 0} />
+            onRun={runRecommend} onOpenConstraints={() => setConstraintsModalOpen(true)}
+            constraintsLabel={constraintsSummary(aiConstraints)} disabled={!result || shown.length === 0} />
           {shown.length === 0 && <p className="opt__notice">조건을 충족하는 조합이 없습니다. 면적·기준을 완화해 보세요.</p>}
           <div className="opt__grid">
             {shown.map(combo => {
@@ -179,6 +190,11 @@ export default function OptimizePage() {
           </div>
         </Card>
       )}
+
+      <ConstraintsModal open={constraintsModalOpen} value={aiConstraints}
+        energySources={window?.LIB_에너지원목록 ?? []}
+        onClose={() => setConstraintsModalOpen(false)}
+        onApply={applyConstraints} />
     </div>
   );
 }
