@@ -103,3 +103,7 @@ select.set-select option { background: var(--bg-card-inner); color: var(--text-p
   display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px;
   padding-top: 14px; border-top: 1px solid var(--border-default);
 }
+
+/* 프로젝트별 최적화 입력 섹션 (2026-07-29 보수: 본문에서 이동) */
+.sm__project { border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: var(--sp-3) var(--sp-4); margin-bottom: var(--sp-3); }
+.sm__project > summary { cursor: pointer; font-weight: 600; font-size: var(--fs-14); margin-bottom: var(--sp-2); }
