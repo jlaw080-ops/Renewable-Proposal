@@ -10,6 +10,8 @@ import Select from "@/components/ui/Select";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import LocationPicker from "@/components/map/LocationPicker";
+import LandInfoCard from "@/components/map/LandInfoCard";
+import { useToast } from "@/components/ui/ToastProvider";
 import "./info.css";
 
 const toOptions = arr => arr.map(v => ({ value: v, label: v }));
@@ -18,6 +20,7 @@ const num = v => (v === "" ? "" : Number(v));
 export default function InfoPage() {
   const { id } = useParams();
   const [input1, setInput1] = useState(null);
+  const { push } = useToast();
 
   useEffect(() => {
     const p = getProject(id);
@@ -41,6 +44,15 @@ export default function InfoPage() {
     apply({ 대지위치: region, 위치정보: { address, lat, lng } });
   }
 
+  function handleLandApply(land) {
+    const patch = { 연면적: land.연면적 };                       // 연면적은 항상 채움
+    for (const k of ["대지면적", "건축면적", "건폐율", "용적률"]) {
+      if (input1[k] === "" || input1[k] == null) patch[k] = land[k] > 0 ? land[k] : "";
+    }
+    apply(patch);
+    push({ message: "현황 건축물 연면적을 반영했습니다", tone: "pass" });
+  }
+
   const 용도합 = input1.용도별연면적목록.reduce((s, r) => s + (Number(r.연면적) || 0), 0);
   const 총연면적 = Number(input1.연면적) || 0;
   const 합계불일치 = 총연면적 > 0 && Math.abs(용도합 - 총연면적) > 0.01;
@@ -62,6 +74,10 @@ export default function InfoPage() {
 
       <Card title="위치 선택 (지도)" actions={<Badge tone="action">3경로 동기</Badge>}>
         <LocationPicker value={input1.위치정보} onResolve={handleLocation} />
+      </Card>
+
+      <Card title="토지정보 조회">
+        <LandInfoCard address={input1.위치정보?.address ?? null} onApply={handleLandApply} />
       </Card>
 
       <Card title="용도별 연면적" actions={
