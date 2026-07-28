@@ -7,7 +7,7 @@
 **프로젝트 루트에서** 실행한다(스크립트는 첫 인자를 라이브러리 로드 기준 경로 ROOT로 받는다. 모듈 이동 후 `public` 명시):
 
 ```bash
-node verify/verify_all.js public
+node verify/verify_all.cjs public
 ```
 
 Node만 있으면 되고 별도 설치는 없다. 브라우저 `file://` 로직을 그대로 Node에서 재현하기 위해 `window`/`localStorage`를 목(mock)으로 만들고, `data/*.js → settingsStore → vendor/lp-solver → targetCalculator → optimizer`를 `new Function`으로 로드한다(`require`/`module`을 `undefined`로 가려 브라우저 UMD 분기 유도). 패턴 근거: `HANDOFF_설비최적화.md` §6.
@@ -17,7 +17,7 @@ Node만 있으면 되고 별도 설치는 없다. 브라우저 `file://` 로직�
 | 파일 | 목적 | 결론 |
 |---|---|---|
 | **`verify_select.js`** | **채택안**: 요구도 6페르소나 + 스토리 조합을 대표차원 챔피언(`argmax(정규화[차원])`)으로 선택. 기획서 §7 샘플의 원천. | 분화 5~6/6 |
-| `verify_all.js` | 초기안: 요구도 6페르소나 → `ranked[0]` 노출. | 페르소나 붕괴(3~5/6) 실증 |
+| `verify_all.cjs` | 초기안: 요구도 6페르소나 → `ranked[0]` 노출. | 페르소나 붕괴(3~5/6) 실증 |
 | `verify_champions.js` | 중립 요구도에서 차원별 챔피언 조합 확인. | 챔피언이 잘 분화됨(§9.2) |
 | `verify_tune.js` | `건물적합가중배수`(2→0.5) 튜닝이 분화를 살리는지. | 튜닝만으로는 정체(3~5/6) |
 | `verify_p1.js` | 공동주택 P1(경제성) 단독 심층 + 연료전지 배제 트위스트 비교. | 비용최소=BIPV 확인 |
