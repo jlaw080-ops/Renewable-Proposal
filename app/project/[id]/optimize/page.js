@@ -149,6 +149,14 @@ export default function OptimizePage() {
         {runError && <p className="opt__notice" role="status">{runError}</p>}
       </Card>
 
+      {!result && ai.result && (
+        <Card title="AI 추천 (저장된 결과)" inner>
+          <RecommendPanel status={ai.status} aiResult={ai.result} error={ai.error}
+            onRun={runRecommend} disabled />
+          <p className="opt__hint">[최적 조합 탐색]을 다시 실행하면 추천 조합에 ⭐ 배지와 근거가 표시됩니다.</p>
+        </Card>
+      )}
+
       {result && (
         <Card title="조합 순위" inner>
           <p className="opt__summary">
