@@ -1,5 +1,6 @@
 "use client";
 import Badge from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
 import { fmtNum } from "@/lib/calcModel";
 import "./comboCard.css";
 
@@ -17,7 +18,7 @@ function GradeBar({ label, value }) {   // value: 0~1
   );
 }
 
-export default function ComboCard({ combo, memo, aiBadge, aiReason, onMemoChange }) {
+export default function ComboCard({ combo, memo, aiBadge, aiReason, onMemoChange, explain, explaining, onExplain }) {
   const t = combo.targets;
   const 프로파일 = t.제약?.프로파일 ?? {};
   return (
@@ -74,6 +75,15 @@ export default function ComboCard({ combo, memo, aiBadge, aiReason, onMemoChange
       )}
 
       {aiReason && <p className="cc__reason"><b>AI 추천 근거:</b> {aiReason}</p>}
+
+      {onExplain && (
+        <div className="cc__explain">
+          <Button size="sm" variant="ghost" onClick={() => onExplain(combo)} disabled={explaining}>
+            {explaining ? "AI 설명 생성 중…" : (explain ? "AI 설명 재생성" : "AI 설명 생성")}
+          </Button>
+          {explain && <p className="cc__explaintext">{explain}</p>}
+        </div>
+      )}
 
       <label className="cc__memo">
         <span>조합 메모</span>

@@ -3,8 +3,10 @@ import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { getProject, updateProject } from "@/lib/projectStore";
 import { useEngineReady } from "@/lib/useEngineReady";
+import { useToast } from "@/components/ui/ToastProvider";
 import { calc규모등급, canCalculate, buildEngineInput2 } from "@/lib/calcModel";
 import { EMPTY_INPUT3, buildOptimizeCtx, withAreaDefaults, autoRequirements } from "@/lib/optimizeModel";
+import { explainCard, openComboReport } from "@/lib/optimizeExtras";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import OptimizeForm from "@/components/optimize/OptimizeForm";
@@ -19,10 +21,13 @@ const MAX_SHOW = 20;
 export default function OptimizePage() {
   const { id } = useParams();
   const { ready, error: engineError } = useEngineReady();
+  const { push } = useToast();
   const [input1, setInput1] = useState(null);
   const [input2, setInput2] = useState(null);
   const [input3, setInput3] = useState(null);
   const [memos, setMemos] = useState({});
+  const [explains, setExplains] = useState({});
+  const [explainingRank, setExplainingRank] = useState(null);
   const [derived, setDerived] = useState({ 에너지소요량: null, 의무비율: null, 전력소비량: null });
   const [result, setResult] = useState(null);      // Optimizer.optimize() 반환
   const [runError, setRunError] = useState(null);
@@ -39,6 +44,7 @@ export default function OptimizePage() {
     setInput2(p.data.input2 ?? null);
     setInput3({ ...EMPTY_INPUT3, ...(p.data.input3 ?? {}), 면적비율: { ...EMPTY_INPUT3.면적비율, ...(p.data.input3?.면적비율 ?? {}) }, 요구도: { ...EMPTY_INPUT3.요구도, ...(p.data.input3?.요구도 ?? {}) } });
     setMemos(p.data.optMemos ?? {});
+    setExplains(p.data.optExplains ?? {});
     setAi(a => (p.data.aiRecommend ? { status: "done", result: p.data.aiRecommend, error: null } : a));
     setAiConstraints(p.data.aiConstraints ?? null);
   }, [id]);
@@ -112,6 +118,32 @@ export default function OptimizePage() {
     }
   }
 
+  async function runExplain(combo) {
+    if (!result) return;
+    setExplainingRank(combo.rank);
+    try {
+      const text = await explainCard(combo, result.ctx);
+      const next = { ...explains, [combo.rank]: text };
+      setExplains(next);
+      updateProject(id, { data: { optExplains: next } });
+    } catch (e) {
+      push({ message: `AI 설명 실패: ${e.message}`, tone: "fail" });
+    } finally { setExplainingRank(null); }
+  }
+
+  async function openReport() {
+    if (!result) return;
+    const memosCopy = { ...memos };
+    const onFocus = () => {
+      setMemos({ ...memosCopy });
+      updateProject(id, { data: { optMemos: { ...memosCopy } } });
+      window.removeEventListener("focus", onFocus);
+    };
+    window.addEventListener("focus", onFocus);
+    try { await openComboReport(result.r, result.ctx, { ...explains }, memosCopy); }
+    catch (e) { window.removeEventListener("focus", onFocus); push({ message: e.message, tone: "fail" }); }
+  }
+
   async function runOptimize() {
     setRunError(null);
     if (!derived.에너지소요량 || derived.에너지소요량 <= 0) {
@@ -168,7 +200,9 @@ export default function OptimizePage() {
       )}
 
       {result && (
-        <Card title="조합 순위" inner>
+        <Card title="조합 순위" inner actions={result && shown.length > 0 ? (
+          <Button size="sm" variant="ghost" onClick={openReport}>조합 보고서</Button>
+        ) : null}>
           <p className="opt__summary">
             실행가능 {result.r.실행가능건수}개 중 {shown.length}개 표시 (종합점수 상위 {MAX_SHOW}) · 평가 {result.r.평가건수}건
             {result.r.표시제외건수 > 0 ? ` · 적합도 미달 제외 ${result.r.표시제외건수}건` : ""}
@@ -184,7 +218,10 @@ export default function OptimizePage() {
                 <ComboCard key={combo.rank} combo={combo} memo={memos[combo.rank]}
                   aiBadge={ai.result?.best_pick === combo.rank}
                   aiReason={aiRank?.reasoning ?? null}
-                  onMemoChange={applyMemo} />
+                  onMemoChange={applyMemo}
+                  explain={explains[combo.rank] ?? null}
+                  explaining={explainingRank === combo.rank}
+                  onExplain={runExplain} />
               );
             })}
           </div>

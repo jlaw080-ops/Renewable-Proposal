@@ -20,5 +20,7 @@
 .cc__profile { list-style: none; display: flex; flex-direction: column; gap: 2px; font-size: var(--fs-12); margin-top: var(--sp-2); }
 .cc__profile li { display: flex; justify-content: space-between; }
 .cc__reason { font-size: var(--fs-13); background: var(--color-pass-bg); border-radius: var(--radius-sm, 4px); padding: var(--sp-2) var(--sp-3); }
+.cc__explain { display: flex; flex-direction: column; gap: var(--sp-2); align-items: flex-start; }
+.cc__explaintext { font-size: var(--fs-13); line-height: 1.6; background: var(--bg-card-inner, var(--color-na-bg)); border-radius: var(--radius-sm, 4px); padding: var(--sp-2) var(--sp-3); white-space: pre-wrap; }
 .cc__memo { display: flex; flex-direction: column; gap: var(--sp-1); font-size: var(--fs-12); color: var(--text-hint); }
 .cc__memo textarea { font: inherit; font-size: var(--fs-13); color: inherit; border: 1px solid var(--border-default); border-radius: var(--radius-sm, 4px); padding: var(--sp-2); background: transparent; resize: vertical; }
