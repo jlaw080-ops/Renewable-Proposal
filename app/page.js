@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { listProjects, createProject, deleteProject } from "@/lib/projectStore";
+import { listProjects, createProject, updateProject, deleteProject } from "@/lib/projectStore";
+import { readLegacyProjects, convertLegacyProject } from "@/lib/migrateLegacy";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import Field from "@/components/ui/Field";
@@ -22,8 +23,12 @@ export default function Dashboard() {
   const [name, setName] = useState("");
   const [nameError, setNameError] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [legacyCount, setLegacyCount] = useState(0);
 
-  useEffect(() => { setProjects(listProjects()); }, []); // localStorage는 클라이언트에서만
+  useEffect(() => {
+    setProjects(listProjects());
+    setLegacyCount(readLegacyProjects(localStorage.getItem("projects_v2")).length);
+  }, []); // localStorage는 클라이언트에서만
 
   function handleCreate() {
     try {
@@ -42,6 +47,21 @@ export default function Dashboard() {
     push({ message: "프로젝트를 삭제했습니다" });
   }
 
+  function importLegacy() {
+    const items = readLegacyProjects(localStorage.getItem("projects_v2"));
+    let ok = 0, fail = 0;
+    for (const item of items) {
+      const conv = convertLegacyProject(item);
+      if (!conv) { fail++; continue; }
+      const p = createProject(conv.name);
+      updateProject(p.id, { data: conv.data });
+      ok++;
+    }
+    setProjects(listProjects());
+    push({ message: `구버전 프로젝트 ${ok}개 가져옴${fail ? ` (형식 불일치 ${fail}개 제외)` : ""}`, tone: "pass" });
+    setLegacyCount(0);
+  }
+
   return (
     <main className="dash">
       <header className="dash__head">
@@ -49,7 +69,12 @@ export default function Dashboard() {
           <h1 className="dash__title">신재생에너지 의무설치비율 검토</h1>
           <p className="dash__sub">프로젝트 단위로 검토 계산·최적화·보고서를 관리합니다</p>
         </div>
-        <Button onClick={() => { setName(""); setNameError(null); setCreateOpen(true); }}>새 프로젝트</Button>
+        <div className="dash__head-actions">
+          <Button onClick={() => { setName(""); setNameError(null); setCreateOpen(true); }}>새 프로젝트</Button>
+          {legacyCount > 0 && (
+            <Button variant="ghost" onClick={importLegacy}>구버전 프로젝트 가져오기 ({legacyCount}개)</Button>
+          )}
+        </div>
       </header>
 
       {projects && projects.length === 0 && (

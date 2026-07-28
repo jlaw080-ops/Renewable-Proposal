@@ -12,4 +12,5 @@
 .dash__name { font-size: var(--fs-16); font-weight: 700; }
 .dash__name:hover { color: var(--accent-action); }
 .dash__date { font-size: var(--fs-12); color: var(--text-hint); }
+.dash__head-actions { display: flex; gap: var(--sp-2); align-items: center; }
 .dash__row-actions { display: flex; gap: var(--sp-2); }
