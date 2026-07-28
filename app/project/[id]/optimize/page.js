@@ -9,6 +9,8 @@ import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import OptimizeForm from "@/components/optimize/OptimizeForm";
 import ComboCard from "@/components/optimize/ComboCard";
+import RecommendPanel from "@/components/optimize/RecommendPanel";
+import { buildCandidates, requestRecommend } from "@/lib/recommendClient";
 import "./optimize.css";
 
 const MAX_SHOW = 20;
@@ -24,6 +26,7 @@ export default function OptimizePage() {
   const [result, setResult] = useState(null);      // Optimizer.optimize() 반환
   const [runError, setRunError] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [ai, setAi] = useState({ status: "idle", result: null, error: null });
   const lastAutoKey = useRef("");                  // 요구도 자동 반영 중복 방지
 
   useEffect(() => {
@@ -33,6 +36,7 @@ export default function OptimizePage() {
     setInput2(p.data.input2 ?? null);
     setInput3({ ...EMPTY_INPUT3, ...(p.data.input3 ?? {}), 면적비율: { ...EMPTY_INPUT3.면적비율, ...(p.data.input3?.면적비율 ?? {}) }, 요구도: { ...EMPTY_INPUT3.요구도, ...(p.data.input3?.요구도 ?? {}) } });
     setMemos(p.data.optMemos ?? {});
+    setAi(a => (p.data.aiRecommend ? { status: "done", result: p.data.aiRecommend, error: null } : a));
   }, [id]);
 
   // 파생값: 검토 계산 재실행 (calc 페이지와 동일 체계)
@@ -84,6 +88,19 @@ export default function OptimizePage() {
     const next = { ...memos, [rank]: text };
     setMemos(next);
     updateProject(id, { data: { optMemos: next } });
+  }
+
+  async function runRecommend() {
+    if (!result) return;
+    setAi({ status: "loading", result: null, error: null });
+    try {
+      const candidates = buildCandidates(result.r.ranked);
+      const parsed = await requestRecommend({ ctx: result.ctx, candidates });
+      setAi({ status: "done", result: parsed, error: null });
+      updateProject(id, { data: { aiRecommend: parsed } });
+    } catch (e) {
+      setAi({ status: "idle", result: null, error: e.message });
+    }
   }
 
   async function runOptimize() {
@@ -138,12 +155,19 @@ export default function OptimizePage() {
             실행가능 {result.r.실행가능건수}개 중 {shown.length}개 표시 (종합점수 상위 {MAX_SHOW}) · 평가 {result.r.평가건수}건
             {result.r.표시제외건수 > 0 ? ` · 적합도 미달 제외 ${result.r.표시제외건수}건` : ""}
           </p>
+          <RecommendPanel status={ai.status} aiResult={ai.result} error={ai.error}
+            onRun={runRecommend} disabled={!result || shown.length === 0} />
           {shown.length === 0 && <p className="opt__notice">조건을 충족하는 조합이 없습니다. 면적·기준을 완화해 보세요.</p>}
           <div className="opt__grid">
-            {shown.map(combo => (
-              <ComboCard key={combo.rank} combo={combo} memo={memos[combo.rank]}
-                aiBadge={false} aiReason={null} onMemoChange={applyMemo} />
-            ))}
+            {shown.map(combo => {
+              const aiRank = ai.result?.ai_ranking?.find(r => r.id === combo.rank);
+              return (
+                <ComboCard key={combo.rank} combo={combo} memo={memos[combo.rank]}
+                  aiBadge={ai.result?.best_pick === combo.rank}
+                  aiReason={aiRank?.reasoning ?? null}
+                  onMemoChange={applyMemo} />
+              );
+            })}
           </div>
         </Card>
       )}

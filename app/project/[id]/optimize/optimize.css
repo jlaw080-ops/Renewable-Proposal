@@ -4,3 +4,9 @@
 .opt__summary { font-size: var(--fs-13); color: var(--text-secondary); margin-bottom: var(--sp-3); }
 .opt__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: var(--sp-4); }
 @media (max-width: 767px) { .opt__grid { grid-template-columns: 1fr; } }
+
+.rp { display: flex; flex-direction: column; gap: var(--sp-2); margin-bottom: var(--sp-3); }
+.rp__head { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; }
+.rp__hint { font-size: var(--fs-13); color: var(--text-secondary); }
+.rp__error { font-size: var(--fs-13); color: var(--color-fail); }
+.rp__summary { font-size: var(--fs-13); background: var(--bg-card-inner, var(--color-na-bg)); border-radius: var(--radius-md); padding: var(--sp-3); }
