@@ -10,6 +10,7 @@ import { explainCard, openComboReport } from "@/lib/optimizeExtras";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import OptimizeForm from "@/components/optimize/OptimizeForm";
+import OptimizeInputSettings from "@/components/optimize/OptimizeInputSettings";
 import ComboCard from "@/components/optimize/ComboCard";
 import RecommendPanel from "@/components/optimize/RecommendPanel";
 import ConstraintsModal, { constraintsSummary } from "@/components/optimize/ConstraintsModal";
@@ -238,7 +239,14 @@ export default function OptimizePage() {
         onClose={() => setConstraintsModalOpen(false)}
         onApply={applyConstraints} />
 
-      <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)}>
+        {input3 && (
+          <details className="sm__project" open>
+            <summary>최적화 입력 — 이 프로젝트 (가용면적 · 사용자 요구도)</summary>
+            <OptimizeInputSettings input3={input3} input1={input1} onChange={applyInput3} />
+          </details>
+        )}
+      </SettingsModal>
     </div>
   );
 }
