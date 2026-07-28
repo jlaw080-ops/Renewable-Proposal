@@ -1,0 +1,12 @@
+.tbl__wrap { overflow-x: auto; border: 1px solid var(--border-default); border-radius: var(--radius-md); }
+.tbl { width: 100%; border-collapse: collapse; font-size: var(--fs-13); background: var(--bg-card); }
+.tbl th {
+  text-align: left; font-weight: 500; color: var(--text-secondary);
+  background: var(--bg-card-inner); padding: var(--sp-2) var(--sp-3);
+  border-bottom: 1px solid var(--border-default); white-space: nowrap;
+}
+.tbl td { padding: var(--sp-2) var(--sp-3); border-bottom: 1px solid var(--border-default); }
+.tbl tbody tr:last-child td { border-bottom: none; }
+.tbl tbody tr:hover { background: var(--bg-hover); }
+.tbl--right { text-align: right; }
+.tbl__empty { text-align: center; color: var(--text-hint); padding: var(--sp-8) !important; }

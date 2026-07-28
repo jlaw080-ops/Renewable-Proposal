@@ -1,0 +1,12 @@
+.card {
+  background: var(--bg-card); border: 1px solid var(--border-default);
+  border-radius: var(--radius-md); box-shadow: var(--shadow-card);
+}
+.card--inner { background: var(--bg-card-inner); box-shadow: none; }
+.card__head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: var(--sp-4) var(--sp-5); border-bottom: 1px solid var(--border-default);
+}
+.card__title { font-size: var(--fs-16); font-weight: 700; }
+.card__actions { display: flex; gap: var(--sp-2); }
+.card__body { padding: var(--sp-5); }
