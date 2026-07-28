@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import "./modal.css";
 
-export default function Modal({ open, onClose, title, footer, children }) {
+export default function Modal({ open, onClose, title, footer, wide = false, children }) {
   useEffect(() => {
     if (!open) return;
     const onKey = e => { if (e.key === "Escape") onClose(); };
@@ -15,7 +15,7 @@ export default function Modal({ open, onClose, title, footer, children }) {
   if (!open) return null;
   return createPortal(
     <div className="modal__backdrop" onClick={onClose}>
-      <div className="modal" role="dialog" aria-modal="true" aria-label={title} onClick={e => e.stopPropagation()}>
+      <div className={wide ? "modal modal--wide" : "modal"} role="dialog" aria-modal="true" aria-label={title} onClick={e => e.stopPropagation()}>
         <header className="modal__head">
           <h2 className="modal__title">{title}</h2>
           <button className="modal__close" onClick={onClose} aria-label="닫기">×</button>

@@ -47,7 +47,7 @@ export default function ReportActions({ coverImage, calcReady, onCoverChange, ge
       </div>
       {!calcReady && <p className="rv__hint">①·② 입력을 완료하면 보고서를 생성할 수 있습니다.</p>}
       {error && <p className="rv__error" role="status">보고서 오류: {error}</p>}
-      <Modal open={previewHtml !== null} onClose={() => setPreviewHtml(null)} title="보고서 미리보기">
+      <Modal open={previewHtml !== null} onClose={() => setPreviewHtml(null)} title="보고서 미리보기" wide>
         {previewHtml !== null && <iframe className="ra__frame" title="보고서 미리보기" srcDoc={previewHtml} />}
       </Modal>
     </div>

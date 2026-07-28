@@ -22,7 +22,7 @@ export default function SettingsModal({ open, onClose, children }) {
   }, [open]);
 
   return (
-    <Modal open={open} onClose={onClose} title="설정 — 입력값 · 가중치 · 라이브러리">
+    <Modal open={open} onClose={onClose} title="설정 — 입력값 · 가중치 · 라이브러리" wide>
       {error && <p className="sm__error" role="status">{error}</p>}
       <p className="sm__hint">변경 사항은 즉시 저장됩니다. 계산·최적화 결과에 반영하려면 해당 화면에서 다시 실행하세요.</p>
       {children}
