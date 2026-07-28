@@ -19,7 +19,8 @@ export default function LocationPicker({ value, onResolve }) {
   const [notice, setNotice] = useState(null);
 
   function placeMarker(lat, lng) {
-    if (!mapRef.current) return;
+    if (!mapRef.current || !window.naver?.maps) return; // SDK 인증 실패 시 maps가 무력화될 수 있음 — 지도 없이도 검색은 계속
+
     const pos = new window.naver.maps.LatLng(lat, lng);
     mapRef.current.setCenter(pos);
     if (mapRef.current.getZoom() < 15) mapRef.current.setZoom(15);
