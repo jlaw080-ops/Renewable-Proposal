@@ -13,6 +13,7 @@ import OptimizeForm from "@/components/optimize/OptimizeForm";
 import ComboCard from "@/components/optimize/ComboCard";
 import RecommendPanel from "@/components/optimize/RecommendPanel";
 import ConstraintsModal, { constraintsSummary } from "@/components/optimize/ConstraintsModal";
+import SettingsModal from "@/components/settings/SettingsModal";
 import { buildCandidates, requestRecommend } from "@/lib/recommendClient";
 import "./optimize.css";
 
@@ -35,6 +36,7 @@ export default function OptimizePage() {
   const [ai, setAi] = useState({ status: "idle", result: null, error: null });
   const [aiConstraints, setAiConstraints] = useState(null);
   const [constraintsModalOpen, setConstraintsModalOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const lastAutoKey = useRef("");                  // 요구도 자동 반영 중복 방지
 
   useEffect(() => {
@@ -178,7 +180,10 @@ export default function OptimizePage() {
   return (
     <div className="opt">
       <Card title="③ 최적화 입력" actions={
-        <Button onClick={runOptimize} disabled={busy || !ready}>{busy ? "탐색 중…" : "최적 조합 탐색"}</Button>
+        <>
+          <Button size="sm" variant="ghost" onClick={() => setSettingsOpen(true)}>설정</Button>
+          <Button onClick={runOptimize} disabled={busy || !ready}>{busy ? "탐색 중…" : "최적 조합 탐색"}</Button>
+        </>
       }>
         {engineError && <p className="opt__notice" role="status">엔진 로드 실패: {engineError}</p>}
         {!ready && !engineError && <p className="opt__hint">계산 엔진 로딩 중…</p>}
@@ -232,6 +237,8 @@ export default function OptimizePage() {
         energySources={window?.LIB_에너지원목록 ?? []}
         onClose={() => setConstraintsModalOpen(false)}
         onApply={applyConstraints} />
+
+      <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
   );
 }
