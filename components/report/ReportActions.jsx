@@ -2,7 +2,7 @@
 import { useState } from "react";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
-import { loadReportAssets } from "@/lib/reportAssets";
+import { loadReportAssets, buildStyledReport } from "@/lib/reportAssets";
 import "./report.css";
 
 export default function ReportActions({ coverImage, calcReady, onCoverChange, getReportData }) {
@@ -26,9 +26,9 @@ export default function ReportActions({ coverImage, calcReady, onCoverChange, ge
     finally { setBusy(null); }
   }
 
-  const preview = () => withAssets("preview", async () => setPreviewHtml(window.buildReport(getReportData())));
-  const pdf = () => withAssets("pdf", async () => window.downloadReportPDF(window.buildReport(getReportData())));
-  const html = () => withAssets("html", async () => window.downloadReportHTML(window.buildReport(getReportData())));
+  const preview = () => withAssets("preview", async () => setPreviewHtml(await buildStyledReport(getReportData())));
+  const pdf = () => withAssets("pdf", async () => window.downloadReportPDF(await buildStyledReport(getReportData())));
+  const html = () => withAssets("html", async () => window.downloadReportHTML(await buildStyledReport(getReportData())));
   const word = () => withAssets("word", async () => window.downloadReportWord(getReportData()));
 
   return (
