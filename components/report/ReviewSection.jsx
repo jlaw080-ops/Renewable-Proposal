@@ -7,7 +7,7 @@ import { generateReview } from "@/public/review/reviewGenerator.js";
 import { getPrompts } from "@/public/review/reviewPromptManager.js";
 import "./report.css";
 
-const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 
 export default function ReviewSection({ calcData, review, onSave }) {
   const [prompts, setPrompts] = useState([]);
