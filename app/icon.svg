@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- 브랜드 그린(--accent-primary #2EA043) 배경 + 에너지 볼트 -->
+  <rect width="32" height="32" rx="7" fill="#2EA043"/>
+  <path d="M17.6 5.5 9.8 17.2h4.9l-1.9 9.3 8.4-12.3h-5.1l1.5-8.7z" fill="#FFFFFF"/>
+</svg>
