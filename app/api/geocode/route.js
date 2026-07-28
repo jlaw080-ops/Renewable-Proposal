@@ -10,7 +10,7 @@ export async function GET(request) {
   if (!query) return NextResponse.json({ error: "query 파라미터가 필요합니다" }, { status: 400 });
 
   try {
-    const url = "https://naveropenapi.apigw.ntruss.com/map-geocode/v2/geocode?query=" + encodeURIComponent(query);
+    const url = "https://maps.apigw.ntruss.com/map-geocode/v2/geocode?query=" + encodeURIComponent(query);
     const resp = await fetch(url, {
       headers: { "X-NCP-APIGW-API-KEY-ID": clientId, "X-NCP-APIGW-API-KEY": clientSecret },
     });

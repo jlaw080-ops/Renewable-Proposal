@@ -11,7 +11,7 @@ export async function GET(request) {
   if (!lat || !lng) return NextResponse.json({ error: "lat·lng 파라미터가 필요합니다" }, { status: 400 });
 
   try {
-    const url = "https://naveropenapi.apigw.ntruss.com/map-reversegeocode/v2/gc"
+    const url = "https://maps.apigw.ntruss.com/map-reversegeocode/v2/gc"
       + `?coords=${encodeURIComponent(lng + "," + lat)}&orders=legalcode&output=json`;
     const resp = await fetch(url, {
       headers: { "X-NCP-APIGW-API-KEY-ID": clientId, "X-NCP-APIGW-API-KEY": clientSecret },
