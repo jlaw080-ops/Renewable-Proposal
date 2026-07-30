@@ -387,7 +387,9 @@
   var _built = false;
   function init() {
     var host = document.getElementById("settings-content");
-    if (!host || _built) return;
+    // host가 비어 있으면 재구축 허용 — React 모달은 닫힘/페이지 이동 시 host DOM을 파괴하므로
+    // _built 플래그만으로 가드하면 재오픈 시 빈 모달이 됨 (2026-07-29 보수)
+    if (!host || (_built && host.childElementCount > 0)) return;
     _built = true;
 
     host.appendChild(configCard());

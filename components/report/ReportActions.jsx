@@ -10,9 +10,17 @@ export default function ReportActions({ coverImage, calcReady, onCoverChange, ge
   const [busy, setBusy] = useState(null); // "preview"|"pdf"|"html"|"word"|null
   const [error, setError] = useState(null);
 
+  const COVER_MAX_BYTES = 2 * 1024 * 1024; // localStorage 한도(~5MB, base64 +33%) 보호
+
   function pickCover(e) {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (file.size > COVER_MAX_BYTES) {
+      setError(`표지 이미지는 2MB 이하만 가능합니다 (선택한 파일: ${(file.size / 1024 / 1024).toFixed(1)}MB)`);
+      e.target.value = "";
+      return;
+    }
+    setError(null);
     const reader = new FileReader();
     reader.onload = () => onCoverChange(reader.result);
     reader.readAsDataURL(file);

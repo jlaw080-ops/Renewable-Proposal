@@ -1,5 +1,5 @@
-// verify/verify_output12.js — 검토계산(Output1/2) 엔진 동일성 검증
-// 사용: node verify/verify_output12.js <ROOT>   (ROOT = data/ 가 있는 기준 경로, 기본 ".")
+// verify/verify_output12.cjs — 검토계산(Output1/2) 엔진 동일성 검증
+// 사용: node verify/verify_output12.cjs <ROOT>   (ROOT = data/ 가 있는 기준 경로, 기본 ".")
 const fs = require("fs"); const path = require("path");
 const ROOT = process.argv[2] || ".";
 const win = {}; const store = {};
