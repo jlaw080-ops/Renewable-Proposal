@@ -6,4 +6,8 @@
 .info__sum--warn { color: var(--accent-warm-dim); }
 .info__rowgroup { display: flex; flex-direction: column; gap: var(--sp-2); }
 .info__seda { max-width: 320px; }
-@media (max-width: 767px) { .info__row { grid-template-columns: 1fr; } }
+/* 모바일 1열: 행간(24px)을 행 내부 간격(12px)의 2배로 벌려 행 묶음이 읽히게 함 */
+@media (max-width: 767px) {
+  .info__row { grid-template-columns: 1fr; }
+  .info__rows { gap: var(--sp-6); }
+}

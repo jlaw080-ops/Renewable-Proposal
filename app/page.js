@@ -92,7 +92,6 @@ export default function Dashboard() {
               <span className="dash__date mono">수정 {formatDate(p.updatedAt)}</span>
             </button>
             <div className="dash__row-actions">
-              <Button size="sm" variant="ghost" onClick={() => router.push(`/project/${p.id}/info`)}>열기</Button>
               <Button size="sm" variant="danger" onClick={() => setDeleteTarget(p)}>삭제</Button>
             </div>
           </Card>

@@ -16,4 +16,5 @@
 .cm__memo textarea { font: inherit; font-size: var(--fs-13); color: inherit; border: 1px solid var(--border-default); border-radius: var(--radius-sm, 4px); padding: var(--sp-2); background: transparent; resize: vertical; }
 .cm__radio, .cm__cbs { display: flex; gap: var(--sp-3); flex-wrap: wrap; align-items: center; }
 .cm__budget { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); }
+@media (max-width: 767px) { .cm__budget { grid-template-columns: 1fr; } }
 .cm__actions { display: flex; gap: var(--sp-2); justify-content: flex-end; }

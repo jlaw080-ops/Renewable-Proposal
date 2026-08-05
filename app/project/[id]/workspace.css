@@ -16,6 +16,12 @@
 @media (max-width: 1023px) {
   .ws { flex-direction: column; }
   .ws__nav { width: 100%; height: auto; position: static; border-right: none; border-bottom: 1px solid var(--border-default); }
-  .ws__nav .stepper { flex-direction: row; overflow-x: auto; }
+  /* 잘림 단서: 트레일링 여백 + 우측 페이드 — 스크롤 끝에서는 여백만 페이드되어 라벨은 안 가려짐 */
+  .ws__nav .stepper {
+    flex-direction: row; overflow-x: auto;
+    padding-inline-end: var(--sp-10);
+    mask-image: linear-gradient(to right, black calc(100% - 24px), transparent);
+  }
   .ws__nav .stepper__desc { display: none; }
+  .ws__nav .stepper__item { white-space: nowrap; }
 }

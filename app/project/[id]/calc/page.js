@@ -78,11 +78,11 @@ export default function CalcPage() {
         {calcError && <p className="calc__notice" role="status">계산 오류: {calcError}</p>}
       </Card>
 
-      {result && (
-        <Card title="예상에너지사용량 (Output 1)">
-          <Output1Table output1={result.output1} />
-        </Card>
-      )}
+      <Card title="예상에너지사용량 (Output 1)">
+        {result
+          ? <Output1Table output1={result.output1} />
+          : <p className="calc__hint">① 사업정보 입력이 완료되면 용도별 예상에너지사용량이 여기 표시됩니다.</p>}
+      </Card>
 
       <Card title="시나리오 (ALT)">
         {lib && input2
@@ -90,11 +90,11 @@ export default function CalcPage() {
           : <p className="calc__hint">계산 엔진 로딩 중…</p>}
       </Card>
 
-      {result && (
-        <Card title="신재생에너지 설치비율 (Output 2)">
-          {result.output2.map(alt => <Output2Panel key={alt.id} alt={alt} />)}
-        </Card>
-      )}
+      <Card title="신재생에너지 설치비율 (Output 2)">
+        {result
+          ? result.output2.map(alt => <Output2Panel key={alt.id} alt={alt} />)
+          : <p className="calc__hint">시나리오 구성과 계산이 완료되면 의무비율 대비 판정 결과가 여기 표시됩니다.</p>}
+      </Card>
     </div>
   );
 }
