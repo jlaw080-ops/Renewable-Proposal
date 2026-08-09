@@ -12,10 +12,12 @@ import Button from "@/components/ui/Button";
 import OptimizeForm from "@/components/optimize/OptimizeForm";
 import OptimizeInputSettings from "@/components/optimize/OptimizeInputSettings";
 import ComboCard from "@/components/optimize/ComboCard";
+import ComboTable from "@/components/optimize/ComboTable";
 import RecommendPanel from "@/components/optimize/RecommendPanel";
 import ConstraintsModal, { constraintsSummary } from "@/components/optimize/ConstraintsModal";
 import SettingsModal from "@/components/settings/SettingsModal";
 import { buildCandidates, requestRecommend } from "@/lib/recommendClient";
+import { SORT_KEYS, sortCombos, filterCombos, energySources } from "@/lib/comboView";
 import "./optimize.css";
 
 const MAX_SHOW = 20;
@@ -38,6 +40,10 @@ export default function OptimizePage() {
   const [aiConstraints, setAiConstraints] = useState(null);
   const [constraintsModalOpen, setConstraintsModalOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [view, setView] = useState("table");          // "table" | "cards" — 저장 안 함(세션 상태)
+  const [sort, setSort] = useState({ key: "score", dir: "desc" });
+  const [의무충족만, set의무충족만] = useState(false);
+  const [sources, setSources] = useState([]);
   const lastAutoKey = useRef("");                  // 요구도 자동 반영 중복 방지
 
   useEffect(() => {
@@ -176,7 +182,30 @@ export default function OptimizePage() {
 
   if (input3 === null) return null;   // 로딩 (가드는 WorkspaceShell)
 
-  const shown = result ? result.r.ranked.slice(0, MAX_SHOW) : [];
+  // 필터·정렬을 ranked 전체에 적용한 뒤 상위 MAX_SHOW — 필터 조건의 상위가 나와야 의미가 있다
+  const allRanked = result?.r.ranked ?? [];
+  const 에너지원목록 = energySources(allRanked);
+  const filtered = filterCombos(allRanked, { 의무충족만, sources });
+  const shown = sortCombos(filtered, sort.key, sort.dir).slice(0, MAX_SHOW);
+
+  function toggleSort(key) {
+    setSort(prev => prev.key === key
+      ? { key, dir: prev.dir === "asc" ? "desc" : "asc" }
+      : { key, dir: SORT_KEYS.find(s => s.key === key)?.dir ?? "desc" });
+  }
+
+  function toggleSource(src) {
+    setSources(prev => prev.includes(src) ? prev.filter(s => s !== src) : [...prev, src]);
+  }
+
+  function resetFilters() { set의무충족만(false); setSources([]); }
+
+  function pickCombo(rank) {
+    setView("cards");
+    requestAnimationFrame(() => {
+      document.getElementById(`combo-${rank}`)?.scrollIntoView({ block: "start" });
+    });
+  }
 
   return (
     <div className="opt">
@@ -216,21 +245,62 @@ export default function OptimizePage() {
           <RecommendPanel status={ai.status} aiResult={ai.result} error={ai.error}
             onRun={runRecommend} onOpenConstraints={() => setConstraintsModalOpen(true)}
             constraintsLabel={constraintsSummary(aiConstraints)} disabled={!result || shown.length === 0} />
-          {shown.length === 0 && <p className="opt__notice">조건을 충족하는 조합이 없습니다. 면적·기준을 완화해 보세요.</p>}
-          <div className="opt__grid">
-            {shown.map(combo => {
-              const aiRank = ai.result?.ai_ranking?.find(r => r.id === combo.rank);
-              return (
-                <ComboCard key={combo.rank} combo={combo} memo={memos[combo.rank]}
-                  aiBadge={ai.result?.best_pick === combo.rank}
-                  aiReason={aiRank?.reasoning ?? null}
-                  onMemoChange={applyMemo}
-                  explain={explains[combo.rank] ?? null}
-                  explaining={explainingRank === combo.rank}
-                  onExplain={runExplain} />
-              );
-            })}
+
+          <div className="opt__controls">
+            <div className="opt__viewtoggle" role="group" aria-label="표시 방식">
+              <Button size="sm" variant={view === "table" ? "primary" : "ghost"} onClick={() => setView("table")}>표</Button>
+              <Button size="sm" variant={view === "cards" ? "primary" : "ghost"} onClick={() => setView("cards")}>카드</Button>
+            </div>
+            <label className="opt__filter">
+              <input type="checkbox" checked={의무충족만} onChange={e => set의무충족만(e.target.checked)} />
+              의무비율 충족만
+            </label>
+            {에너지원목록.length > 0 && (
+              <span className="opt__sources">
+                {에너지원목록.map(src => (
+                  <label key={src} className="opt__filter">
+                    <input type="checkbox" checked={sources.includes(src)} onChange={() => toggleSource(src)} />
+                    {src}
+                  </label>
+                ))}
+              </span>
+            )}
+            {(의무충족만 || sources.length > 0) && (
+              <Button size="sm" variant="ghost" onClick={resetFilters}>필터 초기화</Button>
+            )}
           </div>
+
+          {shown.length === 0 && (
+            <p className="opt__notice" role="status">
+              {allRanked.length === 0
+                ? "조건을 충족하는 조합이 없습니다. 면적·기준을 완화해 보세요."
+                : "조건에 맞는 조합이 없습니다 — 필터를 완화하세요."}
+            </p>
+          )}
+
+          {view === "table" ? (
+            shown.length > 0 && (
+              <ComboTable combos={shown} sortKey={sort.key} sortDir={sort.dir}
+                onSort={toggleSort} onPick={pickCombo} aiBest={ai.result?.best_pick ?? null} />
+            )
+          ) : (
+            <div className="opt__grid">
+              {shown.map(combo => {
+                const aiRank = ai.result?.ai_ranking?.find(r => r.id === combo.rank);
+                return (
+                  <div key={combo.rank} id={`combo-${combo.rank}`} className="opt__cardslot">
+                    <ComboCard combo={combo} memo={memos[combo.rank]}
+                      aiBadge={ai.result?.best_pick === combo.rank}
+                      aiReason={aiRank?.reasoning ?? null}
+                      onMemoChange={applyMemo}
+                      explain={explains[combo.rank] ?? null}
+                      explaining={explainingRank === combo.rank}
+                      onExplain={runExplain} />
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </Card>
       )}
 

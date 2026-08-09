@@ -2,7 +2,12 @@
 .opt__notice { font-size: var(--fs-13); color: var(--accent-warm-dim); margin-top: var(--sp-2); }
 .opt__hint { font-size: var(--fs-13); color: var(--text-secondary); }
 .opt__summary { font-size: var(--fs-13); color: var(--text-secondary); margin-bottom: var(--sp-3); }
+.opt__controls { display: flex; align-items: center; gap: var(--sp-4); flex-wrap: wrap; margin-bottom: var(--sp-3); }
+.opt__viewtoggle { display: flex; gap: var(--sp-1); }
+.opt__filter { display: inline-flex; align-items: center; gap: var(--sp-1); font-size: var(--fs-13); color: var(--text-secondary); cursor: pointer; }
+.opt__sources { display: inline-flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; }
 .opt__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: var(--sp-4); }
+.opt__cardslot { scroll-margin-top: var(--sp-6); }
 @media (max-width: 767px) { .opt__grid { grid-template-columns: 1fr; } }
 
 .rp { display: flex; flex-direction: column; gap: var(--sp-2); margin-bottom: var(--sp-3); }
