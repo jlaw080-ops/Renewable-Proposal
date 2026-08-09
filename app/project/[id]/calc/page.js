@@ -9,6 +9,7 @@ import Badge from "@/components/ui/Badge";
 import ScenarioEditor from "@/components/calc/ScenarioEditor";
 import Output1Table from "@/components/calc/Output1Table";
 import Output2Panel from "@/components/calc/Output2Panel";
+import VerdictSticky from "@/components/calc/VerdictSticky";
 import "./calc.css";
 
 export default function CalcPage() {
@@ -69,33 +70,41 @@ export default function CalcPage() {
   return (
     <div className="calc">
       {(notices.length > 0 || loading) && (
-        <Card title="② 검토 계산">
+        <Card title="② 검토 계산" className="calc__full">
           {notices.map(n => <p key={n} className="calc__notice" role="status">{n}</p>)}
           {loading && <p className="calc__hint">계산 엔진 로딩 중…</p>}
         </Card>
       )}
 
-      <Card title="② 예상에너지사용량 (Output 1)" actions={
-        <span className="calc__cat" title="주거: 세대수 기준 / 비주거: 용도별 연면적 합계 기준으로 자동 결정됩니다">
-          규모등급 <Badge tone={카테고리 ? "brand" : "na"}>{카테고리 || "미판정"}</Badge>
-        </span>
-      }>
-        {result
-          ? <Output1Table output1={result.output1} />
-          : <p className="calc__hint">① 사업정보 입력이 완료되면 용도별 예상에너지사용량이 여기 표시됩니다.</p>}
-      </Card>
+      {result && <VerdictSticky output2={result.output2} />}
 
-      <Card title="시나리오 (ALT)">
-        {lib && input2
-          ? <ScenarioEditor scenarios={input2.scenarios} lib={lib} onChange={applyInput2} />
-          : <p className="calc__hint">계산 엔진 로딩 중…</p>}
-      </Card>
+      <div className="calc__cols">
+        <div className="calc__col calc__col--input">
+          <Card title="시나리오 (ALT)">
+            {lib && input2
+              ? <ScenarioEditor scenarios={input2.scenarios} lib={lib} onChange={applyInput2} />
+              : <p className="calc__hint">계산 엔진 로딩 중…</p>}
+          </Card>
+        </div>
 
-      <Card title="신재생에너지 설치비율 (Output 2)">
-        {result
-          ? result.output2.map(alt => <Output2Panel key={alt.id} alt={alt} />)
-          : <p className="calc__hint">시나리오 구성과 계산이 완료되면 의무비율 대비 판정 결과가 여기 표시됩니다.</p>}
-      </Card>
+        <div className="calc__col calc__col--result">
+          <Card title="신재생에너지 설치비율 (Output 2)">
+            {result
+              ? result.output2.map(alt => <Output2Panel key={alt.id} alt={alt} />)
+              : <p className="calc__hint">시나리오 구성과 계산이 완료되면 의무비율 대비 판정 결과가 여기 표시됩니다.</p>}
+          </Card>
+
+          <Card title="② 예상에너지사용량 (Output 1)" actions={
+            <span className="calc__cat" title="주거: 세대수 기준 / 비주거: 용도별 연면적 합계 기준으로 자동 결정됩니다">
+              규모등급 <Badge tone={카테고리 ? "brand" : "na"}>{카테고리 || "미판정"}</Badge>
+            </span>
+          }>
+            {result
+              ? <Output1Table output1={result.output1} />
+              : <p className="calc__hint">① 사업정보 입력이 완료되면 용도별 예상에너지사용량이 여기 표시됩니다.</p>}
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }

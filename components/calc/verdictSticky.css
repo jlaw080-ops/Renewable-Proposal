@@ -1,0 +1,14 @@
+/* components/calc/verdictSticky.css — 좁은 화면 전용 판정 고정 바 */
+.vsticky {
+  display: flex; align-items: baseline; gap: var(--sp-3); flex-wrap: wrap;
+  position: sticky; top: 0; z-index: 5;
+  padding: var(--sp-3) var(--sp-4); margin-bottom: var(--sp-2);
+  border-radius: var(--radius-md); border-inline-start: 4px solid;
+  box-shadow: var(--shadow-card);
+}
+.vsticky--pass { background: var(--color-pass-bg); border-color: var(--color-pass); }
+.vsticky--fail { background: var(--color-fail-bg); border-color: var(--color-fail); }
+.vsticky--na { background: var(--color-na-bg); border-color: var(--color-na); }
+.vsticky__id { font-size: var(--fs-12); color: var(--text-secondary); }
+.vsticky__ratio { font-size: var(--fs-18); font-weight: 800; line-height: 1.1; }
+.vsticky__req, .vsticky__more { font-size: var(--fs-12); color: var(--text-secondary); }

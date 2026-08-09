@@ -2,3 +2,15 @@
 .calc__cat { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-13); color: var(--text-secondary); }
 .calc__notice { font-size: var(--fs-13); color: var(--accent-warm-dim); }
 .calc__hint { font-size: var(--fs-13); color: var(--text-secondary); }
+
+/* 기본(좁은 화면): 1열 — 입력 → 결과 순서 */
+.calc__cols { display: flex; flex-direction: column; gap: var(--sp-5); }
+.calc__col { display: flex; flex-direction: column; gap: var(--sp-5); min-width: 0; }
+
+/* ≥1280px: 좌 입력 · 우 결과 2열 — 중첩 스크롤 없이 페이지 스크롤 단일화 */
+@media (min-width: 1280px) {
+  .calc__cols {
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+    gap: var(--sp-5); align-items: start;
+  }
+}
