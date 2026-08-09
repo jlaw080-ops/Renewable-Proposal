@@ -7,14 +7,10 @@
 .calc__cols { display: flex; flex-direction: column; gap: var(--sp-5); }
 .calc__col { display: flex; flex-direction: column; gap: var(--sp-5); min-width: 0; }
 
-/* ≥1280px: 좌 입력 · 우 결과(sticky) 2열 — 시나리오↔결과 왕복 제거 */
+/* ≥1280px: 좌 입력 · 우 결과 2열 — 중첩 스크롤 없이 페이지 스크롤 단일화 */
 @media (min-width: 1280px) {
   .calc__cols {
     display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
     gap: var(--sp-5); align-items: start;
-  }
-  .calc__col--result {
-    position: sticky; top: var(--sp-4); align-self: start;
-    max-height: calc(100vh - var(--sp-8)); overflow-y: auto; overscroll-behavior: contain;
   }
 }

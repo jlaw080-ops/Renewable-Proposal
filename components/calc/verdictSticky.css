@@ -12,6 +12,3 @@
 .vsticky__id { font-size: var(--fs-12); color: var(--text-secondary); }
 .vsticky__ratio { font-size: var(--fs-18); font-weight: 800; line-height: 1.1; }
 .vsticky__req, .vsticky__more { font-size: var(--fs-12); color: var(--text-secondary); }
-
-/* 2열 배치에서는 우측 열 상단의 판정 밴드가 그 역할을 하므로 숨김 */
-@media (min-width: 1280px) { .vsticky { display: none; } }
