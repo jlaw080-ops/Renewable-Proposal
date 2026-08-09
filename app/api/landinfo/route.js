@@ -18,7 +18,15 @@ export async function GET(request) {
     if (!jusoResp.ok) {
       return NextResponse.json({ error: "도로명주소 API 오류", detail: await jusoResp.text() }, { status: jusoResp.status });
     }
-    const cand = pickJusoCandidate(await jusoResp.json());
+    const jusoJson = await jusoResp.json();
+    // 도로명주소 API는 키 오류·쿼터 초과도 HTTP 200 + errorCode로 반환한다 — 후보 없음과 구분해 노출
+    const common = jusoJson?.results?.common ?? {};
+    if (common.errorCode && common.errorCode !== "0") {
+      return NextResponse.json(
+        { error: `도로명주소 API 오류: ${common.errorMessage ?? "알 수 없는 오류"}`, code: common.errorCode },
+        { status: 502 });
+    }
+    const cand = pickJusoCandidate(jusoJson);
     if (!cand) return NextResponse.json({ juso: null, land: null });
 
     // 2) 건축물대장 표제부 조회 (전 동, 최대 100)
