@@ -1,7 +1,7 @@
 .badge {
   display: inline-flex; align-items: center; gap: var(--sp-1);
   height: 22px; padding: 0 var(--sp-2); border-radius: 999px;
-  font-size: var(--fs-12); font-weight: 500; white-space: nowrap;
+  font-size: var(--fs-12); font-weight: 700; white-space: nowrap;
 }
 .badge--pass { background: var(--color-pass-bg); color: var(--color-pass); }
 .badge--fail { background: var(--color-fail-bg); color: var(--color-fail); }

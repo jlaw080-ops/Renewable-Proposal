@@ -47,7 +47,7 @@
 
   /* ↓ 타이포·간격·라운드·그림자·레이어·레이아웃·모션 — 기존 값 그대로 */
   /* 타이포 */
-  --font-body: var(--font-sans), 'Noto Sans KR', system-ui, sans-serif;
+  --font-body: var(--font-sans), 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
   --font-mono: var(--font-plex-mono), 'IBM Plex Mono', monospace;
   --fs-12: 12px; --fs-13: 13px; --fs-14: 14px; --fs-16: 16px;
   --fs-18: 18px; --fs-22: 22px; --fs-28: 28px;

@@ -1,7 +1,7 @@
 .tbl__wrap { overflow-x: auto; border: 1px solid var(--border-default); border-radius: var(--radius-md); }
 .tbl { width: 100%; border-collapse: collapse; font-size: var(--fs-13); background: var(--bg-card); }
 .tbl th {
-  text-align: left; font-weight: 500; color: var(--text-secondary);
+  text-align: left; font-weight: 700; color: var(--text-secondary);
   background: var(--bg-card-inner); padding: var(--sp-2) var(--sp-3);
   border-bottom: 1px solid var(--border-default); white-space: nowrap;
 }
