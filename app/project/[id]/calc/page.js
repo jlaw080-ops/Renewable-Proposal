@@ -92,7 +92,8 @@ export default function CalcPage() {
         <div className="calc__col calc__col--input">
           <Card title="시나리오 (ALT)">
             {lib && input2
-              ? <ScenarioEditor scenarios={input2.scenarios} lib={lib} onChange={applyInput2} />
+              ? <ScenarioEditor scenarios={input2.scenarios} lib={lib} onChange={applyInput2}
+                target={result ? { 총에너지사용량: result.output1.총예상에너지사용량, 의무비율: result.output2[0]?.의무비율 ?? null } : null} />
               : <p className="calc__hint">계산 엔진 로딩 중…</p>}
           </Card>
         </div>

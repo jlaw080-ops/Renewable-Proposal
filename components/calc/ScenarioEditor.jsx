@@ -4,11 +4,12 @@ import Field from "@/components/ui/Field";
 import Select from "@/components/ui/Select";
 import Button from "@/components/ui/Button";
 import { EMPTY_SYSTEM, newScenario, nextAltNo, fmtNum } from "@/lib/calcModel";
+import { requiredCapacity } from "@/lib/capacityHint";
 import "./scenarioEditor.css";
 
 const toOptions = arr => arr.map(v => ({ value: v, label: v }));
 
-export default function ScenarioEditor({ scenarios, lib, onChange }) {
+export default function ScenarioEditor({ scenarios, lib, target = null, onChange }) {
   function patchSystem(si, yi, patch) {
     onChange(scenarios.map((sc, i) => i !== si ? sc : {
       ...sc,
@@ -67,6 +68,26 @@ export default function ScenarioEditor({ scenarios, lib, onChange }) {
                     단위에너지생산량 {fmtNum(sys.단위에너지생산량)} kWh/kW·yr · 원별보정계수 {sys.원별보정계수 || "-"} ·
                     생산량 {생산량 > 0 ? `${fmtNum(Math.round(생산량))} kWh/yr` : "-"}
                   </p>
+                  {(() => {
+                    const hint = requiredCapacity({
+                      총에너지사용량: target?.총에너지사용량,
+                      의무비율: target?.의무비율,
+                      systems: sc.systems,
+                      index: yi,
+                    });
+                    if (!hint) return null;
+                    if (hint.전체충족) {
+                      return <p className="se__hint se__hint--ok">✓ 의무비율 충족 — 추가 용량 불필요</p>;
+                    }
+                    const 잔여모드 = hint.확보생산량 > 0;
+                    return (
+                      <p className="se__hint">
+                        {잔여모드 ? "잔여 필요 용량 " : "의무비율 충족 필요 용량 "}
+                        <b className="mono">{fmtNum(hint.필요용량)} kW</b>
+                        {잔여모드 && <span className="se__hintsub"> (다른 시스템 기여 반영)</span>}
+                      </p>
+                    );
+                  })()}
                 </div>
               );
             })}
