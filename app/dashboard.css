@@ -13,6 +13,16 @@
 .dash__open:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; border-radius: var(--radius-sm); }
 .dash__name { font-size: var(--fs-16); font-weight: 700; }
 .dash__name:hover { color: var(--accent-action); }
+.dash__meta { display: flex; align-items: center; gap: var(--sp-3); }
+.dash__dots { display: inline-flex; gap: var(--sp-1); }
+.dash__dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  border: 1.5px solid var(--border-strong); display: inline-block;
+}
+.dash__dot--done { background: var(--accent-graphic); border-color: var(--accent-graphic); }
 .dash__date { font-size: var(--fs-12); color: var(--text-hint); }
+.dash__verdict { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-13); color: var(--text-secondary); }
+.dash__continue { font-size: var(--fs-13); color: var(--accent-action); font-weight: 700; }
+.dash__open:hover .dash__continue { text-decoration: underline; }
 .dash__head-actions { display: flex; gap: var(--sp-2); align-items: center; }
 .dash__row-actions { display: flex; gap: var(--sp-2); justify-content: flex-end; }

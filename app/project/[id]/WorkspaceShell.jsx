@@ -39,7 +39,28 @@ export default function WorkspaceShell({ projectId, children }) {
         <Stepper statuses={stepStatuses(state.project, activeSegment)}
           items={STEPS.map(s => ({ ...s, href: `/project/${projectId}/${s.segment}` }))} />
       </aside>
-      <main className="ws__content">{children}</main>
+      <main className="ws__content">
+        {children}
+        <div className="ws__next">
+          {(() => {
+            const idx = STEPS.findIndex(s => s.segment === activeSegment);
+            const next = STEPS[idx + 1] ?? null;
+            return next ? (
+              <>
+                <span className="ws__next-hint">다음 단계 — {next.desc}</span>
+                <Link className="btn btn--primary btn--md" href={`/project/${projectId}/${next.segment}`}>
+                  다음: {next.label} →
+                </Link>
+              </>
+            ) : (
+              <>
+                <span className="ws__next-hint">검토 절차의 마지막 단계입니다</span>
+                <Link className="btn btn--ghost btn--md" href="/">완료 — 대시보드로</Link>
+              </>
+            );
+          })()}
+        </div>
+      </main>
     </div>
   );
 }
