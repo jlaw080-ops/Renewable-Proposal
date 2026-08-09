@@ -188,6 +188,9 @@ export default function OptimizePage() {
   const filtered = filterCombos(allRanked, { 의무충족만, sources });
   const shown = sortCombos(filtered, sort.key, sort.dir).slice(0, MAX_SHOW);
 
+  const sortLabel = SORT_KEYS.find(s => s.key === sort.key)?.label ?? "종합점수";
+  const filterActive = 의무충족만 || sources.length > 0;
+
   function toggleSort(key) {
     setSort(prev => prev.key === key
       ? { key, dir: prev.dir === "asc" ? "desc" : "asc" }
@@ -239,8 +242,11 @@ export default function OptimizePage() {
           <Button size="sm" variant="ghost" onClick={openReport}>조합 보고서</Button>
         ) : null}>
           <p className="opt__summary">
-            실행가능 {result.r.실행가능건수}개 중 {shown.length}개 표시 (종합점수 상위 {MAX_SHOW}) · 평가 {result.r.평가건수}건
+            실행가능 {result.r.실행가능건수}개 · 평가 {result.r.평가건수}건
             {result.r.표시제외건수 > 0 ? ` · 적합도 미달 제외 ${result.r.표시제외건수}건` : ""}
+            {" — "}
+            {filterActive ? `필터 적용 ${filtered.length}개 중 ` : ""}
+            {`${sortLabel} ${sort.dir === "asc" ? "낮은" : "높은"} 순 상위 ${shown.length}개 표시`}
           </p>
           <RecommendPanel status={ai.status} aiResult={ai.result} error={ai.error}
             onRun={runRecommend} onOpenConstraints={() => setConstraintsModalOpen(true)}
