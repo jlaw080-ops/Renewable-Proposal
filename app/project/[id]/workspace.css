@@ -9,7 +9,7 @@
 .ws__back { font-size: var(--fs-13); color: var(--nav-text-dim); }
 .ws__back:hover { color: var(--nav-text); }
 .ws__project { font-size: var(--fs-16); font-weight: 800; word-break: keep-all; color: var(--nav-text); }
-.ws__content { flex: 1; min-width: 0; padding: var(--sp-8) var(--sp-6); max-width: var(--content-max); margin-inline: auto; }
+.ws__content { flex: 1; min-width: 0; width: 100%; padding: var(--sp-8) var(--sp-6); max-width: var(--content-max); margin-inline: auto; }
 .ws--missing { display: block; max-width: 560px; margin: 0 auto; padding: var(--sp-10); }
 
 /* 1024px 미만: 나브를 다크 상단 바로 전환 (태블릿·모바일) */
