@@ -4,10 +4,16 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { listProjects, createProject, updateProject, deleteProject } from "@/lib/projectStore";
 import { readLegacyProjects, convertLegacyProject } from "@/lib/migrateLegacy";
+import { useEngineReady } from "@/lib/useEngineReady";
+import { stepStatuses } from "@/lib/stepStatus";
+import { canCalculate, calc규모등급, buildEngineInput2 } from "@/lib/calcModel";
+import { pickRepresentative, nextSegment, VERDICT_UI } from "@/lib/projectSummary";
+import { STEPS } from "@/lib/workspaceSteps";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import Field from "@/components/ui/Field";
 import Modal from "@/components/ui/Modal";
+import Badge from "@/components/ui/Badge";
 import { useToast } from "@/components/ui/ToastProvider";
 import "./dashboard.css";
 
@@ -25,6 +31,30 @@ export default function Dashboard() {
   const [nameError, setNameError] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [legacyCount, setLegacyCount] = useState(0);
+  const { ready } = useEngineReady();
+  const [verdicts, setVerdicts] = useState({});   // { [projectId]: 대표 ALT }
+
+  useEffect(() => {
+    if (!ready || !projects?.length) return;
+    let alive = true;
+    (async () => {
+      const { runCalculation } = await import("@/engine/index.js");
+      const out = {};
+      for (const p of projects) {
+        const input1 = p.data?.input1, input2 = p.data?.input2;
+        if (!input1 || !input2?.scenarios?.length || !canCalculate(input1).ok) continue;
+        const 카테고리 = calc규모등급(input1.용도별연면적목록 ?? []);
+        if (!카테고리) continue;
+        try {
+          const r = runCalculation(input1, buildEngineInput2(input2.scenarios), 카테고리);
+          const rep = pickRepresentative(r.output2);
+          if (rep) out[p.id] = rep;
+        } catch { /* 판정 계산 실패 시 해당 카드만 요약 생략 */ }
+      }
+      if (alive) setVerdicts(out);
+    })();
+    return () => { alive = false; };
+  }, [ready, projects]);
 
   useEffect(() => {
     setProjects(listProjects());
@@ -86,17 +116,39 @@ export default function Dashboard() {
       )}
 
       <div className="dash__grid">
-        {(projects ?? []).map(p => (
-          <Card key={p.id} className="dash__item">
-            <Link href={`/project/${p.id}/info`} className="dash__open">
-              <span className="dash__name">{p.name}</span>
-              <span className="dash__date mono">수정 {formatDate(p.updatedAt)}</span>
-            </Link>
-            <div className="dash__row-actions">
-              <Button size="sm" variant="danger" onClick={() => setDeleteTarget(p)}>삭제</Button>
-            </div>
-          </Card>
-        ))}
+        {(projects ?? []).map(p => {
+          const st = stepStatuses(p, null);
+          const doneCount = ["info", "calc", "optimize", "report"].filter(s => st[s] === "done").length;
+          const next = nextSegment(st);
+          const nextStep = STEPS.find(s => s.segment === next);
+          const rep = verdicts[p.id];
+          const ui = rep ? (VERDICT_UI[rep.만족여부] ?? VERDICT_UI.해당없음) : null;
+          return (
+            <Card key={p.id} className="dash__item">
+              <Link href={`/project/${p.id}/${next}`} className="dash__open">
+                <span className="dash__name">{p.name}</span>
+                <span className="dash__meta">
+                  <span className="dash__dots" role="img" aria-label={`4단계 중 ${doneCount}단계 완료`}>
+                    {["info", "calc", "optimize", "report"].map(s => (
+                      <i key={s} className={`dash__dot ${st[s] === "done" ? "dash__dot--done" : ""}`} />
+                    ))}
+                  </span>
+                  <span className="dash__date mono">수정 {formatDate(p.updatedAt)}</span>
+                </span>
+                {rep && ui && (
+                  <span className="dash__verdict">
+                    <Badge tone={ui.tone}>{ui.sym} {ui.label}</Badge>
+                    <span className="mono">설치 {rep.비율.toFixed(1)}% / 의무 {rep.의무비율 !== null ? `${rep.의무비율}%` : "-"}</span>
+                  </span>
+                )}
+                <span className="dash__continue">이어서: {nextStep.label} →</span>
+              </Link>
+              <div className="dash__row-actions">
+                <Button size="sm" variant="danger" onClick={() => setDeleteTarget(p)}>삭제</Button>
+              </div>
+            </Card>
+          );
+        })}
       </div>
 
       <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="새 프로젝트"
