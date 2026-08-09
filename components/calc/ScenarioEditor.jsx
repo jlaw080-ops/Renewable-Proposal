@@ -51,12 +51,12 @@ export default function ScenarioEditor({ scenarios, lib, onChange }) {
               return (
                 <div className="se__system" key={yi}>
                   <div className="se__row">
-                    <Select label={yi === 0 ? "에너지원" : undefined} placeholder="선택" options={toOptions(lib.에너지원목록)}
+                    <Select label="에너지원" labelHidden={yi > 0} placeholder="선택" options={toOptions(lib.에너지원목록)}
                       value={sys.에너지원} onChange={e => changeEnergy(si, yi, e.target.value)} />
-                    <Select label={yi === 0 ? "형식" : undefined} placeholder="선택"
+                    <Select label="형식" labelHidden={yi > 0} placeholder="선택"
                       options={toOptions(sys.에너지원 ? lib.형식목록(sys.에너지원) : [])}
                       value={sys.형식} onChange={e => changeType(si, yi, e.target.value)} />
-                    <Field label={yi === 0 ? "적용용량 (kW)" : undefined} type="number" mono value={sys.적용용량}
+                    <Field label="적용용량 (kW)" labelHidden={yi > 0} type="number" mono value={sys.적용용량}
                       onChange={e => patchSystem(si, yi, { 적용용량: e.target.value === "" ? "" : Number(e.target.value) })} />
                     <Button size="sm" variant="danger" disabled={sc.systems.length <= 1}
                       onClick={() => onChange(scenarios.map((s, i) => i !== si ? s : { ...s, systems: s.systems.filter((_, j) => j !== yi) }))}>
