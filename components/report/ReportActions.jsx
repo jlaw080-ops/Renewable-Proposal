@@ -44,7 +44,10 @@ export default function ReportActions({ coverImage, calcReady, onCoverChange, ge
       <div className="ra__cover">
         <span>표지 이미지</span>
         {coverImage && <img src={coverImage} alt="표지 미리보기" />}
-        <input type="file" accept="image/*" onChange={pickCover} />
+        <label className="btn btn--ghost btn--sm ra__filebtn">
+          표지 선택
+          <input type="file" accept="image/*" onChange={pickCover} className="visually-hidden" />
+        </label>
         {coverImage && <Button size="sm" variant="ghost" onClick={() => onCoverChange(null)}>제거</Button>}
       </div>
       <div className="ra__row">

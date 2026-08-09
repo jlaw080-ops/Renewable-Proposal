@@ -58,27 +58,28 @@ export default function CalcPage() {
 
   if (input1 === null && input2 === null) return null; // 프로젝트 로딩(가드는 WorkspaceShell 담당)
 
+  const notices = [
+    !check.ok && `사업정보가 부족합니다: ${check.missing.join(", ")} — ① 사업정보에서 입력을 완료하세요.`,
+    check.ok && !카테고리 && "공동주택 세대 수를 선택하면 규모등급이 판정됩니다 (① 사업정보).",
+    engineError && `엔진 로드 실패: ${engineError}`,
+    calcError && `계산 오류: ${calcError}`,
+  ].filter(Boolean);
+  const loading = !ready && !engineError;
+
   return (
     <div className="calc">
-      <Card title="② 검토 계산" actions={
+      {(notices.length > 0 || loading) && (
+        <Card title="② 검토 계산">
+          {notices.map(n => <p key={n} className="calc__notice" role="status">{n}</p>)}
+          {loading && <p className="calc__hint">계산 엔진 로딩 중…</p>}
+        </Card>
+      )}
+
+      <Card title="② 예상에너지사용량 (Output 1)" actions={
         <span className="calc__cat" title="주거: 세대수 기준 / 비주거: 용도별 연면적 합계 기준으로 자동 결정됩니다">
-          규모등급(카테고리) <Badge tone={카테고리 ? "brand" : "na"}>{카테고리 || "미판정"}</Badge>
+          규모등급 <Badge tone={카테고리 ? "brand" : "na"}>{카테고리 || "미판정"}</Badge>
         </span>
       }>
-        {!check.ok && (
-          <p className="calc__notice" role="status">
-            사업정보가 부족합니다: {check.missing.join(", ")} — ① 사업정보에서 입력을 완료하세요.
-          </p>
-        )}
-        {check.ok && !카테고리 && (
-          <p className="calc__notice" role="status">공동주택 세대 수를 선택하면 규모등급이 판정됩니다 (① 사업정보).</p>
-        )}
-        {engineError && <p className="calc__notice" role="status">엔진 로드 실패: {engineError}</p>}
-        {!ready && !engineError && <p className="calc__hint">계산 엔진 로딩 중…</p>}
-        {calcError && <p className="calc__notice" role="status">계산 오류: {calcError}</p>}
-      </Card>
-
-      <Card title="예상에너지사용량 (Output 1)">
         {result
           ? <Output1Table output1={result.output1} />
           : <p className="calc__hint">① 사업정보 입력이 완료되면 용도별 예상에너지사용량이 여기 표시됩니다.</p>}
