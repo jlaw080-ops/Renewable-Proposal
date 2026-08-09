@@ -17,12 +17,12 @@ const 판정 = {
   해당없음: { tone: "na", label: "해당없음", sym: "–" },
 };
 
-export default function Output2Panel({ alt }) {
+export default function Output2Panel({ alt, hideId = false }) {
   const j = 판정[alt.만족여부] ?? 판정.해당없음;
   return (
     <section className="res res__alt">
       <div className={`verdict verdict--${j.tone}`}>
-        <span className="verdict__id mono">{alt.id}</span>
+        {!hideId && <span className="verdict__id mono">{alt.id}</span>}
         <strong className="verdict__ratio mono">{alt.비율.toFixed(1)}%</strong>
         <span className="verdict__req">의무 {alt.의무비율 !== null ? `${alt.의무비율}%` : "-"}</span>
         <Badge tone={j.tone}>{j.sym} {j.label}</Badge>
