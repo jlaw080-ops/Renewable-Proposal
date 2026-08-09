@@ -51,6 +51,12 @@ for (const vw of [320, 375, 768, 1440, 1920]) {
   const trigger = page.getByRole("button", { name: "새 프로젝트" });
   await trigger.click();
   await page.waitForTimeout(400);
+  // 회귀 방지: 입력 중 포커스가 닫기 버튼으로 튀지 않아야 한다 (Modal effect 의존성 결함)
+  await page.keyboard.type("포커스테스트");
+  const focusKept = await page.evaluate(() => document.activeElement?.tagName === "INPUT");
+  if (!focusKept) bad("모달 입력 중 포커스가 입력칸을 벗어남");
+  const typed = await page.evaluate(() => document.querySelector(".modal__body input")?.value ?? "");
+  if (typed !== "포커스테스트") bad(`모달 입력값 불일치: "${typed}"`);
   for (let i = 0; i < 15; i++) {
     await page.keyboard.press("Tab");
     const inside = await page.evaluate(() => document.querySelector(".modal")?.contains(document.activeElement));
