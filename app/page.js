@@ -46,7 +46,7 @@ export default function Dashboard() {
         const 카테고리 = calc규모등급(input1.용도별연면적목록 ?? []);
         if (!카테고리) continue;
         try {
-          const r = runCalculation(input1, buildEngineInput2(input2.scenarios), 카테고리);
+          const r = await runCalculation(input1, buildEngineInput2(input2.scenarios), 카테고리);
           const rep = pickRepresentative(r.output2);
           if (rep) out[p.id] = rep;
         } catch { /* 판정 계산 실패 시 해당 카드만 요약 생략 */ }
