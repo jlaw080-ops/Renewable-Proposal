@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { getProject } from "@/lib/projectStore";
 import { STEPS } from "@/lib/workspaceSteps";
+import { stepStatuses } from "@/lib/stepStatus";
 import Stepper from "@/components/ui/Stepper";
 import Card from "@/components/ui/Card";
 import "./workspace.css";
@@ -15,7 +16,7 @@ export default function WorkspaceShell({ projectId, children }) {
 
   useEffect(() => {
     setState({ loading: false, project: getProject(projectId) }); // localStorage는 클라이언트에서만
-  }, [projectId]);
+  }, [projectId, pathname]);
 
   if (state.loading) return null;
 
@@ -35,7 +36,7 @@ export default function WorkspaceShell({ projectId, children }) {
       <aside className="ws__nav">
         <Link href="/" className="ws__back">← 대시보드</Link>
         <p className="ws__project">{state.project.name}</p>
-        <Stepper activeSegment={activeSegment}
+        <Stepper statuses={stepStatuses(state.project, activeSegment)}
           items={STEPS.map(s => ({ ...s, href: `/project/${projectId}/${s.segment}` }))} />
       </aside>
       <main className="ws__content">{children}</main>

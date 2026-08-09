@@ -79,11 +79,11 @@ export default function DesignCheck() {
 
       <Card title="Stepper" inner>
         <div style={{ maxWidth: 280 }}>
-          <Stepper activeSegment="info" items={[
-            { segment: "info", label: "사업정보", desc: "사업형태·위치·연면적", dotVar: "--dot-step1", href: "#" },
-            { segment: "calc", label: "검토 계산", desc: "에너지사용량·설치비율", dotVar: "--dot-step2", href: "#" },
-            { segment: "optimize", label: "최적화·AI", desc: "설비조합·AI 추천", dotVar: "--dot-step3", href: "#" },
-            { segment: "report", label: "보고서", desc: "미리보기·다운로드", dotVar: "--dot-step4", href: "#" },
+          <Stepper statuses={{ info: "active", calc: "todo", optimize: "todo", report: "todo" }} items={[
+            { segment: "info", label: "사업정보", desc: "사업형태·위치·연면적", href: "#" },
+            { segment: "calc", label: "검토 계산", desc: "에너지사용량·설치비율", href: "#" },
+            { segment: "optimize", label: "최적화·AI", desc: "설비조합·AI 추천", href: "#" },
+            { segment: "report", label: "보고서", desc: "미리보기·다운로드", href: "#" },
           ]} />
         </div>
       </Card>
