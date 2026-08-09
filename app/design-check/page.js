@@ -21,7 +21,7 @@ export default function DesignCheck() {
       <Card title="Button" actions={<Badge tone="brand">1차</Badge>}>
         <div style={{ display: "flex", gap: "var(--sp-3)", flexWrap: "wrap" }}>
           <Button>주요 동작</Button>
-          <Button variant="brand">브랜드 동작</Button>
+          <Button>브랜드 동작</Button>
           <Button variant="ghost">보조 동작</Button>
           <Button variant="danger">삭제</Button>
           <Button size="sm">작은 버튼</Button>

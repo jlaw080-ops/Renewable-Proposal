@@ -80,7 +80,7 @@ export default function Dashboard() {
       {projects && projects.length === 0 && (
         <Card inner className="dash__empty">
           <p>아직 프로젝트가 없습니다. 첫 프로젝트를 만들어 검토를 시작하세요.</p>
-          <Button variant="brand" onClick={() => setCreateOpen(true)}>첫 프로젝트 만들기</Button>
+          <Button onClick={() => setCreateOpen(true)}>첫 프로젝트 만들기</Button>
         </Card>
       )}
 
