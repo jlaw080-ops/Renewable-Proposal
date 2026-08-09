@@ -76,6 +76,16 @@ export default function CalcPage() {
         </Card>
       )}
 
+      <Card title="② 예상에너지사용량 (Output 1) — 모든 시나리오 공통 전제" actions={
+        <span className="calc__cat" title="주거: 세대수 기준 / 비주거: 용도별 연면적 합계 기준으로 자동 결정됩니다">
+          규모등급 <Badge tone={카테고리 ? "brand" : "na"}>{카테고리 || "미판정"}</Badge>
+        </span>
+      }>
+        {result
+          ? <Output1Table output1={result.output1} />
+          : <p className="calc__hint">① 사업정보 입력이 완료되면 용도별 예상에너지사용량이 여기 표시됩니다.</p>}
+      </Card>
+
       {result && <VerdictSticky output2={result.output2} />}
 
       <div className="calc__cols">
@@ -92,16 +102,6 @@ export default function CalcPage() {
             {result
               ? result.output2.map(alt => <Output2Panel key={alt.id} alt={alt} />)
               : <p className="calc__hint">시나리오 구성과 계산이 완료되면 의무비율 대비 판정 결과가 여기 표시됩니다.</p>}
-          </Card>
-
-          <Card title="② 예상에너지사용량 (Output 1)" actions={
-            <span className="calc__cat" title="주거: 세대수 기준 / 비주거: 용도별 연면적 합계 기준으로 자동 결정됩니다">
-              규모등급 <Badge tone={카테고리 ? "brand" : "na"}>{카테고리 || "미판정"}</Badge>
-            </span>
-          }>
-            {result
-              ? <Output1Table output1={result.output1} />
-              : <p className="calc__hint">① 사업정보 입력이 완료되면 용도별 예상에너지사용량이 여기 표시됩니다.</p>}
           </Card>
         </div>
       </div>

@@ -31,7 +31,14 @@ export default function LandInfoCard({ address, onApply }) {
 
   if (!address) return <p className="lp__fallback">지도에서 위치를 확정하면 현황 건축물의 토지정보를 조회합니다.</p>;
   if (state.status === "loading") return <p className="lp__fallback">토지정보 조회 중…</p>;
-  if (state.status === "error") return <p className="lp__notice" role="status">토지정보 조회 오류: {state.message} — 아래 대지 현황에 직접 입력하세요.</p>;
+  if (state.status === "error") {
+    return (
+      <div className="lic">
+        <p className="lp__notice" role="status">토지정보 조회 오류: {state.message}</p>
+        <p className="lp__fallback">주소 조회 서비스 문제일 수 있습니다 — 아래 대지 현황에 직접 입력하세요.</p>
+      </div>
+    );
+  }
   if (state.status === "done" && !state.land) {
     return <p className="lp__fallback">조회 결과 없음 (나대지 등) — 아래 대지 현황에 직접 입력하세요.</p>;
   }
