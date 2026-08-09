@@ -6,6 +6,10 @@ const BASE = process.argv[2];
 const OUT = process.argv[3] ?? "verify/e2e_out";
 if (!BASE) { console.error("사용법: node verify/e2e_redesign.mjs <PREVIEW_URL> [OUT_DIR]"); process.exit(1); }
 
+// Vercel Deployment Protection 우회 (프리뷰 SSO) — .env.local의 VERCEL_AUTOMATION_BYPASS_SECRET
+const BYPASS = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
+const ctxOpts = BYPASS ? { extraHTTPHeaders: { "x-vercel-protection-bypass": BYPASS } } : {};
+
 const seed = [{
   id: "e2e-seed", name: "E2E검증-개편", createdAt: 1, updatedAt: 1,
   data: {
@@ -25,7 +29,7 @@ let fails = 0;
 const bad = m => { fails++; console.error("FAIL:", m); };
 
 for (const vw of [320, 375, 768, 1440, 1920]) {
-  const ctx = await browser.newContext({ viewport: { width: vw, height: 900 } });
+  const ctx = await browser.newContext({ viewport: { width: vw, height: 900 }, ...ctxOpts });
   const page = await ctx.newPage();
   await page.goto(BASE, { waitUntil: "networkidle" });
   await page.evaluate(s => localStorage.setItem("rp.projects.v1", JSON.stringify(s)), seed);
@@ -41,7 +45,7 @@ for (const vw of [320, 375, 768, 1440, 1920]) {
 
 // 모달 포커스 트랩 (1440px)
 {
-  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, ...ctxOpts });
   const page = await ctx.newPage();
   await page.goto(BASE, { waitUntil: "networkidle" });
   const trigger = page.getByRole("button", { name: "새 프로젝트" });
