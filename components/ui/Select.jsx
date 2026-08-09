@@ -2,11 +2,11 @@
 import { useId } from "react";
 import "./field.css";
 
-export default function Select({ label, options = [], placeholder, error, className = "", ...selectProps }) {
+export default function Select({ label, labelHidden = false, options = [], placeholder, error, className = "", ...selectProps }) {
   const id = useId();
   return (
     <div className={`field ${className}`}>
-      {label && <label className="field__label" htmlFor={id}>{label}</label>}
+      {label && <label className={`field__label ${labelHidden ? "visually-hidden" : ""}`} htmlFor={id}>{label}</label>}
       <select id={id} className={`field__input field__select ${error ? "field__input--error" : ""}`}
         aria-invalid={error ? true : undefined} {...selectProps}>
         {placeholder && <option value="">{placeholder}</option>}

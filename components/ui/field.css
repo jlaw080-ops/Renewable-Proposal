@@ -8,9 +8,14 @@
   transition: border-color var(--dur-fast) var(--ease-out);
 }
 .field__input:read-only { background: var(--bg-input-readonly); }
-.field__input:focus { border-color: var(--border-focus); outline: none; }
+.field__input:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 1px; border-color: var(--border-focus); }
 .field__input--error { border-color: var(--color-fail); }
 .field__input.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 .field__select { appearance: auto; }
 .field__hint { font-size: var(--fs-12); color: var(--text-hint); }
 .field__error { font-size: var(--fs-12); color: var(--color-fail); }
+
+/* iOS 자동 확대 방지 — 모바일 입력 16px */
+@media (max-width: 767px) {
+  .field__input { font-size: 16px; }
+}
