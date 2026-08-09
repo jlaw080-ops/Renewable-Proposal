@@ -14,18 +14,25 @@ export default function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([]);
   const seq = useRef(0);
 
+  const dismiss = useCallback(id => setToasts(prev => prev.filter(t => t.id !== id)), []);
+
   const push = useCallback(({ message, tone = "info" }) => {
     const id = ++seq.current;
     setToasts(prev => [...prev, { id, message, tone }]);
-    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3000);
-  }, []);
+    if (tone !== "fail") setTimeout(() => dismiss(id), 3000);  // 오류는 수동 닫기
+  }, [dismiss]);
 
   return (
     <ToastContext.Provider value={{ push }}>
       {children}
       <div className="toast__stack" aria-live="polite">
         {toasts.map(t => (
-          <div key={t.id} className={`toast toast--${t.tone}`}>{t.message}</div>
+          <div key={t.id} className={`toast toast--${t.tone}`}>
+            {t.message}
+            {t.tone === "fail" && (
+              <button className="toast__close" onClick={() => dismiss(t.id)} aria-label="닫기">×</button>
+            )}
+          </div>
         ))}
       </div>
     </ToastContext.Provider>
