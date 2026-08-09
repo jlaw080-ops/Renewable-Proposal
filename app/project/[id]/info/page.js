@@ -72,7 +72,7 @@ export default function InfoPage() {
         </div>
       </Card>
 
-      <Card title="위치 선택 (지도)" actions={<Badge tone="action">3경로 동기</Badge>}>
+      <Card title="위치 선택 (지도)" actions={<Badge tone="brand">주소·지도·직접 선택 연동</Badge>}>
         <LocationPicker value={input1.위치정보} onResolve={handleLocation} />
       </Card>
 
@@ -90,9 +90,9 @@ export default function InfoPage() {
           {input1.용도별연면적목록.map((row, i) => (
             <div className="info__rowgroup" key={i}>
               <div className="info__row">
-                <Select label={i === 0 ? "용도" : undefined} placeholder="용도 선택" options={toOptions(용도_OPTIONS)}
+                <Select label="용도" labelHidden={i > 0} placeholder="용도 선택" options={toOptions(용도_OPTIONS)}
                   value={row.용도} onChange={e => applyRow(i, { 용도: e.target.value })} />
-                <Field label={i === 0 ? "연면적 (㎡)" : undefined} type="number" mono value={row.연면적}
+                <Field label="연면적 (㎡)" labelHidden={i > 0} type="number" mono value={row.연면적}
                   onChange={e => applyRow(i, { 연면적: num(e.target.value) })} />
                 <Button size="sm" variant="danger" disabled={input1.용도별연면적목록.length <= 1}
                   onClick={() => apply({ 용도별연면적목록: input1.용도별연면적목록.filter((_, idx) => idx !== i) })}>

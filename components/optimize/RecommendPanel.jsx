@@ -5,7 +5,7 @@ export default function RecommendPanel({ status, aiResult, error, onRun, onOpenC
   return (
     <div className="rp">
       <div className="rp__head">
-        <Button variant="brand" onClick={onRun} disabled={disabled || status === "loading"}>
+        <Button onClick={onRun} disabled={disabled || status === "loading"}>
           {status === "loading" ? "AI 평가 중…" : "AI 추천 받기"}
         </Button>
         <Button size="sm" variant="ghost" onClick={onOpenConstraints}>제약조건</Button>

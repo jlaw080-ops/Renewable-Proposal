@@ -1,18 +1,17 @@
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-2);
   border: 1px solid transparent; border-radius: var(--radius-sm);
-  font-size: var(--fs-14); font-weight: 500; cursor: pointer;
-  transition: background var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+  font-size: var(--fs-14); font-weight: 700; cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), scale var(--dur-fast) var(--ease-out);
 }
 .btn--md { height: 36px; padding: 0 var(--sp-4); }
 .btn--sm { height: 28px; padding: 0 var(--sp-3); font-size: var(--fs-13); }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn:active:not(:disabled) { scale: 0.96; }
+.btn:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
 
-.btn--primary { background: var(--accent-action); color: var(--text-invert); }
-.btn--primary:hover:not(:disabled) { background: var(--accent-action-dim); }
-
-.btn--brand { background: var(--accent-primary); color: var(--text-invert); }
-.btn--brand:hover:not(:disabled) { background: var(--accent-primary-dim); }
+.btn--primary { background: var(--accent-primary); color: var(--text-invert); }
+.btn--primary:hover:not(:disabled) { background: var(--accent-primary-dim); }
 
 .btn--ghost { background: var(--bg-card); color: var(--text-primary); border-color: var(--border-default); }
 .btn--ghost:hover:not(:disabled) { background: var(--bg-hover); }

@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { listProjects, createProject, updateProject, deleteProject } from "@/lib/projectStore";
 import { readLegacyProjects, convertLegacyProject } from "@/lib/migrateLegacy";
@@ -80,17 +81,17 @@ export default function Dashboard() {
       {projects && projects.length === 0 && (
         <Card inner className="dash__empty">
           <p>아직 프로젝트가 없습니다. 첫 프로젝트를 만들어 검토를 시작하세요.</p>
-          <Button variant="brand" onClick={() => setCreateOpen(true)}>첫 프로젝트 만들기</Button>
+          <Button onClick={() => setCreateOpen(true)}>첫 프로젝트 만들기</Button>
         </Card>
       )}
 
       <div className="dash__grid">
         {(projects ?? []).map(p => (
           <Card key={p.id} className="dash__item">
-            <button className="dash__open" onClick={() => router.push(`/project/${p.id}/info`)}>
+            <Link href={`/project/${p.id}/info`} className="dash__open">
               <span className="dash__name">{p.name}</span>
               <span className="dash__date mono">수정 {formatDate(p.updatedAt)}</span>
-            </button>
+            </Link>
             <div className="dash__row-actions">
               <Button size="sm" variant="danger" onClick={() => setDeleteTarget(p)}>삭제</Button>
             </div>

@@ -18,6 +18,8 @@ a:hover { text-decoration: underline; }
 
 button { font-family: inherit; }
 
+h1, h2, h3 { line-height: 1.25; word-break: keep-all; }
+
 :focus-visible {
   outline: 2px solid var(--accent-action);
   outline-offset: 2px;

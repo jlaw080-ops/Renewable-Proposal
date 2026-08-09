@@ -21,7 +21,7 @@ export default function DesignCheck() {
       <Card title="Button" actions={<Badge tone="brand">1차</Badge>}>
         <div style={{ display: "flex", gap: "var(--sp-3)", flexWrap: "wrap" }}>
           <Button>주요 동작</Button>
-          <Button variant="brand">브랜드 동작</Button>
+          <Button>브랜드 동작</Button>
           <Button variant="ghost">보조 동작</Button>
           <Button variant="danger">삭제</Button>
           <Button size="sm">작은 버튼</Button>
@@ -45,7 +45,7 @@ export default function DesignCheck() {
           <Badge tone="fail">미충족</Badge>
           <Badge tone="na">해당 없음</Badge>
           <Badge tone="brand">신재생</Badge>
-          <Badge tone="action">AI 추천</Badge>
+          <Badge tone="brand">AI 추천</Badge>
           <Badge tone="warm">최적화</Badge>
         </div>
       </Card>
@@ -79,11 +79,11 @@ export default function DesignCheck() {
 
       <Card title="Stepper" inner>
         <div style={{ maxWidth: 280 }}>
-          <Stepper activeSegment="info" items={[
-            { segment: "info", label: "사업정보", desc: "사업형태·위치·연면적", dotVar: "--dot-step1", href: "#" },
-            { segment: "calc", label: "검토 계산", desc: "에너지사용량·설치비율", dotVar: "--dot-step2", href: "#" },
-            { segment: "optimize", label: "최적화·AI", desc: "설비조합·AI 추천", dotVar: "--dot-step3", href: "#" },
-            { segment: "report", label: "보고서", desc: "미리보기·다운로드", dotVar: "--dot-step4", href: "#" },
+          <Stepper statuses={{ info: "active", calc: "todo", optimize: "todo", report: "todo" }} items={[
+            { segment: "info", label: "사업정보", desc: "사업형태·위치·연면적", href: "#" },
+            { segment: "calc", label: "검토 계산", desc: "에너지사용량·설치비율", href: "#" },
+            { segment: "optimize", label: "최적화·AI", desc: "설비조합·AI 추천", href: "#" },
+            { segment: "report", label: "보고서", desc: "미리보기·다운로드", href: "#" },
           ]} />
         </div>
       </Card>

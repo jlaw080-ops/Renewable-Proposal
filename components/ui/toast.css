@@ -11,3 +11,6 @@
 .toast--pass { background: var(--color-pass); }
 .toast--fail { background: var(--color-fail); }
 @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.toast { display: flex; align-items: center; gap: var(--sp-3); }
+.toast__close { background: none; border: none; color: inherit; font-size: var(--fs-16); cursor: pointer; line-height: 1; padding: 0; }
+.toast__close:focus-visible { outline: 2px solid var(--text-invert); outline-offset: 2px; }
