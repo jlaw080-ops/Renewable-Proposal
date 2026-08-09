@@ -6,7 +6,7 @@
 .opt__viewtoggle { display: flex; gap: var(--sp-1); }
 .opt__filter { display: inline-flex; align-items: center; gap: var(--sp-1); font-size: var(--fs-13); color: var(--text-secondary); cursor: pointer; }
 .opt__sources { display: inline-flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; }
-.opt__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: var(--sp-4); }
+.opt__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: var(--sp-4); grid-auto-rows: 1fr; }
 .opt__cardslot { scroll-margin-top: var(--sp-6); }
 @media (max-width: 767px) { .opt__grid { grid-template-columns: 1fr; } }
 
