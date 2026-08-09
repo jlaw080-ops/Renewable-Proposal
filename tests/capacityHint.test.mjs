@@ -71,3 +71,16 @@ test("적용용량이 문자열·빈칸·음수여도 안전", () => {
   const r = requiredCapacity({ 총에너지사용량: 총, 의무비율: 의무, systems, index: 1 });
   assert.equal(r.확보생산량, 300 * 2118.48);   // 문자열 300은 반영, 음수는 0으로 처리
 });
+
+test("두 행이 함께 목표를 채우면 전체충족 true·충족 false", () => {
+  const systems = [sys(1044), sys(1045)];
+  const r = requiredCapacity({ 총에너지사용량: 총, 의무비율: 의무, systems, index: 0 });
+  assert.equal(r.전체충족, true);
+  assert.equal(r.충족, false);
+});
+
+test("혼자서도 목표를 넘기면 전체충족 true", () => {
+  const systems = [sys(2089)];
+  const r = requiredCapacity({ 총에너지사용량: 총, 의무비율: 의무, systems, index: 0 });
+  assert.equal(r.전체충족, true);
+});

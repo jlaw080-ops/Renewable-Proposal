@@ -76,8 +76,8 @@ export default function ScenarioEditor({ scenarios, lib, target = null, onChange
                       index: yi,
                     });
                     if (!hint) return null;
-                    if (hint.충족) {
-                      return <p className="se__hint se__hint--ok">✓ 의무비율 충족 — 이 시스템에 추가 용량 불필요</p>;
+                    if (hint.전체충족) {
+                      return <p className="se__hint se__hint--ok">✓ 의무비율 충족 — 추가 용량 불필요</p>;
                     }
                     const 잔여모드 = hint.확보생산량 > 0;
                     return (
