@@ -6,6 +6,10 @@
 .se__system { display: flex; flex-direction: column; gap: var(--sp-1); }
 .se__row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 1fr) auto; gap: var(--sp-3); align-items: end; }
 .se__meta { font-size: var(--fs-12); color: var(--text-hint); }
+.se__hint { font-size: var(--fs-12); color: var(--accent-action); }
+.se__hint b { font-weight: 700; }
+.se__hint--ok { color: var(--color-pass); }
+.se__hintsub { color: var(--text-hint); }
 @media (max-width: 767px) {
   .se__row { grid-template-columns: 1fr; }
   .se__systems { gap: var(--sp-6); }
