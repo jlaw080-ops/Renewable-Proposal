@@ -11,6 +11,7 @@ import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import LocationPicker from "@/components/map/LocationPicker";
 import LandInfoCard from "@/components/map/LandInfoCard";
+import RequiredChecklist from "@/components/info/RequiredChecklist";
 import { useToast } from "@/components/ui/ToastProvider";
 import "./info.css";
 
@@ -59,6 +60,7 @@ export default function InfoPage() {
 
   return (
     <div className="info">
+      <RequiredChecklist input1={input1} />
       <Card title="① 사업정보">
         <div className="info__grid">
           <Select label="사업형태" placeholder="선택하세요" options={toOptions(사업형태_OPTIONS)}
