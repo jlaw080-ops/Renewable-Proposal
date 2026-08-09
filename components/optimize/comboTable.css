@@ -1,0 +1,26 @@
+/* components/optimize/comboTable.css — 조합 비교 표 */
+.ct__wrap { overflow-x: auto; border: 1px solid var(--border-default); border-radius: var(--radius-md); }
+.ct { width: 100%; border-collapse: collapse; font-size: var(--fs-13); background: var(--bg-card); }
+.ct th {
+  text-align: left; font-weight: 700; color: var(--text-secondary);
+  background: var(--bg-card-inner); padding: var(--sp-2) var(--sp-3);
+  border-bottom: 1px solid var(--border-default); white-space: nowrap;
+}
+.ct td { padding: var(--sp-2) var(--sp-3); border-bottom: 1px solid var(--border-default); }
+.ct tbody tr:last-child td { border-bottom: none; }
+.ct tbody tr { cursor: pointer; }
+.ct tbody tr:hover { background: var(--bg-hover); }
+.ct--right { text-align: right; }
+.ct__sys { min-width: 200px; }
+.ct__badges { display: flex; gap: var(--sp-1); white-space: nowrap; }
+.ct__sort {
+  background: none; border: none; padding: 0; font: inherit; color: inherit;
+  cursor: pointer; font-weight: 700;
+}
+.ct__sort:hover { color: var(--accent-action); }
+.ct__sort--active { color: var(--accent-action); }
+.ct__sort:focus-visible, .ct__pick:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
+.ct__pick {
+  background: none; border: none; padding: 0; font: inherit; color: var(--accent-action);
+  cursor: pointer; font-weight: 700;
+}
