@@ -29,6 +29,7 @@
   --accent-primary-rgb: 31, 31, 92;
   --accent-action: #00757C;       /* 링크·강조 텍스트 (틸 딥) */
   --accent-action-dim: #005A60;
+  --accent-action-bg: #E6F7F5;    /* 배지·표면 (틸 밝음) */
   --accent-graphic: #009BA4;      /* 게이지·활성 표시 — 비텍스트 전용 */
   --accent-warm: #B35400;         /* 경고·주의 */
   --accent-warm-dim: #B35400;

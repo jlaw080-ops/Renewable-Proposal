@@ -45,7 +45,7 @@ export default function DesignCheck() {
           <Badge tone="fail">미충족</Badge>
           <Badge tone="na">해당 없음</Badge>
           <Badge tone="brand">신재생</Badge>
-          <Badge tone="action">AI 추천</Badge>
+          <Badge tone="brand">AI 추천</Badge>
           <Badge tone="warm">최적화</Badge>
         </div>
       </Card>

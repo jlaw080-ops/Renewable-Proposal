@@ -26,7 +26,7 @@ export default function ComboCard({ combo, memo, aiBadge, aiReason, onMemoChange
       <header className="cc__head">
         <span className="cc__rank mono">#{combo.rank}</span>
         <span className="cc__score mono">{Math.round(combo.score * 100)}점</span>
-        {combo.rank === 1 && <Badge tone="pass">최적</Badge>}
+        {combo.rank === 1 && <Badge tone="brand">최적</Badge>}
         {aiBadge && <Badge tone="warm">⭐ AI 최선</Badge>}
       </header>
 

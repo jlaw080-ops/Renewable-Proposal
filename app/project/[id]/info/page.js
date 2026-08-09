@@ -72,7 +72,7 @@ export default function InfoPage() {
         </div>
       </Card>
 
-      <Card title="위치 선택 (지도)" actions={<Badge tone="action">3경로 동기</Badge>}>
+      <Card title="위치 선택 (지도)" actions={<Badge tone="brand">주소·지도·직접 선택 연동</Badge>}>
         <LocationPicker value={input1.위치정보} onResolve={handleLocation} />
       </Card>
 

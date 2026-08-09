@@ -6,6 +6,5 @@
 .badge--pass { background: var(--color-pass-bg); color: var(--color-pass); }
 .badge--fail { background: var(--color-fail-bg); color: var(--color-fail); }
 .badge--na { background: var(--color-na-bg); color: var(--color-na); }
-.badge--brand { background: rgba(var(--accent-primary-rgb), .12); color: var(--accent-primary-dim); }
-.badge--action { background: #EAF0FE; color: var(--accent-action-dim); }
-.badge--warm { background: #FBF1DE; color: var(--accent-warm-dim); }
+.badge--brand { background: var(--accent-action-bg); color: var(--accent-action); }
+.badge--warm { background: var(--accent-warm-bg); color: var(--accent-warm-dim); }

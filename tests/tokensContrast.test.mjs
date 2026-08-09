@@ -26,7 +26,7 @@ const TEXT_PAIRS = [ // 전경, 배경 — 4.5:1 이상
   ["text-secondary", "bg-card"], ["text-secondary", "bg-page"], ["text-secondary", "bg-card-inner"],
   ["text-hint", "bg-card"], ["text-hint", "bg-page"], ["text-hint", "bg-card-inner"],
   ["text-invert", "accent-primary"], ["text-invert", "accent-primary-dim"],
-  ["accent-action", "bg-card"],
+  ["accent-action", "bg-card"], ["accent-action", "accent-action-bg"],
   ["color-pass", "color-pass-bg"], ["color-pass", "bg-card"],
   ["color-fail", "color-fail-bg"], ["color-fail", "bg-card"],
   ["color-na", "color-na-bg"],
