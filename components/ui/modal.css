@@ -12,7 +12,8 @@
 .modal__title { font-size: var(--fs-16); font-weight: 700; }
 .modal__close { background: none; border: none; font-size: var(--fs-22); color: var(--text-hint); cursor: pointer; line-height: 1; }
 .modal__close:hover { color: var(--text-primary); }
-.modal__body { padding: var(--sp-5); overflow-y: auto; }
+.modal__close:focus-visible { outline: 2px solid var(--border-focus); }
+.modal__body { padding: var(--sp-5); overflow-y: auto; overscroll-behavior: contain; }
 .modal__foot { display: flex; justify-content: flex-end; gap: var(--sp-2); padding: var(--sp-4) var(--sp-5); border-top: 1px solid var(--border-default); }
 @keyframes modal-fade { from { opacity: 0; } to { opacity: 1; } }
 

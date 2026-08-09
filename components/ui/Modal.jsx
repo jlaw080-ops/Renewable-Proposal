@@ -1,23 +1,54 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useId, useRef } from "react";
 import { createPortal } from "react-dom";
 import "./modal.css";
 
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 export default function Modal({ open, onClose, title, footer, wide = false, children }) {
+  const titleId = useId();
+  const backdropRef = useRef(null);
+  const dialogRef = useRef(null);
+
   useEffect(() => {
     if (!open) return;
-    const onKey = e => { if (e.key === "Escape") onClose(); };
+    const trigger = document.activeElement;                 // 닫힐 때 복귀할 트리거
+    const dialog = dialogRef.current;
+    const first = dialog.querySelector("[autofocus]") ?? dialog.querySelector(FOCUSABLE) ?? dialog;
+    first.focus();
+
+    // 배경 비활성화: body 직계 중 모달 백드롭 제외 전부 inert
+    const siblings = [...document.body.children].filter(el => el !== backdropRef.current);
+    siblings.forEach(el => el.setAttribute("inert", ""));
+
+    const onKey = e => {
+      if (e.key === "Escape") { onClose(); return; }
+      if (e.key !== "Tab") return;
+      const items = [...dialog.querySelectorAll(FOCUSABLE)];
+      if (items.length === 0) { e.preventDefault(); return; }
+      const firstEl = items[0], lastEl = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === firstEl) { e.preventDefault(); lastEl.focus(); }
+      else if (!e.shiftKey && (document.activeElement === lastEl || !dialog.contains(document.activeElement))) {
+        e.preventDefault(); firstEl.focus();
+      }
+    };
     document.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
-    return () => { document.removeEventListener("keydown", onKey); document.body.style.overflow = ""; };
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+      siblings.forEach(el => el.removeAttribute("inert"));
+      trigger?.focus?.();
+    };
   }, [open, onClose]);
 
   if (!open) return null;
   return createPortal(
-    <div className="modal__backdrop" onClick={onClose}>
-      <div className={wide ? "modal modal--wide" : "modal"} role="dialog" aria-modal="true" aria-label={title} onClick={e => e.stopPropagation()}>
+    <div className="modal__backdrop" ref={backdropRef} onClick={onClose}>
+      <div className={wide ? "modal modal--wide" : "modal"} ref={dialogRef} role="dialog" aria-modal="true"
+        aria-labelledby={titleId} tabIndex={-1} onClick={e => e.stopPropagation()}>
         <header className="modal__head">
-          <h2 className="modal__title">{title}</h2>
+          <h2 className="modal__title" id={titleId}>{title}</h2>
           <button className="modal__close" onClick={onClose} aria-label="닫기">×</button>
         </header>
         <div className="modal__body">{children}</div>
