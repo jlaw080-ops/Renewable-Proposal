@@ -8,7 +8,6 @@ import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import ScenarioEditor from "@/components/calc/ScenarioEditor";
 import Output1Table from "@/components/calc/Output1Table";
-import Output2Panel from "@/components/calc/Output2Panel";
 import VerdictSticky from "@/components/calc/VerdictSticky";
 import "./calc.css";
 
@@ -88,24 +87,13 @@ export default function CalcPage() {
 
       {result && <VerdictSticky output2={result.output2} />}
 
-      <div className="calc__cols">
-        <div className="calc__col calc__col--input">
-          <Card title="시나리오 (ALT)">
-            {lib && input2
-              ? <ScenarioEditor scenarios={input2.scenarios} lib={lib} onChange={applyInput2}
-                target={result ? { 총에너지사용량: result.output1.총예상에너지사용량, 의무비율: result.output2[0]?.의무비율 ?? null } : null} />
-              : <p className="calc__hint">계산 엔진 로딩 중…</p>}
-          </Card>
-        </div>
-
-        <div className="calc__col calc__col--result">
-          <Card title="신재생에너지 설치비율 (Output 2)">
-            {result
-              ? result.output2.map(alt => <Output2Panel key={alt.id} alt={alt} />)
-              : <p className="calc__hint">시나리오 구성과 계산이 완료되면 의무비율 대비 판정 결과가 여기 표시됩니다.</p>}
-          </Card>
-        </div>
-      </div>
+      <Card title="시나리오와 판정 (ALT별)">
+        {lib && input2
+          ? <ScenarioEditor scenarios={input2.scenarios} lib={lib} onChange={applyInput2}
+              results={result?.output2 ?? null}
+              target={result ? { 총에너지사용량: result.output1.총예상에너지사용량, 의무비율: result.output2[0]?.의무비율 ?? null } : null} />
+          : <p className="calc__hint">계산 엔진 로딩 중…</p>}
+      </Card>
     </div>
   );
 }
